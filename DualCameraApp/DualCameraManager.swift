@@ -78,24 +78,34 @@ class DualCameraManager: NSObject {
     private var frontVideoURL: URL?
     private var backVideoURL: URL?
     
+    private var isSetupComplete = false
+
     override init() {
         super.init()
-        setupCameras()
+        // Don't setup cameras in init - do it after permissions are granted
     }
-    
-    private func setupCameras() {
+
+    func setupCameras() {
+        guard !isSetupComplete else { return }
+
         // Configure camera devices
         frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         audioDevice = AVCaptureDevice.default(for: .audio)
-        
+
+        guard frontCamera != nil, backCamera != nil else {
+            print("❌ Failed to get camera devices")
+            return
+        }
+
         setupSessions()
+        isSetupComplete = true
     }
-    
+
     private func setupSessions() {
         // Setup Front Camera Session
         setupFrontCameraSession()
-        
+
         // Setup Back Camera Session
         setupBackCameraSession()
     }
@@ -192,7 +202,13 @@ private func setupBackCameraSession() {
 
     // MARK: - Session Control
     func startSessions() {
-        DispatchQueue.global(qos: .userInitiated).async {
+        guard isSetupComplete else {
+            print("⚠️ Cannot start sessions - setup not complete")
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
             if !self.frontCameraSession.isRunning {
                 self.frontCameraSession.startRunning()
             }
@@ -203,7 +219,10 @@ private func setupBackCameraSession() {
     }
 
     func stopSessions() {
-        DispatchQueue.global(qos: .userInitiated).async {
+        guard isSetupComplete else { return }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
             if self.frontCameraSession.isRunning {
                 self.frontCameraSession.stopRunning()
             }

@@ -27,21 +27,26 @@ class ViewController: UIViewController {
     private var isFrontViewPrimary = true
     private var frontZoomScale: CGFloat = 1.0
     private var backZoomScale: CGFloat = 1.0
+    private var isCameraSetupComplete = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupDualCamera()
         requestCameraPermissions()
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        dualCameraManager.startSessions()
+        if isCameraSetupComplete {
+            dualCameraManager.startSessions()
+        }
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        dualCameraManager.stopSessions()
+        if isCameraSetupComplete {
+            dualCameraManager.stopSessions()
+        }
     }
 
     override func didReceiveMemoryWarning() {
@@ -318,10 +323,12 @@ class ViewController: UIViewController {
         AVCaptureDevice.requestAccess(for: .video) { [weak self] videoGranted in
             if videoGranted {
                 AVCaptureDevice.requestAccess(for: .audio) { [weak self] audioGranted in
-                    if !audioGranted {
-                        DispatchQueue.main.async {
+                    DispatchQueue.main.async {
+                        if !audioGranted {
                             self?.showPermissionAlert(type: "Audio")
                         }
+                        // Setup cameras after permissions are granted
+                        self?.setupCamerasAfterPermissions()
                     }
                 }
             } else {
@@ -330,6 +337,23 @@ class ViewController: UIViewController {
                 }
             }
         }
+    }
+
+    private func setupCamerasAfterPermissions() {
+        // Setup camera manager
+        dualCameraManager.setupCameras()
+
+        // Setup delegate and preview layers
+        setupDualCamera()
+
+        // Mark setup as complete
+        isCameraSetupComplete = true
+
+        // Start sessions
+        dualCameraManager.startSessions()
+
+        // Update status
+        statusLabel.text = "Ready to record"
     }
     
     private func showPermissionAlert(type: String) {
