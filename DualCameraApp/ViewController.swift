@@ -21,6 +21,7 @@ class ViewController: UIViewController {
     var isFrontViewPrimary = true
     var isPhotoMode = false
     var isGridVisible = false
+    var isPresentingAlert = false
 
     // MARK: - UI Components - Camera Views
     let cameraStackView = UIStackView()
@@ -429,10 +430,26 @@ class ViewController: UIViewController {
                 self.setupCamerasAfterPermissions()
             } else {
                 self.statusLabel.text = "Permissions required"
-                self.permissionManager.showMultiplePermissionsAlert(
-                    deniedPermissions: deniedPermissions,
-                    from: self
+
+                // Show alert for denied permissions
+                let permissionNames = deniedPermissions.map { $0.title }.joined(separator: ", ")
+                let message = "This app requires the following permissions to function properly:\n\n\(permissionNames)\n\nPlease enable them in Settings."
+
+                let alert = UIAlertController(
+                    title: "Permissions Required",
+                    message: message,
+                    preferredStyle: .alert
                 )
+
+                alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL)
+                    }
+                })
+
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+                self.presentAlertSafely(alert)
 
                 // Show which permissions are missing
                 self.frontCameraPreview.showError(message: "Camera permission required")
@@ -450,19 +467,25 @@ class ViewController: UIViewController {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
+            #if targetEnvironment(simulator)
+            // Simulator doesn't have real cameras, show demo mode
+            DispatchQueue.main.async {
+                self.setupSimulatorMode()
+            }
+            #else
             self.dualCameraManager.setupCameras()
 
             // Poll for preview layers with timeout
             var attempts = 0
             while (self.dualCameraManager.frontPreviewLayer == nil ||
-                   self.dualCameraManager.backPreviewLayer == nil) && attempts < 50 {
+                    self.dualCameraManager.backPreviewLayer == nil) && attempts < 50 {
                 Thread.sleep(forTimeInterval: 0.02)
                 attempts += 1
             }
 
             DispatchQueue.main.async {
                 if self.dualCameraManager.frontPreviewLayer != nil &&
-                   self.dualCameraManager.backPreviewLayer != nil {
+                    self.dualCameraManager.backPreviewLayer != nil {
                     self.setupPreviewLayers()
                     self.activityIndicator.stopAnimating()
                     self.statusLabel.text = "Ready to record"
@@ -474,6 +497,7 @@ class ViewController: UIViewController {
                     self.handleCameraSetupFailure()
                 }
             }
+            #endif
         }
     }
 
@@ -489,6 +513,22 @@ class ViewController: UIViewController {
         backCameraPreview.previewLayer = backLayer
     }
 
+    private func setupSimulatorMode() {
+        // Simulator mode - show placeholder content
+        frontCameraPreview.showError(message: "Simulator Mode\nFront Camera")
+        backCameraPreview.showError(message: "Simulator Mode\nBack Camera")
+
+        activityIndicator.stopAnimating()
+        statusLabel.text = "Simulator Mode - Demo Ready"
+        isCameraSetupComplete = true
+
+        // Enable basic functionality for testing UI
+        frontCameraPreview.isActive = true
+        backCameraPreview.isActive = true
+
+        PerformanceMonitor.shared.endCameraSetup()
+    }
+
     private func handleCameraSetupFailure() {
         statusLabel.text = "Camera setup failed"
         frontCameraPreview.showError(message: "Failed to initialize")
@@ -502,7 +542,7 @@ class ViewController: UIViewController {
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        presentAlertSafely(alert)
     }
 
     // MARK: - Actions
@@ -704,6 +744,17 @@ class ViewController: UIViewController {
         }
     }
 
+    private func presentAlertSafely(_ alertController: UIAlertController) {
+        guard !isPresentingAlert else { return }
+
+        isPresentingAlert = true
+
+        present(alertController, animated: true) { [weak self] in
+            // Reset the flag when the alert is dismissed
+            self?.isPresentingAlert = false
+        }
+    }
+
     // MARK: - Storage Monitoring
     private func startStorageMonitoring() {
         Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
@@ -818,7 +869,7 @@ extension ViewController: DualCameraManagerDelegate {
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        presentAlertSafely(alert)
     }
 
     func didUpdateVideoQuality(to quality: VideoQuality) {
