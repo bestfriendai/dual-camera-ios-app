@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import Photos
 
 class ViewController: UIViewController {
 
@@ -9,6 +10,7 @@ class ViewController: UIViewController {
     
     private let frontCameraView = UIView()
     private let backCameraView = UIView()
+    private let cameraStackView = UIStackView()
     private let controlsContainer = GlassmorphismView()
     private let recordButton = UIButton(type: .system)
     internal let statusLabel = UILabel()  // Changed to internal for VideoMerger access
@@ -18,16 +20,23 @@ class ViewController: UIViewController {
     private let qualityButton = UIButton(type: .system)
     private let galleryButton = UIButton(type: .system)
     private let recordingTimerLabel = UILabel()
-    internal let progressView = UIProgressView(progressViewStyle: .default)  // For export progress
-    internal let activityIndicator = UIActivityIndicatorView(style: .large)  // For loading
+    internal let progressView = UIProgressView(progressViewStyle: .default)
+    internal let activityIndicator = UIActivityIndicatorView(style: .large)
+    
+    private let modeSegmentedControl = UISegmentedControl(items: ["VIDEO", "PHOTO"])
+    private let gridButton = UIButton(type: .system)
+    private let gridOverlayView = UIView()
+    private let storageLabel = UILabel()
 
     private var isRecording = false
     private var recordingTimer: Timer?
     private var recordingDuration = 0
-    private var isFrontViewPrimary = true
+    private var isFrontViewPrimary = false
     private var frontZoomScale: CGFloat = 1.0
     private var backZoomScale: CGFloat = 1.0
     private var isCameraSetupComplete = false
+    private var isPhotoMode = false
+    private var isGridVisible = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,22 +122,42 @@ class ViewController: UIViewController {
     }
     
     private func setupCameraViews() {
+        cameraStackView.axis = .vertical
+        cameraStackView.alignment = .fill
+        cameraStackView.distribution = .fillEqually
+        cameraStackView.spacing = 16
+        cameraStackView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cameraStackView)
+
         // Front camera view
         frontCameraView.backgroundColor = .darkGray
         frontCameraView.layer.cornerRadius = 20
         frontCameraView.layer.masksToBounds = true
         frontCameraView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(frontCameraView)
 
         // Back camera view
         backCameraView.backgroundColor = .darkGray
         backCameraView.layer.cornerRadius = 20
         backCameraView.layer.masksToBounds = true
         backCameraView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(backCameraView)
+
+        updateCameraStackOrder()
 
         // Add gesture recognizers
         setupGestureRecognizers()
+    }
+
+    private func updateCameraStackOrder() {
+        let orderedViews = isFrontViewPrimary ? [frontCameraView, backCameraView] : [backCameraView, frontCameraView]
+
+        for view in cameraStackView.arrangedSubviews {
+            cameraStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        for view in orderedViews {
+            cameraStackView.addArrangedSubview(view)
+        }
     }
 
     private func setupGestureRecognizers() {
@@ -238,103 +267,122 @@ class ViewController: UIViewController {
         activityIndicator.color = .white
         activityIndicator.hidesWhenStopped = true
         view.addSubview(activityIndicator)
+        
+        // Mode segmented control
+        modeSegmentedControl.selectedSegmentIndex = 0
+        modeSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        modeSegmentedControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
+        modeSegmentedControl.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        modeSegmentedControl.selectedSegmentTintColor = .white
+        modeSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
+        modeSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
+        view.addSubview(modeSegmentedControl)
+        
+        // Grid button
+        gridButton.setImage(UIImage(systemName: "grid"), for: .normal)
+        gridButton.tintColor = .white
+        gridButton.backgroundColor = .systemGray.withAlphaComponent(0.7)
+        gridButton.layer.cornerRadius = 8
+        gridButton.translatesAutoresizingMaskIntoConstraints = false
+        gridButton.addTarget(self, action: #selector(gridButtonTapped), for: .touchUpInside)
+        view.addSubview(gridButton)
+        
+        // Grid overlay
+        gridOverlayView.translatesAutoresizingMaskIntoConstraints = false
+        gridOverlayView.isUserInteractionEnabled = false
+        gridOverlayView.isHidden = true
+        view.addSubview(gridOverlayView)
+        setupGridLines()
+        
+        // Storage label
+        storageLabel.textColor = .white
+        storageLabel.font = UIFont.systemFont(ofSize: 11, weight: .medium)
+        storageLabel.textAlignment = .right
+        storageLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(storageLabel)
+        updateStorageLabel()
     }
     
     private func setupConstraints() {
-        updateCameraViewConstraints()
-        
         NSLayoutConstraint.activate([
-            
+            cameraStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            cameraStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            cameraStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            cameraStackView.bottomAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: -20),
+
             controlsContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             controlsContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             controlsContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             controlsContainer.heightAnchor.constraint(equalToConstant: 180),
-            
-            
+
             recordButton.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
             recordButton.topAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: 20),
             recordButton.widthAnchor.constraint(equalToConstant: 70),
             recordButton.heightAnchor.constraint(equalToConstant: 70),
-            
-            
+
             statusLabel.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
             statusLabel.topAnchor.constraint(equalTo: recordButton.bottomAnchor, constant: 10),
             statusLabel.leadingAnchor.constraint(equalTo: controlsContainer.leadingAnchor, constant: 20),
             statusLabel.trailingAnchor.constraint(equalTo: controlsContainer.trailingAnchor, constant: -20),
-            
-            
+
             mergeVideosButton.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
             mergeVideosButton.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
             mergeVideosButton.widthAnchor.constraint(equalToConstant: 120),
             mergeVideosButton.heightAnchor.constraint(equalToConstant: 30),
-            
-            
+
             flashButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
             flashButton.leadingAnchor.constraint(equalTo: controlsContainer.leadingAnchor, constant: 30),
-            
-            
+
             swapCameraButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
             swapCameraButton.trailingAnchor.constraint(equalTo: controlsContainer.trailingAnchor, constant: -30),
-            
 
             recordingTimerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             recordingTimerLabel.bottomAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: -10),
 
-            // Progress view constraints
             progressView.leadingAnchor.constraint(equalTo: controlsContainer.leadingAnchor, constant: 20),
             progressView.trailingAnchor.constraint(equalTo: controlsContainer.trailingAnchor, constant: -20),
             progressView.bottomAnchor.constraint(equalTo: controlsContainer.bottomAnchor, constant: -10),
 
-            // Activity indicator constraints
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
 
-            // Quality button constraints
             qualityButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             qualityButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             qualityButton.widthAnchor.constraint(equalToConstant: 60),
             qualityButton.heightAnchor.constraint(equalToConstant: 30),
 
-            // Gallery button constraints
             galleryButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             galleryButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             galleryButton.widthAnchor.constraint(equalToConstant: 40),
-            galleryButton.heightAnchor.constraint(equalToConstant: 30)
-        ])
-    }
-    
-    private func updateCameraViewConstraints() {
-        
-        frontCameraView.removeFromSuperview()
-        backCameraView.removeFromSuperview()
-        view.insertSubview(frontCameraView, at: 0)
-        view.insertSubview(backCameraView, at: 0)
-        
-        
-        let primaryView = isFrontViewPrimary ? frontCameraView : backCameraView
-        let secondaryView = isFrontViewPrimary ? backCameraView : frontCameraView
-        
-        NSLayoutConstraint.deactivate(view.constraints)
-        setupConstraints()
-        
-        NSLayoutConstraint.activate([
-            primaryView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            primaryView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            primaryView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            primaryView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5),
+            galleryButton.heightAnchor.constraint(equalToConstant: 30),
             
-            secondaryView.widthAnchor.constraint(equalTo: primaryView.widthAnchor, multiplier: 0.3),
-            secondaryView.heightAnchor.constraint(equalTo: primaryView.heightAnchor, multiplier: 0.3),
-            secondaryView.bottomAnchor.constraint(equalTo: primaryView.bottomAnchor, constant: -10),
-            secondaryView.trailingAnchor.constraint(equalTo: primaryView.trailingAnchor, constant: -10)
+            modeSegmentedControl.bottomAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: -60),
+            modeSegmentedControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            modeSegmentedControl.widthAnchor.constraint(equalToConstant: 200),
+            modeSegmentedControl.heightAnchor.constraint(equalToConstant: 32),
+            
+            gridButton.topAnchor.constraint(equalTo: qualityButton.bottomAnchor, constant: 10),
+            gridButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            gridButton.widthAnchor.constraint(equalToConstant: 40),
+            gridButton.heightAnchor.constraint(equalToConstant: 30),
+            
+            gridOverlayView.topAnchor.constraint(equalTo: cameraStackView.topAnchor),
+            gridOverlayView.leadingAnchor.constraint(equalTo: cameraStackView.leadingAnchor),
+            gridOverlayView.trailingAnchor.constraint(equalTo: cameraStackView.trailingAnchor),
+            gridOverlayView.bottomAnchor.constraint(equalTo: cameraStackView.bottomAnchor),
+            
+            storageLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
+            storageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            storageLabel.widthAnchor.constraint(equalToConstant: 100)
         ])
-    }
-    
-    private func setupDualCamera() {
-        dualCameraManager.delegate = self
-        
-        
-        setupPreviewLayers()
+
+        view.bringSubviewToFront(controlsContainer)
+        view.bringSubviewToFront(qualityButton)
+        view.bringSubviewToFront(galleryButton)
+        view.bringSubviewToFront(gridButton)
+        view.bringSubviewToFront(modeSegmentedControl)
+        view.bringSubviewToFront(gridOverlayView)
+        view.bringSubviewToFront(activityIndicator)
     }
     
     private func setupPreviewLayers() {
@@ -381,10 +429,11 @@ class ViewController: UIViewController {
 
     private func setupCamerasAfterPermissions() {
         // Setup camera manager
+        dualCameraManager.delegate = self
         dualCameraManager.setupCameras()
 
-        // Setup delegate and preview layers
-        setupDualCamera()
+        // Setup preview layers
+        setupPreviewLayers()
 
         // Mark setup as complete
         isCameraSetupComplete = true
@@ -416,10 +465,99 @@ class ViewController: UIViewController {
     
     
     @objc private func recordButtonTapped() {
-        if isRecording {
-            dualCameraManager.stopRecording()
+        if isPhotoMode {
+            dualCameraManager.capturePhoto()
+            animateCaptureFlash()
         } else {
-            dualCameraManager.startRecording()
+            if isRecording {
+                dualCameraManager.stopRecording()
+            } else {
+                dualCameraManager.startRecording()
+            }
+        }
+    }
+    
+    @objc private func modeChanged() {
+        isPhotoMode = modeSegmentedControl.selectedSegmentIndex == 1
+        updateUIForMode()
+    }
+    
+    @objc private func gridButtonTapped() {
+        isGridVisible.toggle()
+        gridOverlayView.isHidden = !isGridVisible
+        gridButton.tintColor = isGridVisible ? .systemYellow : .white
+    }
+    
+    private func setupGridLines() {
+        let horizontalLines = 2
+        let verticalLines = 2
+        
+        for i in 1...horizontalLines {
+            let line = UIView()
+            line.backgroundColor = UIColor.white.withAlphaComponent(0.5)
+            line.translatesAutoresizingMaskIntoConstraints = false
+            gridOverlayView.addSubview(line)
+            
+            NSLayoutConstraint.activate([
+                line.leadingAnchor.constraint(equalTo: gridOverlayView.leadingAnchor),
+                line.trailingAnchor.constraint(equalTo: gridOverlayView.trailingAnchor),
+                line.heightAnchor.constraint(equalToConstant: 1),
+                line.topAnchor.constraint(equalTo: gridOverlayView.topAnchor, constant: CGFloat(i) * gridOverlayView.bounds.height / 3)
+            ])
+        }
+        
+        for i in 1...verticalLines {
+            let line = UIView()
+            line.backgroundColor = UIColor.white.withAlphaComponent(0.5)
+            line.translatesAutoresizingMaskIntoConstraints = false
+            gridOverlayView.addSubview(line)
+            
+            NSLayoutConstraint.activate([
+                line.topAnchor.constraint(equalTo: gridOverlayView.topAnchor),
+                line.bottomAnchor.constraint(equalTo: gridOverlayView.bottomAnchor),
+                line.widthAnchor.constraint(equalToConstant: 1),
+                line.leadingAnchor.constraint(equalTo: gridOverlayView.leadingAnchor, constant: CGFloat(i) * gridOverlayView.bounds.width / 3)
+            ])
+        }
+    }
+    
+    private func updateStorageLabel() {
+        if let attributes = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory()),
+           let freeSize = attributes[.systemFreeSize] as? Int64 {
+            let gb = Double(freeSize) / 1_000_000_000
+            storageLabel.text = String(format: "%.1f GB", gb)
+        }
+    }
+    
+    private func updateUIForMode() {
+        if isPhotoMode {
+            recordButton.setImage(UIImage(systemName: "camera.circle.fill"), for: .normal)
+            recordButton.tintColor = .white
+            statusLabel.text = "Tap to capture photo"
+            mergeVideosButton.isHidden = true
+            recordingTimerLabel.isHidden = true
+        } else {
+            recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
+            recordButton.tintColor = .systemRed
+            statusLabel.text = "Ready to record"
+            mergeVideosButton.isHidden = false
+        }
+    }
+    
+    private func animateCaptureFlash() {
+        let flashView = UIView(frame: view.bounds)
+        flashView.backgroundColor = .white
+        flashView.alpha = 0
+        view.addSubview(flashView)
+        
+        UIView.animate(withDuration: 0.1, animations: {
+            flashView.alpha = 1
+        }) { _ in
+            UIView.animate(withDuration: 0.2, animations: {
+                flashView.alpha = 0
+            }) { _ in
+                flashView.removeFromSuperview()
+            }
         }
     }
     
@@ -447,7 +585,7 @@ class ViewController: UIViewController {
     
     @objc private func swapCameraButtonTapped() {
         isFrontViewPrimary.toggle()
-        updateCameraViewConstraints()
+        updateCameraStackOrder()
 
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
@@ -460,7 +598,6 @@ class ViewController: UIViewController {
         for quality in VideoQuality.allCases {
             let action = UIAlertAction(title: quality.rawValue, style: .default) { [weak self] _ in
                 self?.dualCameraManager.videoQuality = quality
-                self?.qualityButton.setTitle(quality.rawValue.components(separatedBy: " ").first, for: .normal)
             }
             if dualCameraManager.videoQuality == quality {
                 action.setValue(true, forKey: "checked")
@@ -604,6 +741,51 @@ extension ViewController: DualCameraManagerDelegate {
         DispatchQueue.main.async {
             self.updateRecordingState(false)
             self.statusLabel.text = "Error: \(error.localizedDescription)"
+        }
+    }
+
+    func didUpdateVideoQuality(to quality: VideoQuality) {
+        let title = quality.rawValue.components(separatedBy: " ").first ?? quality.rawValue
+        qualityButton.setTitle(title, for: .normal)
+    }
+    
+    func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?) {
+        DispatchQueue.main.async {
+            self.statusLabel.text = "Photos captured!"
+            
+            self.savePhotosToLibrary(frontImage: frontImage, backImage: backImage)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.statusLabel.text = "Tap to capture photo"
+            }
+        }
+    }
+    
+    private func savePhotosToLibrary(frontImage: UIImage?, backImage: UIImage?) {
+        PHPhotoLibrary.requestAuthorization { status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async {
+                    self.statusLabel.text = "Photos access denied"
+                }
+                return
+            }
+            
+            PHPhotoLibrary.shared().performChanges({
+                if let frontImage = frontImage {
+                    PHAssetChangeRequest.creationRequestForAsset(from: frontImage)
+                }
+                if let backImage = backImage {
+                    PHAssetChangeRequest.creationRequestForAsset(from: backImage)
+                }
+            }) { success, error in
+                DispatchQueue.main.async {
+                    if success {
+                        self.statusLabel.text = "Photos saved to library!"
+                    } else {
+                        self.statusLabel.text = "Failed to save photos"
+                    }
+                }
+            }
         }
     }
 }
