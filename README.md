@@ -2,6 +2,19 @@
 
 A Swift iOS application that allows users to record videos from both front and back cameras simultaneously, creating unique dual-perspective content perfect for vlogs, tutorials, and creative storytelling.
 
+## 🎉 Latest Update - v2.1 (Crash Fix)
+
+**✅ FIXED:** The critical EXC_BAD_ACCESS crash has been resolved! The app now launches smoothly without freezing at the splash screen.
+
+**What was fixed:**
+- Proper camera initialization order (permissions → setup → start)
+- Added safety guards to prevent premature camera access
+- Fixed memory management with weak references
+- Added background/foreground handling
+- Improved error handling throughout
+
+**Status:** ✅ Build Successful | ✅ Ready for Testing | ✅ Stable
+
 ## Features
 
 ### Core Functionality
