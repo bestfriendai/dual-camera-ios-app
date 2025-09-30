@@ -5,11 +5,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Begin performance monitoring
+        PerformanceMonitor.shared.beginAppLaunch()
+
         // Override point for customization after application launch.
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = ViewController()
-        window?.makeKeyAndVisible()
+        // Only create window for iOS 12 fallback (iOS 13+ uses SceneDelegate)
+        if #available(iOS 13.0, *) {
+            // Scene delegate handles window creation
+        } else {
+            window = UIWindow(frame: UIScreen.main.bounds)
+            window?.rootViewController = ViewController()
+            window?.makeKeyAndVisible()
+        }
+
+        // Defer non-critical initialization
+        DispatchQueue.main.async {
+            self.setupNonCriticalServices()
+        }
+
         return true
+    }
+
+    private func setupNonCriticalServices() {
+        // Setup analytics, crash reporting, etc. here
+        // Currently empty but ready for future additions
     }
 
     // MARK: UISceneSession Lifecycle (iOS 13+)

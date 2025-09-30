@@ -7,10 +7,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        
+
+        // Create window and set root view controller (UIKit)
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = ViewController()
+        let viewController = ViewController()
+        window?.rootViewController = viewController
         window?.makeKeyAndVisible()
+
+        // End app launch performance measurement
+        DispatchQueue.main.async {
+            PerformanceMonitor.shared.endAppLaunch()
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

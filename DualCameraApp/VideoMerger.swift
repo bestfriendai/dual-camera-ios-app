@@ -2,29 +2,20 @@ import AVFoundation
 import Photos
 import UIKit
 
-// MARK: - Video Merging Extension
-extension ViewController {
-    
+class VideoMerger {
     enum VideoLayout {
         case sideBySide
         case pip
     }
-    
-    func mergeVideos(frontURL: URL, backURL: URL, layout: VideoLayout = .sideBySide) {
-        statusLabel.text = "Preparing videos..."
-        mergeVideosButton.isEnabled = false
-        mergeVideosButton.alpha = 0.5
-        activityIndicator.startAnimating()
-        progressView.isHidden = false
-        progressView.progress = 0.0
 
+    func mergeVideos(frontURL: URL, backURL: URL, layout: VideoLayout = .sideBySide, quality: VideoQuality, completion: @escaping (Result<URL, Error>) -> Void) {
         let composition = AVMutableComposition()
 
         // Create separate video tracks for front and back cameras
         guard let frontVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
               let backVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
               let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            showMergeError("Failed to create composition tracks")
+            completion(.failure(NSError(domain: "VideoMerger", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create composition tracks"])))
             return
         }
 
@@ -58,7 +49,7 @@ extension ViewController {
             group.leave()
         }
 
-        group.notify(queue: .main) {
+        group.notify(queue: .global(qos: .userInitiated)) {
             self.performVideoMerge(
                 composition: composition,
                 frontVideoTrack: frontVideoTrack,
@@ -69,11 +60,13 @@ extension ViewController {
                 audioTrackAsset: audioTrackAsset,
                 frontAsset: frontAsset,
                 backAsset: backAsset,
-                layout: layout
+                layout: layout,
+                quality: quality,
+                completion: completion
             )
         }
     }
-    
+
     private func performVideoMerge(
         composition: AVMutableComposition,
         frontVideoTrack: AVMutableCompositionTrack,
@@ -84,11 +77,13 @@ extension ViewController {
         audioTrackAsset: AVAssetTrack?,
         frontAsset: AVAsset,
         backAsset: AVAsset,
-        layout: VideoLayout
+        layout: VideoLayout,
+        quality: VideoQuality,
+        completion: @escaping (Result<URL, Error>) -> Void
     ) {
         guard let frontTrackAsset = frontVideoTrackAsset,
               let backTrackAsset = backVideoTrackAsset else {
-            showMergeError("Failed to load video tracks")
+            completion(.failure(NSError(domain: "VideoMerger", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to load video tracks"])))
             return
         }
 
@@ -113,7 +108,7 @@ extension ViewController {
             }
 
         } catch {
-            showMergeError("Failed to insert tracks: \(error.localizedDescription)")
+            completion(.failure(error))
             return
         }
 
@@ -122,25 +117,26 @@ extension ViewController {
             frontTrack: frontVideoTrack,
             backTrack: backVideoTrack,
             composition: composition,
-            layout: layout
+            layout: layout,
+            quality: quality
         )
 
         // Export the merged video
-        exportMergedVideo(composition: composition, videoComposition: videoComposition)
+        exportMergedVideo(composition: composition, videoComposition: videoComposition, completion: completion)
     }
-    
+
     private func createVideoComposition(
         frontTrack: AVMutableCompositionTrack,
         backTrack: AVMutableCompositionTrack,
         composition: AVMutableComposition,
-        layout: VideoLayout
+        layout: VideoLayout,
+        quality: VideoQuality
     ) -> AVVideoComposition {
 
         let videoComposition = AVMutableVideoComposition()
         videoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30) // 30 FPS
 
-        // Use the current video quality setting - access through self
-        let renderSize = self.dualCameraManager.videoQuality.renderSize
+        let renderSize = quality.renderSize
         videoComposition.renderSize = renderSize
 
         // Create composition instruction
@@ -182,8 +178,8 @@ extension ViewController {
         videoComposition.instructions = [instruction]
         return videoComposition
     }
-    
-    private func exportMergedVideo(composition: AVMutableComposition, videoComposition: AVVideoComposition) {
+
+    private func exportMergedVideo(composition: AVMutableComposition, videoComposition: AVVideoComposition, completion: @escaping (Result<URL, Error>) -> Void) {
         // Create output URL
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let timestamp = Int(Date().timeIntervalSince1970)
@@ -194,7 +190,7 @@ extension ViewController {
 
         // Create export session
         guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
-            showMergeError("Failed to create export session")
+            completion(.failure(NSError(domain: "VideoMerger", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to create export session"])))
             return
         }
 
@@ -202,85 +198,52 @@ extension ViewController {
         exportSession.outputFileType = .mp4
         exportSession.videoComposition = videoComposition
 
-        // Update status
-        DispatchQueue.main.async {
-            self.statusLabel.text = "Exporting video..."
-            self.progressView.progress = 0.1
-        }
-
-        // Monitor export progress
-        let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-
-            let progress = exportSession.progress
-            DispatchQueue.main.async {
-                self.progressView.progress = progress
-                self.statusLabel.text = "Exporting video... \(Int(progress * 100))%"
-            }
-
-            if exportSession.status != .exporting {
-                timer.invalidate()
-            }
-        }
-
         exportSession.exportAsynchronously {
-            progressTimer.invalidate()
-
-            DispatchQueue.main.async {
-                self.activityIndicator.stopAnimating()
-
-                switch exportSession.status {
-                case .completed:
-                    self.progressView.progress = 1.0
-                    self.statusLabel.text = "Saving to Photos..."
-                    self.saveMergedVideoToPhotos(url: outputURL)
-                case .failed:
-                    self.showMergeError("Export failed: \(exportSession.error?.localizedDescription ?? "Unknown error")")
-                case .cancelled:
-                    self.showMergeError("Export cancelled")
-                default:
-                    self.showMergeError("Export failed with unknown status")
+            switch exportSession.status {
+            case .completed:
+                self.saveMergedVideoToPhotos(url: outputURL) { result in
+                    switch result {
+                    case .success:
+                        completion(.success(outputURL))
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
                 }
+            case .failed:
+                completion(.failure(exportSession.error ?? NSError(domain: "VideoMerger", code: 4, userInfo: [NSLocalizedDescriptionKey: "Export failed"])))
+            case .cancelled:
+                completion(.failure(NSError(domain: "VideoMerger", code: 5, userInfo: [NSLocalizedDescriptionKey: "Export cancelled"])))
+            default:
+                completion(.failure(NSError(domain: "VideoMerger", code: 6, userInfo: [NSLocalizedDescriptionKey: "Export failed with unknown status"])))
             }
         }
     }
-    
-    private func saveMergedVideoToPhotos(url: URL) {
+
+    private func saveMergedVideoToPhotos(url: URL, completion: @escaping (Result<Void, Error>) -> Void) {
         PHPhotoLibrary.requestAuthorization { status in
-            DispatchQueue.main.async {
-                switch status {
-                case .authorized, .limited:
-                    PHPhotoLibrary.shared().performChanges({
-                        PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
-                    }) { success, error in
-                        DispatchQueue.main.async {
-                            if success {
-                                self.statusLabel.text = "Merged video saved to Photos!"
-                                // Clean up temporary file after a delay to ensure Photos has copied it
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                    try? FileManager.default.removeItem(at: url)
-                                }
-                                // Also clean up old temporary files to save space
-                                self.cleanupOldTemporaryFiles()
-                            } else {
-                                self.showMergeError("Failed to save to Photos: \(error?.localizedDescription ?? "Unknown error")")
-                            }
-                            self.resetMergeButton()
+            switch status {
+            case .authorized, .limited:
+                PHPhotoLibrary.shared().performChanges({
+                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                }) { success, error in
+                    if success {
+                        // Clean up temporary file after a delay to ensure Photos has copied it
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            try? FileManager.default.removeItem(at: url)
                         }
+                        // Also clean up old temporary files to save space
+                        self.cleanupOldTemporaryFiles()
+                        completion(.success(()))
+                    } else {
+                        completion(.failure(error ?? NSError(domain: "VideoMerger", code: 7, userInfo: [NSLocalizedDescriptionKey: "Failed to save to Photos"])))
                     }
-                case .denied, .restricted:
-                    self.showMergeError("Photos access denied. Please enable in Settings.")
-                    self.resetMergeButton()
-                case .notDetermined:
-                    self.showMergeError("Photos permission not determined")
-                    self.resetMergeButton()
-                @unknown default:
-                    self.showMergeError("Unknown Photos permission status")
-                    self.resetMergeButton()
                 }
+            case .denied, .restricted:
+                completion(.failure(NSError(domain: "VideoMerger", code: 8, userInfo: [NSLocalizedDescriptionKey: "Photos access denied"])))
+            case .notDetermined:
+                completion(.failure(NSError(domain: "VideoMerger", code: 9, userInfo: [NSLocalizedDescriptionKey: "Photos permission not determined"])))
+            @unknown default:
+                completion(.failure(NSError(domain: "VideoMerger", code: 10, userInfo: [NSLocalizedDescriptionKey: "Unknown Photos permission status"])))
             }
         }
     }
@@ -305,26 +268,5 @@ extension ViewController {
         } catch {
             print("Error cleaning up temporary files: \(error)")
         }
-    }
-    
-    private func showMergeError(_ message: String) {
-        DispatchQueue.main.async {
-            self.statusLabel.text = "Error: \(message)"
-            self.activityIndicator.stopAnimating()
-            self.progressView.isHidden = true
-            self.resetMergeButton()
-
-            // Show alert for critical errors
-            let alert = UIAlertController(title: "Merge Failed", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            self.present(alert, animated: true)
-        }
-    }
-
-    private func resetMergeButton() {
-        mergeVideosButton.isEnabled = true
-        mergeVideosButton.alpha = 1.0
-        progressView.isHidden = true
-        progressView.progress = 0.0
     }
 }
