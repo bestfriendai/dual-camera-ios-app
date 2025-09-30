@@ -32,7 +32,47 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupNotifications()
         requestCameraPermissions()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    private func setupNotifications() {
+        // Handle app going to background/foreground
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private func appWillResignActive() {
+        // Stop recording if app goes to background
+        if isRecording {
+            dualCameraManager.stopRecording()
+        }
+        // Stop sessions to free resources
+        if isCameraSetupComplete {
+            dualCameraManager.stopSessions()
+        }
+    }
+
+    @objc private func appDidBecomeActive() {
+        // Restart sessions when app becomes active
+        if isCameraSetupComplete {
+            dualCameraManager.startSessions()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
