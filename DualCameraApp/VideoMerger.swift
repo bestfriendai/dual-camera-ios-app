@@ -5,10 +5,11 @@ import UIKit
 class VideoMerger {
     enum VideoLayout {
         case sideBySide
+        case verticalStack
         case pip
     }
 
-    func mergeVideos(frontURL: URL, backURL: URL, layout: VideoLayout = .sideBySide, quality: VideoQuality, completion: @escaping (Result<URL, Error>) -> Void) {
+    func mergeVideos(frontURL: URL, backURL: URL, layout: VideoLayout = .verticalStack, quality: VideoQuality, completion: @escaping (Result<URL, Error>) -> Void) {
         print("VIDEOMERGER: Starting video merge, front: \(frontURL.lastPathComponent), back: \(backURL.lastPathComponent)")
         
         // Validate input files exist
@@ -161,16 +162,30 @@ class VideoMerger {
         instruction.timeRange = CMTimeRange(start: .zero, duration: composition.duration)
 
         switch layout {
+        case .verticalStack:
+            // Front camera layer instruction (top half)
+            let frontLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: frontTrack)
+            let frontTransform = CGAffineTransform(scaleX: 1.0, y: 0.5)
+            frontLayerInstruction.setTransform(frontTransform, at: .zero)
+
+            // Back camera layer instruction (bottom half)
+            let backLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: backTrack)
+            let backTransform = CGAffineTransform(scaleX: 1.0, y: 0.5)
+                .concatenating(CGAffineTransform(translationX: 0, y: renderSize.height / 2))
+            backLayerInstruction.setTransform(backTransform, at: .zero)
+
+            instruction.layerInstructions = [frontLayerInstruction, backLayerInstruction]
+
         case .sideBySide:
             // Front camera layer instruction (left side)
             let frontLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: frontTrack)
-            let frontTransform = CGAffineTransform(scaleX: 0.5, y: 1.0) // Scale to half width
+            let frontTransform = CGAffineTransform(scaleX: 0.5, y: 1.0)
             frontLayerInstruction.setTransform(frontTransform, at: .zero)
 
             // Back camera layer instruction (right side)
             let backLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: backTrack)
             let backTransform = CGAffineTransform(scaleX: 0.5, y: 1.0)
-                .concatenating(CGAffineTransform(translationX: renderSize.width / 2, y: 0)) // Move to right side
+                .concatenating(CGAffineTransform(translationX: renderSize.width / 2, y: 0))
             backLayerInstruction.setTransform(backTransform, at: .zero)
 
             instruction.layerInstructions = [frontLayerInstruction, backLayerInstruction]

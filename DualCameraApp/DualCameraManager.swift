@@ -87,7 +87,9 @@ final class DualCameraManager: NSObject {
     // MARK: - Triple Output Properties
     private var frontDataOutput: AVCaptureVideoDataOutput?
     private var backDataOutput: AVCaptureVideoDataOutput?
+    private var audioDataOutput: AVCaptureAudioDataOutput?
     private let dataOutputQueue = DispatchQueue(label: "com.dualcamera.dataoutput", qos: .userInitiated)
+    private let audioOutputQueue = DispatchQueue(label: "com.dualcamera.audiooutput", qos: .userInitiated)
     private let compositionQueue = DispatchQueue(label: "com.dualcamera.composition", qos: .userInitiated)
 
     private var frameCompositor: FrameCompositor?
@@ -399,6 +401,27 @@ final class DualCameraManager: NSObject {
                     session.addConnection(backDataConnection)
                     if backDataConnection.isVideoOrientationSupported {
                         backDataConnection.videoOrientation = .portrait
+                    }
+                }
+            }
+            
+            if let audioPort = audioInput?.ports(
+                for: .audio,
+                sourceDeviceType: audioDevice?.deviceType,
+                sourceDevicePosition: audioDevice?.position ?? .unspecified
+            ).first {
+                let audioDataOutput = AVCaptureAudioDataOutput()
+                audioDataOutput.setSampleBufferDelegate(self, queue: self.audioOutputQueue)
+                
+                print("DEBUG: Can add audio data output: \(session.canAddOutput(audioDataOutput))")
+                if session.canAddOutput(audioDataOutput) {
+                    session.addOutputWithNoConnections(audioDataOutput)
+                    self.audioDataOutput = audioDataOutput
+                    
+                    let audioDataConnection = AVCaptureConnection(inputPorts: [audioPort], output: audioDataOutput)
+                    print("DEBUG: Can add audio data connection: \(session.canAddConnection(audioDataConnection))")
+                    if session.canAddConnection(audioDataConnection) {
+                        session.addConnection(audioDataConnection)
                     }
                 }
             }
@@ -918,14 +941,18 @@ extension DualCameraManager: AVCapturePhotoCaptureDelegate {
 }
 
 // MARK: - Triple Output Implementation
-extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
+extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput,
                       didOutput sampleBuffer: CMSampleBuffer,
                       from connection: AVCaptureConnection) {
 
         guard isRecording, enableTripleOutput else { return }
 
-        // Performance monitoring
+        if output == audioDataOutput {
+            appendAudioSampleBuffer(sampleBuffer)
+            return
+        }
+
         PerformanceMonitor.shared.recordFrame()
         
         frameSyncQueue.sync {
@@ -935,7 +962,6 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
                 backFrameBuffer = sampleBuffer
             }
 
-            // When we have both frames, compose them
             if let frontBuffer = frontFrameBuffer,
                let backBuffer = backFrameBuffer {
 
@@ -943,11 +969,19 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
                     self.processFramePair(front: frontBuffer, back: backBuffer)
                 }
 
-                // Clear buffers
                 frontFrameBuffer = nil
                 backFrameBuffer = nil
             }
         }
+    }
+    
+    private func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        guard let audioWriterInput = audioWriterInput,
+              audioWriterInput.isReadyForMoreMediaData else {
+            return
+        }
+        
+        audioWriterInput.append(sampleBuffer)
     }
 
     private func processFramePair(front: CMSampleBuffer, back: CMSampleBuffer) {

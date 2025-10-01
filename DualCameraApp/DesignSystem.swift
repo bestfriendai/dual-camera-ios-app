@@ -2,62 +2,110 @@
 //  DesignSystem.swift
 //  DualCameraApp
 //
-//  Simplified design system for UI consistency
+//  iOS 26 Camera App Design System
 //
 
 import UIKit
 
 class DesignSystem {
-    // Colors
-    static let primaryColor = UIColor.systemBlue
-    static let secondaryColor = UIColor.systemGray
+    
+    // MARK: - Colors (iOS 26 Camera Style)
+    static let primaryColor = UIColor.white
+    static let secondaryColor = UIColor.white.withAlphaComponent(0.6)
     static let backgroundColor = UIColor.black
     static let textColor = UIColor.white
+    static let accentColor = UIColor.systemYellow
+    static let recordingColor = UIColor.systemRed
     
-    // Spacing enum
+    // MARK: - Spacing
     enum Spacing: CGFloat {
         case xs = 4
         case sm = 8
-        case md = 16
-        case lg = 24
-        case xl = 32
+        case md = 12
+        case lg = 16
+        case xl = 24
+        case xxl = 32
         
         var value: CGFloat { return rawValue }
     }
     
-    // Corner radius
-    static let cornerRadius: CGFloat = 12
+    // MARK: - Corner Radius
+    static let smallCornerRadius: CGFloat = 8
+    static let mediumCornerRadius: CGFloat = 12
+    static let largeCornerRadius: CGFloat = 20
+    static let buttonCornerRadius: CGFloat = 20
     
-    // Typography
-    static let titleFont = UIFont.systemFont(ofSize: 20, weight: .bold)
-    static let bodyFont = UIFont.systemFont(ofSize: 16, weight: .regular)
-    static let captionFont = UIFont.systemFont(ofSize: 12, weight: .regular)
+    // MARK: - Typography (iOS Style)
+    static let titleFont = UIFont.systemFont(ofSize: 17, weight: .semibold)
+    static let bodyFont = UIFont.systemFont(ofSize: 15, weight: .regular)
+    static let captionFont = UIFont.systemFont(ofSize: 13, weight: .regular)
+    static let smallCaptionFont = UIFont.systemFont(ofSize: 11, weight: .regular)
+    static let monospacedFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .medium)
     
-    // Button styles
-    static func setupButton(_ button: UIButton) {
-        button.backgroundColor = primaryColor
-        button.layer.cornerRadius = cornerRadius
-        button.tintColor = .white
+    // MARK: - Button Dimensions
+    struct ButtonDimensions {
+        static let iconButtonSize: CGFloat = 40
+        static let recordButtonSize: CGFloat = 70
+        static let smallButtonHeight: CGFloat = 36
+        static let standardButtonHeight: CGFloat = 44
     }
     
-    // Semantic colors
-    struct SemanticColors {
-        static let adaptiveBackground = UIColor { traitCollection in
-            return traitCollection.userInterfaceStyle == .dark ? UIColor.black : UIColor.white
-        }
+    // MARK: - Effects
+    static let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+    static let lightBlurEffect = UIBlurEffect(style: .systemThinMaterialDark)
+    
+    // MARK: - Shadows
+    static func applyShadow(to layer: CALayer) {
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOpacity = 0.3
+        layer.shadowOffset = CGSize(width: 0, height: 2)
+        layer.shadowRadius = 8
+    }
+    
+    // MARK: - Button Styles
+    static func styleButton(_ button: UIButton, isPrimary: Bool = false) {
+        button.layer.cornerRadius = buttonCornerRadius
+        button.tintColor = primaryColor
         
-        static let adaptiveText = UIColor { traitCollection in
-            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
+        if isPrimary {
+            button.backgroundColor = accentColor
         }
     }
     
-    // Layout
+    // MARK: - Blur Views
+    static func createBlurView(style: UIBlurEffect.Style = .systemUltraThinMaterialDark) -> UIVisualEffectView {
+        let blurView = UIVisualEffectView(effect: UIBlurEffect(style: style))
+        blurView.layer.cornerRadius = largeCornerRadius
+        blurView.clipsToBounds = true
+        return blurView
+    }
+    
+    // MARK: - Layout
     struct Layout {
         static let standardPadding: CGFloat = 16
-        static let buttonHeight: CGFloat = 44
+        static let edgePadding: CGFloat = 20
+        static let buttonSpacing: CGFloat = 12
+        static let controlBarHeight: CGFloat = 100
+        static let topBarHeight: CGFloat = 50
+    }
+    
+    // MARK: - Animation
+    struct Animation {
+        static let standardDuration: TimeInterval = 0.3
+        static let quickDuration: TimeInterval = 0.15
+        static let springDamping: CGFloat = 0.7
+        static let springVelocity: CGFloat = 0.5
     }
 }
 
 extension UIView {
-    func addHapticFeedback() {}
+    func addHapticFeedback() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+    
+    func addSelectionHaptic() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.selectionChanged()
+    }
 }

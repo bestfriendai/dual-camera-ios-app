@@ -32,6 +32,7 @@ class ViewController: UIViewController {
     let recordButton = AppleRecordButton()
     let statusLabel = UILabel()
     let recordingTimerLabel = UILabel()
+    let timerBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
     let flashButton = AppleCameraButton(type: .system)
     let swapCameraButton = AppleCameraButton(type: .system)
     let qualityButton = AppleCameraButton(type: .system)
@@ -232,22 +233,27 @@ class ViewController: UIViewController {
         recordButton.addTarget(self, action: #selector(recordButtonTapped), for: .touchUpInside)
         view.addSubview(recordButton)
         
-        // Status label - Apple style
-        statusLabel.text = "Ready"
+        // Recording timer - iOS 26 style (top center with blur)
+        timerBlurView.layer.cornerRadius = 18
+        timerBlurView.clipsToBounds = true
+        timerBlurView.translatesAutoresizingMaskIntoConstraints = false
+        timerBlurView.isHidden = true
+        view.addSubview(timerBlurView)
+        
+        recordingTimerLabel.text = "0:00"
+        recordingTimerLabel.textColor = .systemRed
+        recordingTimerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .semibold)
+        recordingTimerLabel.textAlignment = .center
+        recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
+        timerBlurView.contentView.addSubview(recordingTimerLabel)
+        
+        // Status label - minimized
+        statusLabel.text = ""
         statusLabel.textColor = .white
-        statusLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        statusLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         statusLabel.textAlignment = .center
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusLabel)
-        
-        // Recording timer - Apple style
-        recordingTimerLabel.text = "00:00"
-        recordingTimerLabel.textColor = .white
-        recordingTimerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .semibold)
-        recordingTimerLabel.textAlignment = .center
-        recordingTimerLabel.isHidden = true
-        recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(recordingTimerLabel)
         
         // Flash button - Apple minimal
         flashButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
@@ -267,12 +273,10 @@ class ViewController: UIViewController {
         swapCameraButton.layer.shadowRadius = 8
         view.addSubview(swapCameraButton)
         
-        // Merge button
-        mergeVideosButton.setTitle("Merge Videos", for: .normal)
+        // Merge button - iOS 26 style
+        mergeVideosButton.setTitle("Merge", for: .normal)
         mergeVideosButton.setTitleColor(.white, for: .normal)
-        mergeVideosButton.backgroundColor = .systemBlue.withAlphaComponent(0.7)
-        mergeVideosButton.layer.cornerRadius = 15
-        mergeVideosButton.titleLabel?.font = UIFont.systemFont(ofSize: 14)
+        mergeVideosButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         mergeVideosButton.translatesAutoresizingMaskIntoConstraints = false
         mergeVideosButton.addTarget(self, action: #selector(mergeVideosButtonTapped), for: .touchUpInside)
         mergeVideosButton.isEnabled = false
@@ -286,28 +290,20 @@ class ViewController: UIViewController {
         progressView.isHidden = true
         view.addSubview(progressView)
         
-        // Top controls
-        qualityButton.setTitle("1080p", for: .normal)
+        // Top controls - iOS 26 style
+        qualityButton.setTitle("HD", for: .normal)
         qualityButton.setTitleColor(.white, for: .normal)
-        qualityButton.backgroundColor = .systemGray.withAlphaComponent(0.7)
-        qualityButton.layer.cornerRadius = 8
-        qualityButton.titleLabel?.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        qualityButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         qualityButton.translatesAutoresizingMaskIntoConstraints = false
         qualityButton.addTarget(self, action: #selector(qualityButtonTapped), for: .touchUpInside)
         view.addSubview(qualityButton)
         
         galleryButton.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
-        galleryButton.tintColor = .white
-        galleryButton.backgroundColor = .systemGray.withAlphaComponent(0.7)
-        galleryButton.layer.cornerRadius = 8
         galleryButton.translatesAutoresizingMaskIntoConstraints = false
         galleryButton.addTarget(self, action: #selector(galleryButtonTapped), for: .touchUpInside)
         view.addSubview(galleryButton)
         
         gridButton.setImage(UIImage(systemName: "grid"), for: .normal)
-        gridButton.tintColor = .white
-        gridButton.backgroundColor = .systemGray.withAlphaComponent(0.7)
-        gridButton.layer.cornerRadius = 8
         gridButton.translatesAutoresizingMaskIntoConstraints = false
         gridButton.addTarget(self, action: #selector(gridButtonTapped), for: .touchUpInside)
         view.addSubview(gridButton)
@@ -315,10 +311,16 @@ class ViewController: UIViewController {
         modeSegmentedControl.selectedSegmentIndex = 0
         modeSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
         modeSegmentedControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
-        modeSegmentedControl.backgroundColor = UIColor.white.withAlphaComponent(0.2)
-        modeSegmentedControl.selectedSegmentTintColor = .white
-        modeSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
-        modeSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
+        modeSegmentedControl.backgroundColor = .clear
+        modeSegmentedControl.selectedSegmentTintColor = UIColor.systemYellow
+        modeSegmentedControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.white.withAlphaComponent(0.6),
+            .font: UIFont.systemFont(ofSize: 13, weight: .medium)
+        ], for: .normal)
+        modeSegmentedControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.black,
+            .font: UIFont.systemFont(ofSize: 13, weight: .semibold)
+        ], for: .selected)
         view.addSubview(modeSegmentedControl)
         
         // Grid overlay
@@ -423,32 +425,37 @@ class ViewController: UIViewController {
             recordButton.widthAnchor.constraint(equalToConstant: 70),
             recordButton.heightAnchor.constraint(equalToConstant: 70),
 
-            // Status label
-            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 15),
-            statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
-            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
-
-            // Recording timer
-            recordingTimerLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
-            recordingTimerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            // Timer blur view
+            timerBlurView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            timerBlurView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            timerBlurView.widthAnchor.constraint(equalToConstant: 80),
+            timerBlurView.heightAnchor.constraint(equalToConstant: 36),
+            
+            // Recording timer label
+            recordingTimerLabel.centerXAnchor.constraint(equalTo: timerBlurView.centerXAnchor),
+            recordingTimerLabel.centerYAnchor.constraint(equalTo: timerBlurView.centerYAnchor),
+            
+            // Status label (hidden by default)
+            statusLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
+            statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             // Flash button - left of record button
             flashButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
-            flashButton.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -50),
-            flashButton.widthAnchor.constraint(equalToConstant: 50),
-            flashButton.heightAnchor.constraint(equalToConstant: 50),
+            flashButton.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -40),
+            flashButton.widthAnchor.constraint(equalToConstant: 40),
+            flashButton.heightAnchor.constraint(equalToConstant: 40),
 
-            // Gallery button - right of record button (moved from top)
+            // Gallery button - right of record button
             galleryButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
-            galleryButton.leadingAnchor.constraint(equalTo: recordButton.trailingAnchor, constant: 50),
-            galleryButton.widthAnchor.constraint(equalToConstant: 50),
-            galleryButton.heightAnchor.constraint(equalToConstant: 50),
+            galleryButton.leadingAnchor.constraint(equalTo: recordButton.trailingAnchor, constant: 40),
+            galleryButton.widthAnchor.constraint(equalToConstant: 40),
+            galleryButton.heightAnchor.constraint(equalToConstant: 40),
             
-            // Swap camera button - moved to top right corner
+            // Swap camera button - top right corner
             swapCameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             swapCameraButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            swapCameraButton.widthAnchor.constraint(equalToConstant: 44),
-            swapCameraButton.heightAnchor.constraint(equalToConstant: 44),
+            swapCameraButton.widthAnchor.constraint(equalToConstant: 40),
+            swapCameraButton.heightAnchor.constraint(equalToConstant: 40),
 
             // Merge button - top of controls area
             mergeVideosButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 15),
@@ -461,23 +468,23 @@ class ViewController: UIViewController {
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
 
-            // Mode segmented control - overlay at top
-            modeSegmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            // Mode segmented control - bottom above record button
+            modeSegmentedControl.bottomAnchor.constraint(equalTo: recordButton.topAnchor, constant: -30),
             modeSegmentedControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            modeSegmentedControl.widthAnchor.constraint(equalToConstant: 200),
-            modeSegmentedControl.heightAnchor.constraint(equalToConstant: 32),
+            modeSegmentedControl.widthAnchor.constraint(equalToConstant: 160),
+            modeSegmentedControl.heightAnchor.constraint(equalToConstant: 28),
 
             // Quality button - overlay at top left
             qualityButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             qualityButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            qualityButton.widthAnchor.constraint(equalToConstant: 60),
-            qualityButton.heightAnchor.constraint(equalToConstant: 32),
+            qualityButton.widthAnchor.constraint(equalToConstant: 50),
+            qualityButton.heightAnchor.constraint(equalToConstant: 40),
 
-            // Grid button - top left corner (moved from old gallery position)
+            // Grid button - top left corner
             gridButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            gridButton.trailingAnchor.constraint(equalTo: swapCameraButton.leadingAnchor, constant: -10),
-            gridButton.widthAnchor.constraint(equalToConstant: 44),
-            gridButton.heightAnchor.constraint(equalToConstant: 44),
+            gridButton.trailingAnchor.constraint(equalTo: swapCameraButton.leadingAnchor, constant: -12),
+            gridButton.widthAnchor.constraint(equalToConstant: 40),
+            gridButton.heightAnchor.constraint(equalToConstant: 40),
 
             // Grid overlay
             gridOverlayView.topAnchor.constraint(equalTo: cameraStackView.topAnchor),

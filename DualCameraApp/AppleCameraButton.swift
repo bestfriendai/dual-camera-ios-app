@@ -20,21 +20,30 @@ class AppleCameraButton: UIButton {
     }
     
     private func setupAppleStyle() {
-        // Apple's style: Clean white icon, no background
         tintColor = .white
-        backgroundColor = .clear
         
-        // Modern SF Symbol configuration
-        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .medium, scale: .large)
+        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        blurView.isUserInteractionEnabled = false
+        blurView.layer.cornerRadius = 20
+        blurView.clipsToBounds = true
+        blurView.translatesAutoresizingMaskIntoConstraints = false
+        
+        insertSubview(blurView, at: 0)
+        
+        NSLayoutConstraint.activate([
+            blurView.topAnchor.constraint(equalTo: topAnchor),
+            blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            blurView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            blurView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        layer.cornerRadius = 20
+        clipsToBounds = true
+        
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium, scale: .medium)
         setPreferredSymbolConfiguration(config, forImageIn: .normal)
         
-        // Subtle shadow for depth
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOffset = CGSize(width: 0, height: 1)
-        layer.shadowRadius = 3
-        layer.shadowOpacity = 0.3
-        
-        // Touch feedback
         addTarget(self, action: #selector(touchDown), for: .touchDown)
         addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
     }
