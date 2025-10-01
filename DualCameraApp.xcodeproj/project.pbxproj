@@ -18,6 +18,7 @@
 		5255AAD6154E394DC840655E /* AdvancedCameraControlsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC749B48E761859DBE734A3A /* AdvancedCameraControlsManager.swift */; };
 		5765CFA44D46E69AE82B2122 /* BatteryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A757744EFD73B001BD2210D8 /* BatteryManager.swift */; };
 		5869F7337293BE33BC8554BE /* StartupOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6137DCC063E83726503F4551 /* StartupOptimizer.swift */; };
+		59E14324D02E6AB2E7397FFB /* AppleCameraButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B664D2B1E196DBB85E0512E4 /* AppleCameraButton.swift */; };
 		6D8DBC1C8F6CC64F1E5B301E /* LiquidGlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9BEB631D3DCAE6EC0F9A81 /* LiquidGlassView.swift */; };
 		72B04DC27F0DF4791A0C3886 /* VisualCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20692F49C74B0B53711886BD /* VisualCountdownView.swift */; };
 		7D464E6A4483F51E5D8A87D7 /* CameraControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CA58005DF586397D2CC54E /* CameraControlsView.swift */; };
@@ -73,6 +74,7 @@
 		A4CA58005DF586397D2CC54E /* CameraControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraControlsView.swift; sourceTree = "<group>"; };
 		A757744EFD73B001BD2210D8 /* BatteryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryManager.swift; sourceTree = "<group>"; };
 		AF7540A216277A8B87D046DB /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B664D2B1E196DBB85E0512E4 /* AppleCameraButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleCameraButton.swift; sourceTree = "<group>"; };
 		C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
 		C209188E3C80E94D70AF972F /* ThermalManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThermalManager.swift; sourceTree = "<group>"; };
 		D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioControlsView.swift; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 				9497073E94A938BA551F9CBE /* ModernGlassButton.swift */,
 				EC9BEB631D3DCAE6EC0F9A81 /* LiquidGlassView.swift */,
 				805253B05E42B3963D5DA5A6 /* LiquidGlassButton.swift */,
+				B664D2B1E196DBB85E0512E4 /* AppleCameraButton.swift */,
 			);
 			path = DualCameraApp;
 			sourceTree = "<group>";
@@ -253,6 +256,7 @@
 				2375B452EEDF1DBBCD63FE4C /* ModernGlassButton.swift in Sources */,
 				6D8DBC1C8F6CC64F1E5B301E /* LiquidGlassView.swift in Sources */,
 				3E9E428DFBB598BCC1515B0B /* LiquidGlassButton.swift in Sources */,
+				59E14324D02E6AB2E7397FFB /* AppleCameraButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
