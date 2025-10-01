@@ -27,17 +27,17 @@ class ViewController: UIViewController {
     let cameraStackView = UIStackView()
     let frontCameraPreview = CameraPreviewView()
     let backCameraPreview = CameraPreviewView()
-    let controlsContainer = GlassmorphismView()
-    let recordButton = ModernGlassButton(type: .system)
+    let controlsContainer = LiquidGlassView()
+    let recordButton = LiquidGlassButton(type: .system)
     let statusLabel = UILabel()
     let recordingTimerLabel = UILabel()
-    let flashButton = ModernGlassButton(type: .system)
-    let swapCameraButton = ModernGlassButton(type: .system)
-    let qualityButton = ModernGlassButton(type: .system)
-    let galleryButton = ModernGlassButton(type: .system)
-    let gridButton = ModernGlassButton(type: .system)
+    let flashButton = LiquidGlassButton(type: .system)
+    let swapCameraButton = LiquidGlassButton(type: .system)
+    let qualityButton = LiquidGlassButton(type: .system)
+    let galleryButton = LiquidGlassButton(type: .system)
+    let gridButton = LiquidGlassButton(type: .system)
     let modeSegmentedControl = UISegmentedControl(items: ["Video", "Photo"])
-    let mergeVideosButton = ModernGlassButton(type: .system)
+    let mergeVideosButton = LiquidGlassButton(type: .system)
     let progressView = UIProgressView(progressViewStyle: .default)
     let activityIndicator = UIActivityIndicatorView(style: .large)
     let gridOverlayView = UIView()
@@ -195,27 +195,23 @@ class ViewController: UIViewController {
         // topControlsContainer.translatesAutoresizingMaskIntoConstraints = false
         // view.addSubview(topControlsContainer)
 
-        // Bottom controls container - iOS 18+ liquid glass overlay
+        // Bottom controls container - TRUE iOS 18+ liquid glass overlay
         controlsContainer.translatesAutoresizingMaskIntoConstraints = false
-        controlsContainer.backgroundColor = .clear
+        controlsContainer.liquidGlassColor = .white
+        controlsContainer.glassIntensity = 0.45
         view.addSubview(controlsContainer)
 
-        // Record button - enhanced modern design with glow effect
+        // Record button - LIQUID GLASS with bright glow
         recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
         recordButton.tintColor = .systemRed
+        recordButton.liquidGlassColor = .white
+        recordButton.glassIntensity = 0.55
+        recordButton.layer.cornerRadius = 35
+        recordButton.setGlowEnabled(true, animated: false)
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         recordButton.addTarget(self, action: #selector(recordButtonTapped), for: .touchUpInside)
         recordButton.contentVerticalAlignment = .fill
         recordButton.contentHorizontalAlignment = .fill
-        recordButton.backgroundColor = UIColor.white.withAlphaComponent(0.1)
-        recordButton.layer.cornerRadius = 40
-        recordButton.layer.masksToBounds = false
-        recordButton.layer.shadowColor = UIColor.systemRed.cgColor
-        recordButton.layer.shadowOpacity = 0.4
-        recordButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        recordButton.layer.shadowRadius = 12
-        recordButton.layer.borderWidth = 3
-        recordButton.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         controlsContainer.contentView.addSubview(recordButton)
         
         // Status label
@@ -236,16 +232,13 @@ class ViewController: UIViewController {
         recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
         controlsContainer.contentView.addSubview(recordingTimerLabel)
         
-        // Flash button - modern glassmorphism
+        // Flash button - liquid glass
         flashButton.setImage(UIImage(systemName: "bolt.slash"), for: .normal)
         flashButton.tintColor = .white
+        flashButton.liquidGlassColor = .white
+        flashButton.glassIntensity = 0.4
         flashButton.translatesAutoresizingMaskIntoConstraints = false
         flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
-        flashButton.backgroundColor = .clear
-        flashButton.layer.shadowColor = UIColor.black.cgColor
-        flashButton.layer.shadowOpacity = 0.2
-        flashButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        flashButton.layer.shadowRadius = 8
         controlsContainer.contentView.addSubview(flashButton)
 
         // Swap camera button - modern glassmorphism
