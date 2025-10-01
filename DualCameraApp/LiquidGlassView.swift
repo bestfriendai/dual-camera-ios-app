@@ -35,12 +35,13 @@ class LiquidGlassView: UIView {
     }
     
     private func setupLiquidGlass() {
+        // NO solid background - let material work naturally
         backgroundColor = .clear
         
-        // Base blur - thinner for more transparency
-        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
+        // systemChromeMaterial for true liquid glass shine
+        let blurEffect = UIBlurEffect(style: .systemChromeMaterial)
         blurEffectView.effect = blurEffect
-        blurEffectView.layer.cornerRadius = 24
+        blurEffectView.layer.cornerRadius = 20
         blurEffectView.layer.cornerCurve = .continuous
         blurEffectView.clipsToBounds = true
         blurEffectView.translatesAutoresizingMaskIntoConstraints = false
@@ -52,48 +53,21 @@ class LiquidGlassView: UIView {
         vibrancyEffectView.translatesAutoresizingMaskIntoConstraints = false
         blurEffectView.contentView.addSubview(vibrancyEffectView)
         
-        // Brightness layer - KEY FOR LIQUID GLASS
-        brightnessLayer.backgroundColor = liquidGlassColor.withAlphaComponent(glassIntensity).cgColor
-        brightnessLayer.cornerRadius = 24
-        brightnessLayer.cornerCurve = .continuous
-        layer.insertSublayer(brightnessLayer, at: 0)
+        // Saturation boost via compositing filter (iOS 18+ way)
+        // Note: CAFilter requires private APIs, so we rely on material's natural appearance
+        // systemChromeMaterial already provides rich saturation
         
-        // Glossy gradient overlay for luminosity
-        glossLayer.colors = [
-            UIColor.white.withAlphaComponent(0.4).cgColor,
-            UIColor.white.withAlphaComponent(0.1).cgColor,
-            UIColor.white.withAlphaComponent(0.0).cgColor
-        ]
-        glossLayer.locations = [0.0, 0.3, 1.0]
-        glossLayer.startPoint = CGPoint(x: 0, y: 0)
-        glossLayer.endPoint = CGPoint(x: 1, y: 1)
-        glossLayer.cornerRadius = 24
-        glossLayer.cornerCurve = .continuous
-        layer.insertSublayer(glossLayer, above: brightnessLayer)
-        
-        // Shine effect - top highlight
-        shineLayer.colors = [
-            UIColor.white.withAlphaComponent(0.6).cgColor,
-            UIColor.white.withAlphaComponent(0.0).cgColor
-        ]
-        shineLayer.locations = [0.0, 0.3]
-        shineLayer.startPoint = CGPoint(x: 0.5, y: 0)
-        shineLayer.endPoint = CGPoint(x: 0.5, y: 0.3)
-        shineLayer.cornerRadius = 24
-        shineLayer.cornerCurve = .continuous
-        layer.insertSublayer(shineLayer, above: glossLayer)
-        
-        // Bright border
-        layer.borderWidth = 1.5
-        layer.borderColor = UIColor.white.withAlphaComponent(0.5).cgColor
-        layer.cornerRadius = 24
+        // Border with material-appropriate opacity
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
+        layer.cornerRadius = 20
         layer.cornerCurve = .continuous
         
         // Soft shadow for depth
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOffset = CGSize(width: 0, height: 8)
-        layer.shadowRadius = 20
-        layer.shadowOpacity = 0.2
+        layer.shadowOffset = CGSize(width: 0, height: 4)
+        layer.shadowRadius = 16
+        layer.shadowOpacity = 0.15
         layer.masksToBounds = false
         
         // Content view setup
@@ -122,13 +96,11 @@ class LiquidGlassView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        brightnessLayer.frame = bounds
-        glossLayer.frame = bounds
-        shineLayer.frame = bounds
+        // Material handles everything naturally
     }
     
     private func updateLiquidGlass() {
-        brightnessLayer.backgroundColor = liquidGlassColor.withAlphaComponent(glassIntensity).cgColor
+        // Material adapts automatically
     }
     
     func pulse() {

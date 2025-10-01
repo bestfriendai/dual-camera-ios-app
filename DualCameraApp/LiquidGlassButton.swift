@@ -35,12 +35,13 @@ class LiquidGlassButton: UIButton {
     }
     
     private func setupLiquidGlass() {
+        // NO solid background - pure material
         backgroundColor = .clear
         
-        // Thin blur base
-        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
+        // systemChromeMaterial for buttons - this is the key!
+        let blurEffect = UIBlurEffect(style: .systemChromeMaterial)
         blurEffectView.effect = blurEffect
-        blurEffectView.layer.cornerRadius = 14
+        blurEffectView.layer.cornerRadius = 12
         blurEffectView.layer.cornerCurve = .continuous
         blurEffectView.clipsToBounds = true
         blurEffectView.isUserInteractionEnabled = false
@@ -59,38 +60,22 @@ class LiquidGlassButton: UIButton {
         contentContainer.translatesAutoresizingMaskIntoConstraints = false
         vibrancyEffectView.contentView.addSubview(contentContainer)
         
-        // Brightness layer - BRIGHT for liquid glass
-        brightnessLayer.backgroundColor = liquidGlassColor.withAlphaComponent(glassIntensity).cgColor
-        brightnessLayer.cornerRadius = 14
-        brightnessLayer.cornerCurve = .continuous
-        layer.insertSublayer(brightnessLayer, at: 0)
+        // systemChromeMaterial provides natural saturation and shine
+        // No additional filters needed - let the material work its magic
         
-        // Glossy gradient
-        glossLayer.colors = [
-            UIColor.white.withAlphaComponent(0.5).cgColor,
-            UIColor.white.withAlphaComponent(0.1).cgColor,
-            UIColor.clear.cgColor
-        ]
-        glossLayer.locations = [0.0, 0.4, 1.0]
-        glossLayer.startPoint = CGPoint(x: 0, y: 0)
-        glossLayer.endPoint = CGPoint(x: 1, y: 1)
-        glossLayer.cornerRadius = 14
-        glossLayer.cornerCurve = .continuous
-        layer.insertSublayer(glossLayer, above: brightnessLayer)
-        
-        // Bright border
-        layer.cornerRadius = 14
+        // Minimal border - let material shine
+        layer.cornerRadius = 12
         layer.cornerCurve = .continuous
-        layer.borderWidth = 1.5
-        layer.borderColor = UIColor.white.withAlphaComponent(0.6).cgColor
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.15).cgColor
         
-        // Glow layer
+        // Glow layer for active states
         glowLayer.backgroundColor = UIColor.clear.cgColor
-        glowLayer.shadowColor = liquidGlassColor.cgColor
+        glowLayer.shadowColor = UIColor.white.cgColor
         glowLayer.shadowOffset = .zero
-        glowLayer.shadowRadius = 12
+        glowLayer.shadowRadius = 10
         glowLayer.shadowOpacity = 0
-        glowLayer.cornerRadius = 14
+        glowLayer.cornerRadius = 12
         glowLayer.cornerCurve = .continuous
         layer.insertSublayer(glowLayer, at: 0)
         
@@ -119,8 +104,6 @@ class LiquidGlassButton: UIButton {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        brightnessLayer.frame = bounds
-        glossLayer.frame = bounds
         glowLayer.frame = bounds
         
         // Move imageView to vibrancy
@@ -131,23 +114,22 @@ class LiquidGlassButton: UIButton {
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.12, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
-            self.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
-            self.glowLayer.shadowOpacity = 0.6
+        UIView.animate(withDuration: 0.1, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5) {
+            self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
+            self.glowLayer.shadowOpacity = 0.4
         }
         HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
             self.transform = .identity
             self.glowLayer.shadowOpacity = 0
         }
     }
     
     private func updateAppearance() {
-        brightnessLayer.backgroundColor = liquidGlassColor.withAlphaComponent(glassIntensity).cgColor
-        glowLayer.shadowColor = liquidGlassColor.cgColor
+        // Material adapts automatically
     }
     
     func setGlowEnabled(_ enabled: Bool, animated: Bool = true) {
