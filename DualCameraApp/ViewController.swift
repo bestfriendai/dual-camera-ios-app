@@ -198,14 +198,12 @@ class ViewController: UIViewController {
         // Bottom controls container - TRUE iOS 18+ liquid glass overlay
         controlsContainer.translatesAutoresizingMaskIntoConstraints = false
         controlsContainer.liquidGlassColor = .white
-        controlsContainer.glassIntensity = 0.45
         view.addSubview(controlsContainer)
 
-        // Record button - LIQUID GLASS with bright glow
+        // Record button - TRUE Apple liquid glass (gradient behind blur)
         recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
         recordButton.tintColor = .systemRed
         recordButton.liquidGlassColor = .white
-        recordButton.glassIntensity = 0.55
         recordButton.layer.cornerRadius = 35
         recordButton.setGlowEnabled(true, animated: false)
         recordButton.translatesAutoresizingMaskIntoConstraints = false
@@ -232,11 +230,10 @@ class ViewController: UIViewController {
         recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
         controlsContainer.contentView.addSubview(recordingTimerLabel)
         
-        // Flash button - liquid glass
+        // Flash button - Apple liquid glass
         flashButton.setImage(UIImage(systemName: "bolt.slash"), for: .normal)
         flashButton.tintColor = .white
         flashButton.liquidGlassColor = .white
-        flashButton.glassIntensity = 0.4
         flashButton.translatesAutoresizingMaskIntoConstraints = false
         flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         controlsContainer.contentView.addSubview(flashButton)

@@ -10,17 +10,11 @@ import UIKit
 class LiquidGlassView: UIView {
     
     let contentView = UIView()
+    private let gradientLayer = CAGradientLayer()  // KEY: Gradient BEHIND blur
     private let blurEffectView = UIVisualEffectView()
     private let vibrancyEffectView = UIVisualEffectView()
-    private let brightnessLayer = CALayer()
-    private let glossLayer = CAGradientLayer()
-    private let shineLayer = CAGradientLayer()
     
     var liquidGlassColor: UIColor = .white {
-        didSet { updateLiquidGlass() }
-    }
-    
-    var glassIntensity: CGFloat = 0.45 {
         didSet { updateLiquidGlass() }
     }
     
@@ -35,11 +29,23 @@ class LiquidGlassView: UIView {
     }
     
     private func setupLiquidGlass() {
-        // NO solid background - let material work naturally
         backgroundColor = .clear
         
-        // systemChromeMaterial for true liquid glass shine
-        let blurEffect = UIBlurEffect(style: .systemChromeMaterial)
+        // STEP 1: Gradient BEHIND everything (this is the KEY!)
+        gradientLayer.colors = [
+            liquidGlassColor.withAlphaComponent(0.7).cgColor,
+            liquidGlassColor.withAlphaComponent(0.4).cgColor,
+            liquidGlassColor.withAlphaComponent(0.2).cgColor
+        ]
+        gradientLayer.locations = [0.0, 0.5, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.cornerRadius = 20
+        gradientLayer.cornerCurve = .continuous
+        layer.insertSublayer(gradientLayer, at: 0)  // BEHIND everything!
+        
+        // STEP 2: Thin material on top (lets gradient show through)
+        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
         blurEffectView.effect = blurEffect
         blurEffectView.layer.cornerRadius = 20
         blurEffectView.layer.cornerCurve = .continuous
@@ -47,19 +53,15 @@ class LiquidGlassView: UIView {
         blurEffectView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(blurEffectView)
         
-        // Vibrancy for content
+        // STEP 3: Vibrancy for content
         let vibrancyEffect = UIVibrancyEffect(blurEffect: blurEffect, style: .label)
         vibrancyEffectView.effect = vibrancyEffect
         vibrancyEffectView.translatesAutoresizingMaskIntoConstraints = false
         blurEffectView.contentView.addSubview(vibrancyEffectView)
         
-        // Saturation boost via compositing filter (iOS 18+ way)
-        // Note: CAFilter requires private APIs, so we rely on material's natural appearance
-        // systemChromeMaterial already provides rich saturation
-        
-        // Border with material-appropriate opacity
+        // Subtle border
         layer.borderWidth = 0.5
-        layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
+        layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         layer.cornerRadius = 20
         layer.cornerCurve = .continuous
         
@@ -96,11 +98,16 @@ class LiquidGlassView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Material handles everything naturally
+        gradientLayer.frame = bounds
     }
     
     private func updateLiquidGlass() {
-        // Material adapts automatically
+        // Update gradient colors
+        gradientLayer.colors = [
+            liquidGlassColor.withAlphaComponent(0.7).cgColor,
+            liquidGlassColor.withAlphaComponent(0.4).cgColor,
+            liquidGlassColor.withAlphaComponent(0.2).cgColor
+        ]
     }
     
     func pulse() {
