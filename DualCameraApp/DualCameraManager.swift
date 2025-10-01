@@ -8,6 +8,7 @@ protocol DualCameraManagerDelegate: AnyObject {
     func didFailWithError(_ error: Error)
     func didUpdateVideoQuality(to quality: VideoQuality)
     func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?)
+    func didFinishCameraSetup()
 }
 
 enum VideoQuality: String, CaseIterable {
@@ -170,6 +171,7 @@ final class DualCameraManager: NSObject {
                 // Notify on main thread
                 DispatchQueue.main.async {
                     self.delegate?.didUpdateVideoQuality(to: self.videoQuality)
+                    self.delegate?.didFinishCameraSetup()
                 }
             } catch {
                 DispatchQueue.main.async {

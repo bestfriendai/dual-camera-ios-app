@@ -611,6 +611,13 @@ class CameraManagerWrapper: NSObject, ObservableObject, DualCameraManagerDelegat
     func didUpdateVideoQuality(to quality: VideoQuality) {
         // Handle quality update
     }
+    
+    func didFinishCameraSetup() {
+        DispatchQueue.main.async {
+            self.frontPreviewLayer = self.dualCameraManager.frontPreviewLayer
+            self.backPreviewLayer = self.dualCameraManager.backPreviewLayer
+        }
+    }
 
     func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?) {
         // Handle photo capture

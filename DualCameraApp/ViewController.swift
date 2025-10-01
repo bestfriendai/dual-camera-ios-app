@@ -749,33 +749,6 @@ class ViewController: UIViewController {
             #else
             print("VIEWCONTROLLER: Running on device, setting up real cameras")
             self.dualCameraManager.setupCameras()
-
-            // Poll for preview layers with timeout
-            var attempts = 0
-            while (self.dualCameraManager.frontPreviewLayer == nil ||
-                    self.dualCameraManager.backPreviewLayer == nil) && attempts < 50 {
-                Thread.sleep(forTimeInterval: 0.02)
-                attempts += 1
-            }
-
-            print("VIEWCONTROLLER: Camera setup polling completed, attempts: \(attempts)")
-
-            DispatchQueue.main.async {
-                if self.dualCameraManager.frontPreviewLayer != nil &&
-                    self.dualCameraManager.backPreviewLayer != nil {
-                    print("VIEWCONTROLLER: Both preview layers available, setting up UI")
-                    self.setupPreviewLayers()
-                    self.activityIndicator.stopAnimating()
-                    self.statusLabel.text = "Ready to record"
-                    self.isCameraSetupComplete = true
-                    self.frontCameraPreview.isActive = true
-                    self.backCameraPreview.isActive = true
-                    PerformanceMonitor.shared.endCameraSetup()
-                } else {
-                    print("VIEWCONTROLLER: Preview layers not available after polling")
-                    self.handleCameraSetupFailure()
-                }
-            }
             #endif
         }
     }
@@ -1226,6 +1199,18 @@ extension ViewController: DualCameraManagerDelegate {
 
     func didUpdateVideoQuality(to quality: VideoQuality) {
         qualityButton.setTitle(quality.rawValue, for: .normal)
+    }
+    
+    func didFinishCameraSetup() {
+        print("VIEWCONTROLLER: didFinishCameraSetup called")
+        setupPreviewLayers()
+        activityIndicator.stopAnimating()
+        timerBlurView.isHidden = true
+        statusLabel.text = ""
+        isCameraSetupComplete = true
+        frontCameraPreview.isActive = true
+        backCameraPreview.isActive = true
+        PerformanceMonitor.shared.endCameraSetup()
     }
 }
 
