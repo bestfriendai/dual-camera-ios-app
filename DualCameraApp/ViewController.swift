@@ -137,17 +137,50 @@ class ViewController: UIViewController {
     
     // MARK: - Setup
     private func setupUI() {
-        // Black background (camera will fill the entire screen)
+        // Black background (camera fills screen)
         view.backgroundColor = .black
         
         // Camera views
         setupCameraViews()
+        
+        // Apple-style dark gradients
+        setupGradients()
         
         // Controls
         setupControls()
         
         // Constraints
         setupConstraints()
+    }
+    
+    private func setupGradients() {
+        // Top gradient - Apple Camera style
+        topGradient.colors = [
+            UIColor.black.withAlphaComponent(0.6).cgColor,
+            UIColor.black.withAlphaComponent(0.0).cgColor
+        ]
+        topGradient.locations = [0.0, 1.0]
+        topGradient.startPoint = CGPoint(x: 0.5, y: 0)
+        topGradient.endPoint = CGPoint(x: 0.5, y: 1)
+        view.layer.addSublayer(topGradient)
+        
+        // Bottom gradient - Apple Camera style
+        bottomGradient.colors = [
+            UIColor.black.withAlphaComponent(0.0).cgColor,
+            UIColor.black.withAlphaComponent(0.7).cgColor
+        ]
+        bottomGradient.locations = [0.0, 1.0]
+        bottomGradient.startPoint = CGPoint(x: 0.5, y: 0)
+        bottomGradient.endPoint = CGPoint(x: 0.5, y: 1)
+        view.layer.addSublayer(bottomGradient)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        // Update gradient frames
+        topGradient.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 150)
+        bottomGradient.frame = CGRect(x: 0, y: view.bounds.height - 220, width: view.bounds.width, height: 220)
     }
     
     private func setupCameraViews() {
@@ -192,52 +225,35 @@ class ViewController: UIViewController {
     }
     
     private func setupControls() {
-        // Top controls container - not used in new layout
-        // topControlsContainer.translatesAutoresizingMaskIntoConstraints = false
-        // view.addSubview(topControlsContainer)
-
-        // Bottom controls container - TRUE iOS 18+ liquid glass overlay
-        controlsContainer.translatesAutoresizingMaskIntoConstraints = false
-        controlsContainer.liquidGlassColor = .white
-        view.addSubview(controlsContainer)
-
-        // Record button - TRUE Apple liquid glass (gradient behind blur)
-        recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
-        recordButton.tintColor = .systemRed
-        recordButton.liquidGlassColor = .white
-        recordButton.layer.cornerRadius = 35
-        recordButton.setGlowEnabled(true, animated: false)
+        // APPLE MINIMAL STYLE - No containers, just gradients and buttons
+        
+        // Record button - Apple's simple white circle
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         recordButton.addTarget(self, action: #selector(recordButtonTapped), for: .touchUpInside)
-        recordButton.contentVerticalAlignment = .fill
-        recordButton.contentHorizontalAlignment = .fill
-        controlsContainer.contentView.addSubview(recordButton)
+        view.addSubview(recordButton)
         
-        // Status label
-        statusLabel.text = "Initializing..."
+        // Status label - Apple style
+        statusLabel.text = "Ready"
         statusLabel.textColor = .white
-        statusLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        statusLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
         statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        controlsContainer.contentView.addSubview(statusLabel)
+        view.addSubview(statusLabel)
         
-        // Recording timer
+        // Recording timer - Apple style
         recordingTimerLabel.text = "00:00"
-        recordingTimerLabel.textColor = .systemRed
-        recordingTimerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .bold)
+        recordingTimerLabel.textColor = .white
+        recordingTimerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .semibold)
         recordingTimerLabel.textAlignment = .center
         recordingTimerLabel.isHidden = true
         recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
-        controlsContainer.contentView.addSubview(recordingTimerLabel)
+        view.addSubview(recordingTimerLabel)
         
-        // Flash button - Apple liquid glass
-        flashButton.setImage(UIImage(systemName: "bolt.slash"), for: .normal)
-        flashButton.tintColor = .white
-        flashButton.liquidGlassColor = .white
+        // Flash button - Apple minimal
+        flashButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
         flashButton.translatesAutoresizingMaskIntoConstraints = false
         flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
-        controlsContainer.contentView.addSubview(flashButton)
+        view.addSubview(flashButton)
 
         // Swap camera button - modern glassmorphism
         swapCameraButton.setImage(UIImage(systemName: "arrow.triangle.2.circlepath"), for: .normal)
@@ -249,7 +265,7 @@ class ViewController: UIViewController {
         swapCameraButton.layer.shadowOpacity = 0.2
         swapCameraButton.layer.shadowOffset = CGSize(width: 0, height: 4)
         swapCameraButton.layer.shadowRadius = 8
-        controlsContainer.contentView.addSubview(swapCameraButton)
+        view.addSubview(swapCameraButton)
         
         // Merge button
         mergeVideosButton.setTitle("Merge Videos", for: .normal)
@@ -261,14 +277,14 @@ class ViewController: UIViewController {
         mergeVideosButton.addTarget(self, action: #selector(mergeVideosButtonTapped), for: .touchUpInside)
         mergeVideosButton.isEnabled = false
         mergeVideosButton.alpha = 0.5
-        controlsContainer.contentView.addSubview(mergeVideosButton)
+        view.addSubview(mergeVideosButton)
         
         // Progress view
         progressView.translatesAutoresizingMaskIntoConstraints = false
         progressView.progressTintColor = .systemBlue
         progressView.trackTintColor = .systemGray
         progressView.isHidden = true
-        controlsContainer.contentView.addSubview(progressView)
+        view.addSubview(progressView)
         
         // Top controls
         qualityButton.setTitle("1080p", for: .normal)
@@ -401,26 +417,20 @@ class ViewController: UIViewController {
             cameraStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             cameraStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            // Controls container - overlay at bottom
-            controlsContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            controlsContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            controlsContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            controlsContainer.heightAnchor.constraint(equalToConstant: 180),
-
-            // Record button - centered at bottom like Camera app
-            recordButton.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
-            recordButton.bottomAnchor.constraint(equalTo: controlsContainer.contentView.bottomAnchor, constant: -30),
+            // Record button - Apple style centered at bottom
+            recordButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            recordButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             recordButton.widthAnchor.constraint(equalToConstant: 70),
             recordButton.heightAnchor.constraint(equalToConstant: 70),
 
             // Status label
-            statusLabel.topAnchor.constraint(equalTo: controlsContainer.contentView.topAnchor, constant: 15),
-            statusLabel.leadingAnchor.constraint(equalTo: controlsContainer.contentView.leadingAnchor, constant: 15),
-            statusLabel.trailingAnchor.constraint(equalTo: controlsContainer.contentView.trailingAnchor, constant: -15),
+            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 15),
+            statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
 
             // Recording timer
             recordingTimerLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
-            recordingTimerLabel.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
+            recordingTimerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             // Flash button - left of record button
             flashButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
@@ -441,15 +451,15 @@ class ViewController: UIViewController {
             swapCameraButton.heightAnchor.constraint(equalToConstant: 44),
 
             // Merge button - top of controls area
-            mergeVideosButton.topAnchor.constraint(equalTo: controlsContainer.contentView.topAnchor, constant: 15),
-            mergeVideosButton.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
+            mergeVideosButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 15),
+            mergeVideosButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             mergeVideosButton.widthAnchor.constraint(equalToConstant: 120),
             mergeVideosButton.heightAnchor.constraint(equalToConstant: 35),
 
             // Progress view
             progressView.bottomAnchor.constraint(equalTo: mergeVideosButton.topAnchor, constant: -10),
-            progressView.leadingAnchor.constraint(equalTo: controlsContainer.contentView.leadingAnchor, constant: 15),
-            progressView.trailingAnchor.constraint(equalTo: controlsContainer.contentView.trailingAnchor, constant: -15),
+            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
 
             // Mode segmented control - overlay at top
             modeSegmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -1115,7 +1125,6 @@ extension ViewController: DualCameraManagerDelegate {
         }
         
         // Pulse the controls container
-        controlsContainer.pulse()
 
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, let startTime = self.recordingStartTime else { return }
