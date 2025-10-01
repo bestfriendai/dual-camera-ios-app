@@ -27,20 +27,17 @@ class ViewController: UIViewController {
     let cameraStackView = UIStackView()
     let frontCameraPreview = CameraPreviewView()
     let backCameraPreview = CameraPreviewView()
-
-    // MARK: - UI Components - Controls
-    let controlsContainer = GlassmorphismView(style: .regular)
-    let topControlsContainer = GlassmorphismView(style: .subtle)
-    let recordButton = UIButton(type: .system)
+    let controlsContainer = GlassmorphismView()
+    let recordButton = ModernGlassButton(type: .system)
     let statusLabel = UILabel()
     let recordingTimerLabel = UILabel()
-    let flashButton = UIButton(type: .system)
-    let swapCameraButton = UIButton(type: .system)
-    let qualityButton = UIButton(type: .system)
-    let galleryButton = UIButton(type: .system)
-    let gridButton = UIButton(type: .system)
+    let flashButton = ModernGlassButton(type: .system)
+    let swapCameraButton = ModernGlassButton(type: .system)
+    let qualityButton = ModernGlassButton(type: .system)
+    let galleryButton = ModernGlassButton(type: .system)
+    let gridButton = ModernGlassButton(type: .system)
     let modeSegmentedControl = UISegmentedControl(items: ["Video", "Photo"])
-    let mergeVideosButton = UIButton(type: .system)
+    let mergeVideosButton = ModernGlassButton(type: .system)
     let progressView = UIProgressView(progressViewStyle: .default)
     let activityIndicator = UIActivityIndicatorView(style: .large)
     let gridOverlayView = UIView()
@@ -198,9 +195,9 @@ class ViewController: UIViewController {
         // topControlsContainer.translatesAutoresizingMaskIntoConstraints = false
         // view.addSubview(topControlsContainer)
 
-        // Bottom controls container - more transparent overlay
+        // Bottom controls container - iOS 18+ liquid glass overlay
         controlsContainer.translatesAutoresizingMaskIntoConstraints = false
-        controlsContainer.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+        controlsContainer.backgroundColor = .clear
         view.addSubview(controlsContainer)
 
         // Record button - enhanced modern design with glow effect

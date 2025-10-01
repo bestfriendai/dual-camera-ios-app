@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		07664C44CFE9C9388D625DBE /* ErrorHandlingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */; };
 		081D365AD65ADD447CA5F2D2 /* AudioControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */; };
+		2375B452EEDF1DBBCD63FE4C /* ModernGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9497073E94A938BA551F9CBE /* ModernGlassButton.swift */; };
 		31627D0D77FA292CFDF0B17D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7540A216277A8B87D046DB /* ContentView.swift */; };
 		3D514D7345938CC1D1CE4779 /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */; };
 		46C068978873CC24B8F61D12 /* VideoQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17252F9D08595F836950FE58 /* VideoQuality.swift */; };
@@ -50,6 +51,7 @@
 		619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
 		89DDCA7444D82DE363B1A05E /* TripleOutputControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TripleOutputControlView.swift; sourceTree = "<group>"; };
 		8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErrorHandlingManager.swift; sourceTree = "<group>"; };
+		9497073E94A938BA551F9CBE /* ModernGlassButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModernGlassButton.swift; sourceTree = "<group>"; };
 		A1000001294A0000000000000 /* DualCameraApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DualCameraApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000002294A0000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1000004294A0000000000001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 				131D614AD4856D74CCA7198A /* SettingsManager.swift */,
 				A4CA58005DF586397D2CC54E /* CameraControlsView.swift */,
 				E6A855E0AA91FE5361E25D2E /* DesignSystem.swift */,
+				9497073E94A938BA551F9CBE /* ModernGlassButton.swift */,
 			);
 			path = DualCameraApp;
 			sourceTree = "<group>";
@@ -241,6 +244,7 @@
 				BCD64404782FFD8A5405A81C /* SettingsManager.swift in Sources */,
 				7D464E6A4483F51E5D8A87D7 /* CameraControlsView.swift in Sources */,
 				D75403C38BB8AD8676A39D16 /* DesignSystem.swift in Sources */,
+				2375B452EEDF1DBBCD63FE4C /* ModernGlassButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
