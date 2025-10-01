@@ -629,7 +629,12 @@ final class DualCameraManager: NSObject {
             
             // Start audio recording
             let audioURL = documentsPath.appendingPathComponent("audio_\(timestamp).m4a")
-            self.audioManager.startAudioRecording(to: audioURL)
+            let audioStarted = self.audioManager.startAudioRecording(to: audioURL)
+            if audioStarted {
+                print("DEBUG: Audio recording started")
+            } else {
+                print("DEBUG: Failed to start audio recording")
+            }
 
             self.isRecording = true
             print("DEBUG: Recording started successfully")
