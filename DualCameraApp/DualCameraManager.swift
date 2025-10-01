@@ -1,5 +1,6 @@
 import AVFoundation
 import UIKit
+import Photos
 
 protocol DualCameraManagerDelegate: AnyObject {
     func didStartRecording()
@@ -405,7 +406,7 @@ final class DualCameraManager: NSObject {
 
         // Mark deferred setup as complete
         self.isDeferredSetupComplete = true
-        print("DEBUG: Deferred setup complete")
+        print("DEBUG: Configuration complete - all outputs configured successfully")
     }
 
     // MARK: - Deferred Setup (runs in background after camera is visible)
@@ -825,7 +826,6 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
         if let error {
             print("DEBUG: Recording error for \(outputFileURL.lastPathComponent): \(error)")
             DispatchQueue.main.async {
-                // Use error handling manager
                 ErrorHandlingManager.shared.handleError(error)
                 self.delegate?.didFailWithError(error)
             }
@@ -833,14 +833,12 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
         }
 
         print("DEBUG: Recording finished successfully to: \(outputFileURL)")
-        // Check file size
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: outputFileURL.path)
             let fileSize = attributes[.size] as? Int64 ?? 0
             print("DEBUG: Recorded file size: \(fileSize) bytes")
             
-            // Check if file is too small (indicating a failed recording)
-            if fileSize < 1024 { // Less than 1KB
+            if fileSize < 1024 {
                 let error = DualCameraError.configurationFailed("Recording file is too small, likely failed")
                 DispatchQueue.main.async {
                     ErrorHandlingManager.shared.handleError(error)
@@ -852,6 +850,8 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
             print("DEBUG: Could not get file size: \(error)")
         }
 
+        saveVideoToPhotosLibrary(url: outputFileURL)
+
         let frontFinished = frontMovieOutput?.isRecording == false
         let backFinished = backMovieOutput?.isRecording == false
         print("DEBUG: Front finished: \(frontFinished), Back finished: \(backFinished)")
@@ -860,6 +860,29 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
             print("DEBUG: Both recordings finished, notifying delegate")
             DispatchQueue.main.async {
                 self.delegate?.didStopRecording()
+            }
+        }
+    }
+    
+    private func saveVideoToPhotosLibrary(url: URL) {
+        PHPhotoLibrary.requestAuthorization { status in
+            switch status {
+            case .authorized, .limited:
+                PHPhotoLibrary.shared().performChanges({
+                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                }) { success, error in
+                    if success {
+                        print("DEBUG: Video saved to Photos: \(url.lastPathComponent)")
+                    } else {
+                        print("DEBUG: Failed to save video to Photos: \(error?.localizedDescription ?? "unknown error")")
+                    }
+                }
+            case .denied, .restricted:
+                print("DEBUG: Photos access denied, cannot save video")
+            case .notDetermined:
+                print("DEBUG: Photos permission not determined")
+            @unknown default:
+                print("DEBUG: Unknown Photos permission status")
             }
         }
     }
@@ -1058,6 +1081,9 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         assetWriter.finishWriting { [weak self] in
             if assetWriter.status == .completed {
                 print("Combined video saved successfully")
+                if let combinedURL = self?.combinedVideoURL {
+                    self?.saveVideoToPhotosLibrary(url: combinedURL)
+                }
             } else if let error = assetWriter.error {
                 print("Asset writer error: \(error)")
             }

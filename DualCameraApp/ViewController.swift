@@ -723,6 +723,9 @@ class ViewController: UIViewController {
     private func setupCamerasAfterPermissions() {
         print("VIEWCONTROLLER: Setting up cameras after permissions granted")
         dualCameraManager.delegate = self
+        
+        dualCameraManager.enableTripleOutput = true
+        dualCameraManager.tripleOutputMode = .allFiles
 
         frontCameraPreview.showLoading(message: "Initializing cameras...")
         backCameraPreview.showLoading(message: "Initializing cameras...")
