@@ -29,24 +29,46 @@ class VideoGalleryViewController: UIViewController {
     }
     
     private func setupUI() {
-        view.backgroundColor = .black
+        // Modern dark theme background
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(hex: "0A0A0F").cgColor,
+            UIColor(hex: "0F0F1A").cgColor,
+            UIColor(hex: "1A1A2E").cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 0, y: 1)
+        gradientLayer.frame = view.bounds
+        view.layer.insertSublayer(gradientLayer, at: 0)
+
         title = "Video Gallery"
-        
-        // Setup navigation bar
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissGallery))
-        
-        // Setup collection view
-        collectionView.backgroundColor = .black
+
+        // Setup navigation bar with modern styling
+        navigationController?.navigationBar.barStyle = .black
+        navigationController?.navigationBar.tintColor = .white
+        navigationController?.navigationBar.titleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 18, weight: .semibold)
+        ]
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "xmark"),
+            style: .plain,
+            target: self,
+            action: #selector(dismissGallery)
+        )
+
+        // Setup collection view with modern styling
+        collectionView.backgroundColor = .clear
         collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.register(VideoCell.self, forCellWithReuseIdentifier: "VideoCell")
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(collectionView)
-        
+
         NSLayoutConstraint.activate([
             collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
@@ -161,29 +183,56 @@ class VideoCell: UICollectionViewCell {
     }
     
     private func setupUI() {
-        contentView.backgroundColor = .darkGray
-        contentView.layer.cornerRadius = 10
-        contentView.layer.masksToBounds = true
-        
+        // Modern glassmorphism styling
+        contentView.backgroundColor = .clear
+        contentView.layer.cornerRadius = 16
+        contentView.layer.masksToBounds = false
+
+        // Glassmorphism background
+        let glassmorphismView = UIView()
+        glassmorphismView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        glassmorphismView.layer.cornerRadius = 16
+        glassmorphismView.layer.masksToBounds = false
+        glassmorphismView.layer.borderWidth = 1
+        glassmorphismView.layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
+
+        // Subtle shadow
+        glassmorphismView.layer.shadowColor = UIColor.black.cgColor
+        glassmorphismView.layer.shadowOpacity = 0.3
+        glassmorphismView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        glassmorphismView.layer.shadowRadius = 8
+
+        glassmorphismView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(glassmorphismView)
+
         thumbnailImageView.contentMode = .scaleAspectFill
         thumbnailImageView.clipsToBounds = true
+        thumbnailImageView.layer.cornerRadius = 12
         thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(thumbnailImageView)
-        
+
         durationLabel.textColor = .white
-        durationLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        durationLabel.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         durationLabel.textAlignment = .center
-        durationLabel.layer.cornerRadius = 4
+        durationLabel.layer.cornerRadius = 8
         durationLabel.layer.masksToBounds = true
         durationLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(durationLabel)
-        
+
         nameLabel.textColor = .white
-        nameLabel.font = UIFont.systemFont(ofSize: 10)
+        nameLabel.font = UIFont.systemFont(ofSize: 11, weight: .medium)
         nameLabel.numberOfLines = 2
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(nameLabel)
+
+        // Glassmorphism view constraints
+        NSLayoutConstraint.activate([
+            glassmorphismView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            glassmorphismView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            glassmorphismView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            glassmorphismView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+        ])
         
         NSLayoutConstraint.activate([
             thumbnailImageView.topAnchor.constraint(equalTo: contentView.topAnchor),

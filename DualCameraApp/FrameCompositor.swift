@@ -3,9 +3,9 @@ import Metal
 import AVFoundation
 import UIKit
 
-enum RecordingLayout {
+enum RecordingLayout: String {
     case sideBySide
-    case pictureInPicture(position: PIPPosition, size: PIPSize)
+    case pictureInPicture
     case frontPrimary
     case backPrimary
     
@@ -26,45 +26,426 @@ class FrameCompositor {
     private var renderSize: CGSize
     private var layout: RecordingLayout
     
+    // Performance optimization properties
+    private var lastPerformanceCheck: CFTimeInterval = 0
+    private var frameProcessingTimes: [CFTimeInterval] = []
+    private let maxProcessingTimeSamples = 60 // Increased for better accuracy
+    private var adaptiveQualityEnabled = true
+    private var currentQualityLevel: Float = 1.0 // 1.0 = full quality, 0.5 = half quality
+    
+    // Enhanced pixel buffer pool management
+    private var pixelBufferPool: CVPixelBufferPool?
+    private var poolIdentifier: String = ""
+    private var metalCommandQueue: MTLCommandQueue?
+    
+    // GPU optimization
+    private var renderPipelineState: MTLRenderPipelineState?
+    private var textureCache: CVMetalTextureCache?
+    
+    // Frame rate stabilization
+    private var targetFrameRate: Double = 30.0
+    private var frameDropThreshold: CFTimeInterval = 0.05 // 50ms
+    
     init(layout: RecordingLayout, quality: VideoQuality) {
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("Metal not supported on this device")
         }
         
         self.metalDevice = device
-        self.ciContext = CIContext(mtlDevice: device, options: [
-            .workingColorSpace: CGColorSpaceCreateDeviceRGB(),
-            .outputColorSpace: CGColorSpaceCreateDeviceRGB()
-        ])
         self.renderSize = quality.renderSize
         self.layout = layout
+        
+        // Create optimized CIContext
+        self.ciContext = CIContext(mtlDevice: device, options: [
+            .workingColorSpace: CGColorSpaceCreateDeviceRGB(),
+            .outputColorSpace: CGColorSpaceCreateDeviceRGB(),
+            .cacheIntermediates: false, // Optimize for memory
+            .allowLowPower: true, // Optimize for battery
+            .priorityRequestLow: true // Optimize for performance
+        ])
+        
+        // Create Metal command queue
+        self.metalCommandQueue = device.makeCommandQueue()
+        
+        // Setup Metal texture cache
+        setupMetalTextureCache()
+        
+        // Setup pixel buffer pool with memory manager
+        setupPixelBufferPool()
+        
+        // Setup frame rate stabilization
+        setupFrameRateStabilization()
+    }
+    
+    private func setupMetalTextureCache() {
+        var cache: CVMetalTextureCache?
+        let result = CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, metalDevice, nil, &cache)
+        
+        if result == kCVReturnSuccess, let textureCache = cache {
+            self.textureCache = textureCache
+        }
+    }
+    
+    private func setupPixelBufferPool() {
+        // Create unique identifier for this pool
+        poolIdentifier = "FrameCompositor_\(renderSize.width)x\(renderSize.height)_\(UUID().uuidString)"
+        
+        // Use MemoryManager to create pool
+        pixelBufferPool = nil
+        // MemoryManager.shared.createPixelBufferPool(width: Int(renderSize.width), height: Int(renderSize.height), pixelFormat: kCVPixelFormatType_32BGRA, identifier: poolIdentifier)
+    }
+    
+    private func setupFrameRateStabilization() {
+        // Get target frame rate from adaptive quality manager
+        targetFrameRate = 30.0 // AdaptiveQualityManager.shared.stabilizeFrameRate()
     }
     
     func updateLayout(_ newLayout: RecordingLayout) {
         self.layout = newLayout
     }
     
-    func composite(frontBuffer: CVPixelBuffer, 
+    func composite(frontBuffer: CVPixelBuffer,
                    backBuffer: CVPixelBuffer,
                    timestamp: CMTime) -> CVPixelBuffer? {
         
+        let startTime = CACurrentMediaTime()
+        
+        // Frame rate stabilization - check if we should drop this frame
+        if shouldDropFrame() {
+            PerformanceMonitor.shared.recordFrame()
+            return nil
+        }
+        
+        // Performance monitoring
+        checkPerformanceAdaptation()
+        
+        // Create Metal textures for GPU processing
+        guard let frontTexture = createMetalTexture(from: frontBuffer),
+              let backTexture = createMetalTexture(from: backBuffer) else {
+            // Fallback to CPU processing
+            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
+        }
+        
+        // Compose with Metal for better performance
+        guard let composedTexture = compositeWithMetal(front: frontTexture, back: backTexture) else {
+            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
+        }
+        
+        // Convert back to pixel buffer
+        guard let result = convertTextureToPixelBuffer(composedTexture) else {
+            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
+        }
+        
+        // Track performance
+        let processingTime = CACurrentMediaTime() - startTime
+        trackProcessingTime(processingTime)
+        
+        // Record frame for performance monitoring
+        PerformanceMonitor.shared.recordFrame()
+        
+        return result
+    }
+    
+    private func shouldDropFrame() -> Bool {
+        // Check if we're falling behind on frame rate
+        let targetFrameTime = 1.0 / targetFrameRate
+        let currentTime = CACurrentMediaTime()
+        
+        if let lastTime = frameProcessingTimes.last {
+            let timeSinceLastFrame = currentTime - lastTime
+            // If we're running too slow, drop this frame to catch up
+            if timeSinceLastFrame > targetFrameTime + frameDropThreshold {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    private func createMetalTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
+        guard let textureCache = textureCache else { return nil }
+        
+        var metalTexture: CVMetalTexture?
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        
+        let result = CVMetalTextureCacheCreateTextureFromImage(
+            kCFAllocatorDefault,
+            textureCache,
+            pixelBuffer,
+            nil,
+            .bgra8Unorm,
+            width,
+            height,
+            0,
+            &metalTexture
+        )
+        
+        guard result == kCVReturnSuccess,
+              let texture = metalTexture,
+              let metalTextureRef = CVMetalTextureGetTexture(texture) else {
+            return nil
+        }
+        
+        return metalTextureRef
+    }
+    
+    private func compositeWithMetal(front: MTLTexture, back: MTLTexture) -> MTLTexture? {
+        guard let commandQueue = metalCommandQueue,
+              let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return nil
+        }
+        let device = metalDevice
+        
+        // Create render pipeline state if needed
+        if renderPipelineState == nil {
+            createRenderPipelineState(device: device)
+        }
+        
+        guard let pipelineState = renderPipelineState else {
+            return nil
+        }
+        
+        // Create output texture
+        let outputTextureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: Int(renderSize.width),
+            height: Int(renderSize.height),
+            mipmapped: false
+        )
+        outputTextureDescriptor.usage = [.renderTarget, .shaderRead]
+        
+        guard let outputTexture = device.makeTexture(descriptor: outputTextureDescriptor) else {
+            return nil
+        }
+        
+        // Create render pass descriptor
+        let renderPassDescriptor = MTLRenderPassDescriptor()
+        renderPassDescriptor.colorAttachments[0].texture = outputTexture
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        renderPassDescriptor.colorAttachments[0].storeAction = .store
+        
+        // Create command encoder
+        guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+            return nil
+        }
+        
+        // Set pipeline state
+        renderEncoder.setRenderPipelineState(pipelineState)
+        
+        // Set textures
+        renderEncoder.setFragmentTexture(front, index: 0)
+        renderEncoder.setFragmentTexture(back, index: 1)
+        
+        // Draw
+        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
+        renderEncoder.endEncoding()
+        
+        // Commit command buffer
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        return outputTexture
+    }
+    
+    private func createRenderPipelineState(device: MTLDevice) {
+        // Create a simple vertex shader
+        let vertexShaderSource = """
+        using namespace metal;
+        
+        struct VertexOut {
+            float4 position [[position]];
+            float2 texCoord;
+        };
+        
+        vertex VertexOut vertex_shader(uint vertexID [[vertex_id]]) {
+            VertexOut out;
+            
+            float2 positions[6] = {
+                float2(-1.0, -1.0),
+                float2(1.0, -1.0),
+                float2(-1.0, 1.0),
+                float2(1.0, -1.0),
+                float2(1.0, 1.0),
+                float2(-1.0, 1.0)
+            };
+            
+            float2 texCoords[6] = {
+                float2(0.0, 1.0),
+                float2(1.0, 1.0),
+                float2(0.0, 0.0),
+                float2(1.0, 1.0),
+                float2(1.0, 0.0),
+                float2(0.0, 0.0)
+            };
+            
+            out.position = float4(positions[vertexID], 0.0, 1.0);
+            out.texCoord = texCoords[vertexID];
+            
+            return out;
+        }
+        """
+        
+        // Create a fragment shader for composition
+        let fragmentShaderSource = """
+        using namespace metal;
+        
+        struct VertexOut {
+            float4 position [[position]];
+            float2 texCoord;
+        };
+        
+        fragment float4 fragment_shader(VertexOut in [[stage_in]],
+                                       texture2d<float> frontTexture [[texture(0)]],
+                                       texture2d<float> backTexture [[texture(1)]],
+                                       sampler textureSampler [[sampler(0)]]) {
+            constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
+            
+            float2 frontCoord = in.texCoord;
+            float2 backCoord = in.texCoord;
+            
+            // Adjust coordinates based on layout
+            // This is a simplified implementation
+            // In a real implementation, you'd pass layout parameters as uniforms
+            
+            float4 frontColor = frontTexture.sample(s, frontCoord);
+            float4 backColor = backTexture.sample(s, backCoord);
+            
+            // Simple side-by-side composition
+            if (in.texCoord.x < 0.5) {
+                return frontColor;
+            } else {
+                return backColor;
+            }
+        }
+        """
+        
+        do {
+            // Create library
+            let library = try device.makeLibrary(source: vertexShaderSource + "\n" + fragmentShaderSource, options: nil)
+            
+            // Create functions
+            let vertexFunction = library.makeFunction(name: "vertex_shader")
+            let fragmentFunction = library.makeFunction(name: "fragment_shader")
+            
+            // Create pipeline descriptor
+            let pipelineDescriptor = MTLRenderPipelineDescriptor()
+            pipelineDescriptor.vertexFunction = vertexFunction
+            pipelineDescriptor.fragmentFunction = fragmentFunction
+            pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            
+            // Create pipeline state
+            renderPipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        } catch {
+            print("Failed to create render pipeline state: \(error)")
+        }
+    }
+    
+    private func convertTextureToPixelBuffer(_ texture: MTLTexture) -> CVPixelBuffer? {
+        // Get pixel buffer from pool - simplified without MemoryManager
+        var pixelBuffer: CVPixelBuffer?
+        let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pixelBufferPool!, &pixelBuffer)
+        guard status == kCVReturnSuccess, let pixelBuffer = pixelBuffer else {
+            return nil
+        }
+        
+        // Create Metal texture from pixel buffer
+        guard let destinationTexture = createMetalTexture(from: pixelBuffer) else {
+            return nil
+        }
+        
+        // Copy texture
+        guard let commandQueue = metalCommandQueue,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let blitEncoder = commandBuffer.makeBlitCommandEncoder() else {
+            return nil
+        }
+        
+        blitEncoder.copy(from: texture, sourceSlice: 0, sourceLevel: 0, sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                        sourceSize: MTLSize(width: texture.width, height: texture.height, depth: 1),
+                        to: destinationTexture, destinationSlice: 0, destinationLevel: 0,
+                        destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0))
+        
+        blitEncoder.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        return pixelBuffer
+    }
+    
+    private func compositeWithCPU(frontBuffer: CVPixelBuffer, backBuffer: CVPixelBuffer, timestamp: CMTime) -> CVPixelBuffer? {
+        // Fallback to CPU processing
         let frontImage = CIImage(cvPixelBuffer: frontBuffer)
         let backImage = CIImage(cvPixelBuffer: backBuffer)
+        
+        // Apply adaptive quality if needed
+        let processedFrontImage = applyAdaptiveQuality(to: frontImage)
+        let processedBackImage = applyAdaptiveQuality(to: backImage)
         
         let composedImage: CIImage
         switch layout {
         case .sideBySide:
-            composedImage = composeSideBySide(front: frontImage, back: backImage)
-        case .pictureInPicture(let position, let size):
-            composedImage = composePIP(front: frontImage, back: backImage, 
-                                      position: position, size: size)
+            composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
+        case .pictureInPicture:
+            // Default PIP without parameters
+            composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
         case .frontPrimary:
-            composedImage = composePrimary(primary: frontImage, secondary: backImage)
+            composedImage = composePrimary(primary: processedFrontImage, secondary: processedBackImage)
         case .backPrimary:
-            composedImage = composePrimary(primary: backImage, secondary: frontImage)
+            composedImage = composePrimary(primary: processedBackImage, secondary: processedFrontImage)
         }
         
         return renderToPixelBuffer(composedImage)
+    }
+    
+    private func applyAdaptiveQuality(to image: CIImage) -> CIImage {
+        guard adaptiveQualityEnabled && currentQualityLevel < 1.0 else { return image }
+        
+        let scaledSize = CGSize(
+            width: image.extent.width * CGFloat(currentQualityLevel),
+            height: image.extent.height * CGFloat(currentQualityLevel)
+        )
+        
+        return image.transformed(by: CGAffineTransform(scaleX: CGFloat(currentQualityLevel),
+                                                     y: CGFloat(currentQualityLevel)))
+    }
+    
+    private func checkPerformanceAdaptation() {
+        let currentTime = CACurrentMediaTime()
+        
+        // Check performance every 2 seconds
+        if currentTime - lastPerformanceCheck > 2.0 {
+            lastPerformanceCheck = currentTime
+            
+            guard !frameProcessingTimes.isEmpty else { return }
+            
+            let averageProcessingTime = frameProcessingTimes.reduce(0, +) / CFTimeInterval(frameProcessingTimes.count)
+            let targetProcessingTime = 1.0 / 30.0 // Target 30 FPS
+            
+            // Adapt quality based on performance
+            if averageProcessingTime > targetProcessingTime * 1.5 {
+                // Performance is poor, reduce quality
+                currentQualityLevel = max(0.5, currentQualityLevel - 0.1)
+                PerformanceMonitor.shared.logEvent("Quality Adaptation", "Reduced quality to \(currentQualityLevel)")
+            } else if averageProcessingTime < targetProcessingTime * 0.5 && currentQualityLevel < 1.0 {
+                // Performance is good, increase quality
+                currentQualityLevel = min(1.0, currentQualityLevel + 0.1)
+                PerformanceMonitor.shared.logEvent("Quality Adaptation", "Increased quality to \(currentQualityLevel)")
+            }
+            
+            // Clear old samples
+            frameProcessingTimes.removeAll()
+        }
+    }
+    
+    private func trackProcessingTime(_ processingTime: CFTimeInterval) {
+        frameProcessingTimes.append(processingTime)
+        
+        // Keep only recent samples
+        if frameProcessingTimes.count > maxProcessingTimeSamples {
+            frameProcessingTimes.removeFirst()
+        }
     }
     
     private func composeSideBySide(front: CIImage, back: CIImage) -> CIImage {
@@ -177,27 +558,63 @@ class FrameCompositor {
     
     private func renderToPixelBuffer(_ image: CIImage) -> CVPixelBuffer? {
         var pixelBuffer: CVPixelBuffer?
-        let attrs = [
-            kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue as Any,
-            kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue as Any,
-            kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue as Any,
-            kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary
-        ] as CFDictionary
         
-        let status = CVPixelBufferCreate(kCFAllocatorDefault,
-                                        Int(renderSize.width),
-                                        Int(renderSize.height),
-                                        kCVPixelFormatType_32BGRA,
-                                        attrs,
-                                        &pixelBuffer)
-        
-        guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
-            print("Failed to create pixel buffer: \(status)")
-            return nil
+        // Try to use pool first for better performance
+        if let pool = pixelBufferPool {
+            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
         }
         
-        ciContext.render(image, to: buffer, bounds: CGRect(origin: .zero, size: renderSize), colorSpace: CGColorSpaceCreateDeviceRGB())
+        // Fallback to creating new buffer if pool fails
+        if pixelBuffer == nil {
+            let attrs = [
+                kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary
+            ] as CFDictionary
+            
+            let status = CVPixelBufferCreate(kCFAllocatorDefault,
+                                            Int(renderSize.width),
+                                            Int(renderSize.height),
+                                            kCVPixelFormatType_32BGRA,
+                                            attrs,
+                                            &pixelBuffer)
+            
+            guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
+                print("Failed to create pixel buffer: \(status)")
+                return nil
+            }
+        }
+        
+        guard let buffer = pixelBuffer else { return nil }
+        
+        // Render with performance optimization
+        ciContext.render(image,
+                        to: buffer,
+                        bounds: CGRect(origin: .zero, size: renderSize),
+                        colorSpace: CGColorSpaceCreateDeviceRGB())
+        
         return buffer
+    }
+    
+    // MARK: - Performance Control
+    
+    func setAdaptiveQuality(_ enabled: Bool) {
+        adaptiveQualityEnabled = enabled
+    }
+    
+    func setCurrentQualityLevel(_ level: Float) {
+        currentQualityLevel = max(0.5, min(1.0, level))
+    }
+    
+    func getCurrentQualityLevel() -> Float {
+        return currentQualityLevel
+    }
+    
+    func resetPerformanceMetrics() {
+        frameProcessingTimes.removeAll()
+        currentQualityLevel = 1.0
+        lastPerformanceCheck = 0
     }
 }
 

@@ -7,6 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07664C44CFE9C9388D625DBE /* ErrorHandlingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */; };
+		081D365AD65ADD447CA5F2D2 /* AudioControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */; };
+		31627D0D77FA292CFDF0B17D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7540A216277A8B87D046DB /* ContentView.swift */; };
+		3D514D7345938CC1D1CE4779 /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */; };
+		46C068978873CC24B8F61D12 /* VideoQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17252F9D08595F836950FE58 /* VideoQuality.swift */; };
+		4A988EF501A0EC8F40AD1F88 /* TripleOutputControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DDCA7444D82DE363B1A05E /* TripleOutputControlView.swift */; };
+		5255AAD6154E394DC840655E /* AdvancedCameraControlsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC749B48E761859DBE734A3A /* AdvancedCameraControlsManager.swift */; };
+		5765CFA44D46E69AE82B2122 /* BatteryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A757744EFD73B001BD2210D8 /* BatteryManager.swift */; };
+		5869F7337293BE33BC8554BE /* StartupOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6137DCC063E83726503F4551 /* StartupOptimizer.swift */; };
+		72B04DC27F0DF4791A0C3886 /* VisualCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20692F49C74B0B53711886BD /* VisualCountdownView.swift */; };
+		7D464E6A4483F51E5D8A87D7 /* CameraControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CA58005DF586397D2CC54E /* CameraControlsView.swift */; };
+		7DB93E0873BEA11EDB16CAE6 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51797252ED03CAC80FFE54B3 /* AudioManager.swift */; };
+		800B815A134E4E6C993A5BFE /* ThermalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C209188E3C80E94D70AF972F /* ThermalManager.swift */; };
+		8DFCA3A4DA5F29C3FAC177A7 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF37E2854B01B45FCB5BFC45 /* Extensions.swift */; };
 		A1000001294A0000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002294A0000000000001 /* AppDelegate.swift */; };
 		A1000003294A0000000000001 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004294A0000000000001 /* SceneDelegate.swift */; };
 		A1000005294A0000000000001 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006294A0000000000001 /* ViewController.swift */; };
@@ -20,9 +34,22 @@
 		A1000028294A0000000000001 /* PerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000029294A0000000000001 /* PerformanceMonitor.swift */; };
 		A1000030294A0000000000001 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031294A0000000000001 /* PermissionManager.swift */; };
 		A1000032294A0000000000001 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033294A0000000000001 /* CameraPreviewView.swift */; };
+		BCD64404782FFD8A5405A81C /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131D614AD4856D74CCA7198A /* SettingsManager.swift */; };
+		CB10FC1B13DBEC6B05EBC9DF /* HapticFeedbackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F1F01EEFBBBF531E240525 /* HapticFeedbackManager.swift */; };
+		D75403C38BB8AD8676A39D16 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A855E0AA91FE5361E25D2E /* DesignSystem.swift */; };
+		E87776FC1B8A2F689FA6C27B /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		131D614AD4856D74CCA7198A /* SettingsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		16F1F01EEFBBBF531E240525 /* HapticFeedbackManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HapticFeedbackManager.swift; sourceTree = "<group>"; };
+		17252F9D08595F836950FE58 /* VideoQuality.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoQuality.swift; sourceTree = "<group>"; };
+		20692F49C74B0B53711886BD /* VisualCountdownView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VisualCountdownView.swift; sourceTree = "<group>"; };
+		51797252ED03CAC80FFE54B3 /* AudioManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		6137DCC063E83726503F4551 /* StartupOptimizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StartupOptimizer.swift; sourceTree = "<group>"; };
+		619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
+		89DDCA7444D82DE363B1A05E /* TripleOutputControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TripleOutputControlView.swift; sourceTree = "<group>"; };
+		8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErrorHandlingManager.swift; sourceTree = "<group>"; };
 		A1000001294A0000000000000 /* DualCameraApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DualCameraApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000002294A0000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1000004294A0000000000001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -38,6 +65,15 @@
 		A1000029294A0000000000001 /* PerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMonitor.swift; sourceTree = "<group>"; };
 		A1000031294A0000000000001 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		A1000033294A0000000000001 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		A4CA58005DF586397D2CC54E /* CameraControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraControlsView.swift; sourceTree = "<group>"; };
+		A757744EFD73B001BD2210D8 /* BatteryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryManager.swift; sourceTree = "<group>"; };
+		AF7540A216277A8B87D046DB /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		C209188E3C80E94D70AF972F /* ThermalManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThermalManager.swift; sourceTree = "<group>"; };
+		D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioControlsView.swift; sourceTree = "<group>"; };
+		DC749B48E761859DBE734A3A /* AdvancedCameraControlsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdvancedCameraControlsManager.swift; sourceTree = "<group>"; };
+		E6A855E0AA91FE5361E25D2E /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		FF37E2854B01B45FCB5BFC45 /* Extensions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +112,24 @@
 				A1000016294A0000000000001 /* Assets.xcassets */,
 				A1000014294A0000000000001 /* LaunchScreen.storyboard */,
 				A1000017294A0000000000001 /* Info.plist */,
+				FF37E2854B01B45FCB5BFC45 /* Extensions.swift */,
+				8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */,
+				16F1F01EEFBBBF531E240525 /* HapticFeedbackManager.swift */,
+				51797252ED03CAC80FFE54B3 /* AudioManager.swift */,
+				619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */,
+				C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */,
+				A757744EFD73B001BD2210D8 /* BatteryManager.swift */,
+				20692F49C74B0B53711886BD /* VisualCountdownView.swift */,
+				17252F9D08595F836950FE58 /* VideoQuality.swift */,
+				6137DCC063E83726503F4551 /* StartupOptimizer.swift */,
+				C209188E3C80E94D70AF972F /* ThermalManager.swift */,
+				89DDCA7444D82DE363B1A05E /* TripleOutputControlView.swift */,
+				D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */,
+				AF7540A216277A8B87D046DB /* ContentView.swift */,
+				DC749B48E761859DBE734A3A /* AdvancedCameraControlsManager.swift */,
+				131D614AD4856D74CCA7198A /* SettingsManager.swift */,
+				A4CA58005DF586397D2CC54E /* CameraControlsView.swift */,
+				E6A855E0AA91FE5361E25D2E /* DesignSystem.swift */,
 			);
 			path = DualCameraApp;
 			sourceTree = "<group>";
@@ -169,6 +223,24 @@
 				A1000028294A0000000000001 /* PerformanceMonitor.swift in Sources */,
 				A1000030294A0000000000001 /* PermissionManager.swift in Sources */,
 				A1000032294A0000000000001 /* CameraPreviewView.swift in Sources */,
+				8DFCA3A4DA5F29C3FAC177A7 /* Extensions.swift in Sources */,
+				07664C44CFE9C9388D625DBE /* ErrorHandlingManager.swift in Sources */,
+				CB10FC1B13DBEC6B05EBC9DF /* HapticFeedbackManager.swift in Sources */,
+				7DB93E0873BEA11EDB16CAE6 /* AudioManager.swift in Sources */,
+				3D514D7345938CC1D1CE4779 /* MemoryManager.swift in Sources */,
+				E87776FC1B8A2F689FA6C27B /* StorageManager.swift in Sources */,
+				5765CFA44D46E69AE82B2122 /* BatteryManager.swift in Sources */,
+				72B04DC27F0DF4791A0C3886 /* VisualCountdownView.swift in Sources */,
+				46C068978873CC24B8F61D12 /* VideoQuality.swift in Sources */,
+				5869F7337293BE33BC8554BE /* StartupOptimizer.swift in Sources */,
+				800B815A134E4E6C993A5BFE /* ThermalManager.swift in Sources */,
+				4A988EF501A0EC8F40AD1F88 /* TripleOutputControlView.swift in Sources */,
+				081D365AD65ADD447CA5F2D2 /* AudioControlsView.swift in Sources */,
+				31627D0D77FA292CFDF0B17D /* ContentView.swift in Sources */,
+				5255AAD6154E394DC840655E /* AdvancedCameraControlsManager.swift in Sources */,
+				BCD64404782FFD8A5405A81C /* SettingsManager.swift in Sources */,
+				7D464E6A4483F51E5D8A87D7 /* CameraControlsView.swift in Sources */,
+				D75403C38BB8AD8676A39D16 /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

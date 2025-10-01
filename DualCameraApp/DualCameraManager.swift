@@ -80,6 +80,7 @@ final class DualCameraManager: NSObject {
 
     private var isRecording = false
     private var isSetupComplete = false
+    private var isDeferredSetupComplete = false
     private(set) var activeVideoQuality: VideoQuality = .hd1080
 
     // MARK: - Triple Output Properties
@@ -103,11 +104,16 @@ final class DualCameraManager: NSObject {
 
     var recordingLayout: RecordingLayout = .sideBySide
     var enableTripleOutput: Bool = true
+    var tripleOutputMode: TripleOutputMode = .allFiles
+    
+    // Audio management
+    private let audioManager = AudioManager()
 
     private enum DualCameraError: LocalizedError {
         case multiCamNotSupported
         case missingDevices
         case configurationFailed(String)
+        case tripleOutputFailed(String)
 
         var errorDescription: String? {
             switch self {
@@ -117,21 +123,37 @@ final class DualCameraManager: NSObject {
                 return "Required camera devices could not be initialized."
             case .configurationFailed(let reason):
                 return reason
+            case .tripleOutputFailed(let reason):
+                return "Triple output recording failed: \(reason)"
             }
         }
+    }
+    
+    enum TripleOutputMode {
+        case allFiles        // Save front, back, and combined as separate files
+        case combinedOnly    // Save only the combined file
+        case frontBackOnly   // Save front and back files, no combined
     }
 
     func setupCameras() {
         guard !isSetupComplete else { return }
 
+        print("DEBUG: Setting up cameras...")
         // Get devices immediately (fast operation)
         frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         audioDevice = AVCaptureDevice.default(for: .audio)
 
+        print("DEBUG: Front camera: \(frontCamera?.localizedName ?? "nil")")
+        print("DEBUG: Back camera: \(backCamera?.localizedName ?? "nil")")
+        print("DEBUG: Audio device: \(audioDevice?.localizedName ?? "nil")")
+
         guard frontCamera != nil, backCamera != nil else {
+            let error = DualCameraError.missingDevices
             DispatchQueue.main.async {
-                self.delegate?.didFailWithError(DualCameraError.missingDevices)
+                // Use error handling manager
+                ErrorHandlingManager.shared.handleError(error)
+                self.delegate?.didFailWithError(error)
             }
             return
         }
@@ -148,6 +170,8 @@ final class DualCameraManager: NSObject {
                 }
             } catch {
                 DispatchQueue.main.async {
+                    // Use error handling manager
+                    ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
                 }
                 self.captureSession = nil
@@ -157,11 +181,15 @@ final class DualCameraManager: NSObject {
 
     private func configureSession() throws {
         guard let frontCamera, let backCamera else {
+            print("DEBUG: Missing camera devices")
             throw DualCameraError.missingDevices
         }
 
         if #available(iOS 13.0, *) {
-            guard AVCaptureMultiCamSession.isMultiCamSupported else {
+            let isSupported = AVCaptureMultiCamSession.isMultiCamSupported
+            print("DEBUG: MultiCam supported: \(isSupported)")
+            guard isSupported else {
+                print("DEBUG: MultiCam not supported, throwing error")
                 throw DualCameraError.multiCamNotSupported
             }
 
@@ -294,35 +322,111 @@ final class DualCameraManager: NSObject {
             backConnection.videoOrientation = AVCaptureVideoOrientation.portrait
         }
 
-        // DEFER: Photo outputs and triple output setup will be added when first needed
-        // This significantly speeds up initial camera load time
+        // Setup photo outputs
+        let frontPhotoOutput = AVCapturePhotoOutput()
+        print("DEBUG: Can add front photo output: \(session.canAddOutput(frontPhotoOutput))")
+        if session.canAddOutput(frontPhotoOutput) {
+            session.addOutputWithNoConnections(frontPhotoOutput)
+            self.frontPhotoOutput = frontPhotoOutput
 
-        // Start session immediately - preview will be visible ASAP
-        session.startRunning()
-
-        // Schedule deferred setup on background queue
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            self?.setupDeferredOutputs(session: session, frontVideoPort: frontVideoPort, backVideoPort: backVideoPort)
+            let frontPhotoConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontPhotoOutput)
+            print("DEBUG: Can add front photo connection: \(session.canAddConnection(frontPhotoConnection))")
+            if session.canAddConnection(frontPhotoConnection) {
+                session.addConnection(frontPhotoConnection)
+                if frontPhotoConnection.isVideoOrientationSupported {
+                    frontPhotoConnection.videoOrientation = .portrait
+                }
+            }
         }
+
+        let backPhotoOutput = AVCapturePhotoOutput()
+        print("DEBUG: Can add back photo output: \(session.canAddOutput(backPhotoOutput))")
+        if session.canAddOutput(backPhotoOutput) {
+            session.addOutputWithNoConnections(backPhotoOutput)
+            self.backPhotoOutput = backPhotoOutput
+
+            let backPhotoConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backPhotoOutput)
+            print("DEBUG: Can add back photo connection: \(session.canAddConnection(backPhotoConnection))")
+            if session.canAddConnection(backPhotoConnection) {
+                session.addConnection(backPhotoConnection)
+                if backPhotoConnection.isVideoOrientationSupported {
+                    backPhotoConnection.videoOrientation = .portrait
+                }
+            }
+        }
+
+        // Setup triple output data outputs
+        if self.enableTripleOutput {
+            print("DEBUG: Setting up data outputs")
+            let frontDataOutput = AVCaptureVideoDataOutput()
+            frontDataOutput.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+            ]
+            frontDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
+            frontDataOutput.alwaysDiscardsLateVideoFrames = true
+
+            print("DEBUG: Can add front data output: \(session.canAddOutput(frontDataOutput))")
+            if session.canAddOutput(frontDataOutput) {
+                session.addOutputWithNoConnections(frontDataOutput)
+                self.frontDataOutput = frontDataOutput
+
+                let frontDataConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontDataOutput)
+                print("DEBUG: Can add front data connection: \(session.canAddConnection(frontDataConnection))")
+                if session.canAddConnection(frontDataConnection) {
+                    session.addConnection(frontDataConnection)
+                    if frontDataConnection.isVideoOrientationSupported {
+                        frontDataConnection.videoOrientation = .portrait
+                    }
+                }
+            }
+
+            let backDataOutput = AVCaptureVideoDataOutput()
+            backDataOutput.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+            ]
+            backDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
+            backDataOutput.alwaysDiscardsLateVideoFrames = true
+
+            print("DEBUG: Can add back data output: \(session.canAddOutput(backDataOutput))")
+            if session.canAddOutput(backDataOutput) {
+                session.addOutputWithNoConnections(backDataOutput)
+                self.backDataOutput = backDataOutput
+
+                let backDataConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backDataOutput)
+                print("DEBUG: Can add back data connection: \(session.canAddConnection(backDataConnection))")
+                if session.canAddConnection(backDataConnection) {
+                    session.addConnection(backDataConnection)
+                    if backDataConnection.isVideoOrientationSupported {
+                        backDataConnection.videoOrientation = .portrait
+                    }
+                }
+            }
+        }
+
+        // Mark deferred setup as complete
+        self.isDeferredSetupComplete = true
+        print("DEBUG: Deferred setup complete")
     }
 
     // MARK: - Deferred Setup (runs in background after camera is visible)
     @available(iOS 13.0, *)
     private func setupDeferredOutputs(session: AVCaptureMultiCamSession, frontVideoPort: AVCaptureInput.Port, backVideoPort: AVCaptureInput.Port) {
-        // Wait a bit to let preview stabilize
-        Thread.sleep(forTimeInterval: 0.3)
+        print("DEBUG: Starting deferred setup")
 
         sessionQueue.async {
+            print("DEBUG: Deferred setup in session queue")
             session.beginConfiguration()
             defer { session.commitConfiguration() }
 
             // Setup photo outputs
             let frontPhotoOutput = AVCapturePhotoOutput()
+            print("DEBUG: Can add front photo output: \(session.canAddOutput(frontPhotoOutput))")
             if session.canAddOutput(frontPhotoOutput) {
                 session.addOutputWithNoConnections(frontPhotoOutput)
                 self.frontPhotoOutput = frontPhotoOutput
 
                 let frontPhotoConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontPhotoOutput)
+                print("DEBUG: Can add front photo connection: \(session.canAddConnection(frontPhotoConnection))")
                 if session.canAddConnection(frontPhotoConnection) {
                     session.addConnection(frontPhotoConnection)
                     if frontPhotoConnection.isVideoOrientationSupported {
@@ -332,11 +436,13 @@ final class DualCameraManager: NSObject {
             }
 
             let backPhotoOutput = AVCapturePhotoOutput()
+            print("DEBUG: Can add back photo output: \(session.canAddOutput(backPhotoOutput))")
             if session.canAddOutput(backPhotoOutput) {
                 session.addOutputWithNoConnections(backPhotoOutput)
                 self.backPhotoOutput = backPhotoOutput
 
                 let backPhotoConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backPhotoOutput)
+                print("DEBUG: Can add back photo connection: \(session.canAddConnection(backPhotoConnection))")
                 if session.canAddConnection(backPhotoConnection) {
                     session.addConnection(backPhotoConnection)
                     if backPhotoConnection.isVideoOrientationSupported {
@@ -347,6 +453,7 @@ final class DualCameraManager: NSObject {
 
             // Setup triple output data outputs
             if self.enableTripleOutput {
+                print("DEBUG: Setting up data outputs")
                 let frontDataOutput = AVCaptureVideoDataOutput()
                 frontDataOutput.videoSettings = [
                     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
@@ -354,11 +461,13 @@ final class DualCameraManager: NSObject {
                 frontDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
                 frontDataOutput.alwaysDiscardsLateVideoFrames = true
 
+                print("DEBUG: Can add front data output: \(session.canAddOutput(frontDataOutput))")
                 if session.canAddOutput(frontDataOutput) {
                     session.addOutputWithNoConnections(frontDataOutput)
                     self.frontDataOutput = frontDataOutput
 
                     let frontDataConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontDataOutput)
+                    print("DEBUG: Can add front data connection: \(session.canAddConnection(frontDataConnection))")
                     if session.canAddConnection(frontDataConnection) {
                         session.addConnection(frontDataConnection)
                         if frontDataConnection.isVideoOrientationSupported {
@@ -374,11 +483,13 @@ final class DualCameraManager: NSObject {
                 backDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
                 backDataOutput.alwaysDiscardsLateVideoFrames = true
 
+                print("DEBUG: Can add back data output: \(session.canAddOutput(backDataOutput))")
                 if session.canAddOutput(backDataOutput) {
                     session.addOutputWithNoConnections(backDataOutput)
                     self.backDataOutput = backDataOutput
 
                     let backDataConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backDataOutput)
+                    print("DEBUG: Can add back data connection: \(session.canAddConnection(backDataConnection))")
                     if session.canAddConnection(backDataConnection) {
                         session.addConnection(backDataConnection)
                         if backDataConnection.isVideoOrientationSupported {
@@ -388,16 +499,35 @@ final class DualCameraManager: NSObject {
                 }
             }
         }
+
+        // Mark deferred setup as complete
+        self.isDeferredSetupComplete = true
+        print("DEBUG: Deferred setup complete")
     }
 
     // MARK: - Session Control
     func startSessions() {
-        guard let session = captureSession else { return }
+        guard let session = captureSession else {
+            print("DEBUG: No capture session to start")
+            return
+        }
 
+        print("DEBUG: Starting capture session...")
         sessionQueue.async {
-            if !session.isRunning {
-                session.startRunning()
+            // Only start if not already running, setup is complete, and deferred setup is complete
+            guard !session.isRunning && self.isSetupComplete && self.isDeferredSetupComplete else {
+                print("DEBUG: Cannot start session - isRunning: \(session.isRunning), setupComplete: \(self.isSetupComplete), deferredComplete: \(self.isDeferredSetupComplete)")
+                // If deferred setup isn't complete yet, schedule to start later
+                if self.isSetupComplete && !self.isDeferredSetupComplete {
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+                        self.startSessions()
+                    }
+                }
+                return
             }
+
+            session.startRunning()
+            print("DEBUG: Capture session started successfully")
         }
     }
 
@@ -436,54 +566,153 @@ final class DualCameraManager: NSObject {
     // MARK: - Recording
     func startRecording() {
         sessionQueue.async {
-            guard self.isSetupComplete, !self.isRecording else { return }
+            guard self.isSetupComplete, !self.isRecording else {
+                print("DEBUG: Cannot start recording - setupComplete: \(self.isSetupComplete), alreadyRecording: \(self.isRecording)")
+                return
+            }
 
+            print("DEBUG: Starting recording... session running: \(self.captureSession?.isRunning ?? false)")
+            
+            // Performance monitoring
+            PerformanceMonitor.shared.beginRecording()
+            
+            // Configure audio for recording
+            // self.audioManager.configureForRecording()
+            
+            // Check storage space before recording
+            if !self.checkStorageSpace() {
+                DispatchQueue.main.async {
+                    ErrorHandlingManager.shared.handleCustomError(type: .storageSpace)
+                }
+                return
+            }
+            
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let timestamp = Int(Date().timeIntervalSince1970)
 
-            self.frontVideoURL = documentsPath.appendingPathComponent("front_\(timestamp).mov")
-            self.backVideoURL = documentsPath.appendingPathComponent("back_\(timestamp).mov")
+            // Initialize recording URLs based on triple output mode
+            self.initializeRecordingURLs(timestamp: timestamp, documentsPath: documentsPath)
 
-            if let frontOutput = self.frontMovieOutput, let frontURL = self.frontVideoURL {
-                frontOutput.startRecording(to: frontURL, recordingDelegate: self)
-            }
+            // Start individual camera recordings based on mode
+            self.startIndividualRecordings()
 
-            if let backOutput = self.backMovieOutput, let backURL = self.backVideoURL {
-                backOutput.startRecording(to: backURL, recordingDelegate: self)
-            }
-
-            // Setup triple output (combined video)
-            if self.enableTripleOutput {
+            // Setup triple output (combined video) if needed
+            if self.enableTripleOutput && self.tripleOutputMode != .frontBackOnly {
                 self.combinedVideoURL = documentsPath.appendingPathComponent("combined_\(timestamp).mp4")
                 self.setupAssetWriter()
+                print("DEBUG: Setup triple output recording to \(self.combinedVideoURL!)")
             }
+            
+            // Start audio recording
+            let audioURL = documentsPath.appendingPathComponent("audio_\(timestamp).m4a")
+            self.audioManager.startAudioRecording(to: audioURL)
 
             self.isRecording = true
+            print("DEBUG: Recording started successfully")
 
             DispatchQueue.main.async {
                 self.delegate?.didStartRecording()
             }
         }
     }
+    
+    private func initializeRecordingURLs(timestamp: Int, documentsPath: URL) {
+        switch tripleOutputMode {
+        case .allFiles:
+            frontVideoURL = documentsPath.appendingPathComponent("front_\(timestamp).mov")
+            backVideoURL = documentsPath.appendingPathComponent("back_\(timestamp).mov")
+            
+        case .combinedOnly:
+            // Individual files not needed for combined only mode
+            frontVideoURL = nil
+            backVideoURL = nil
+            
+        case .frontBackOnly:
+            frontVideoURL = documentsPath.appendingPathComponent("front_\(timestamp).mov")
+            backVideoURL = documentsPath.appendingPathComponent("back_\(timestamp).mov")
+        }
+    }
+    
+    private func startIndividualRecordings() {
+        switch tripleOutputMode {
+        case .allFiles, .frontBackOnly:
+            // Start front camera recording
+            if let frontOutput = frontMovieOutput, let frontURL = frontVideoURL {
+                frontOutput.startRecording(to: frontURL, recordingDelegate: self)
+                print("DEBUG: Started front camera recording to \(frontURL)")
+            } else {
+                print("DEBUG: Front camera output or URL not available")
+                let error = DualCameraError.configurationFailed("Front camera output not available")
+                DispatchQueue.main.async {
+                    ErrorHandlingManager.shared.handleError(error)
+                }
+            }
+            
+            // Start back camera recording
+            if let backOutput = backMovieOutput, let backURL = backVideoURL {
+                backOutput.startRecording(to: backURL, recordingDelegate: self)
+                print("DEBUG: Started back camera recording to \(backURL)")
+            } else {
+                print("DEBUG: Back camera output or URL not available")
+                let error = DualCameraError.configurationFailed("Back camera output not available")
+                DispatchQueue.main.async {
+                    ErrorHandlingManager.shared.handleError(error)
+                }
+            }
+            
+        case .combinedOnly:
+            // Don't start individual recordings for combined only mode
+            print("DEBUG: Skipping individual recordings for combined only mode")
+        }
+    }
+    
+    private func checkStorageSpace() -> Bool {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        do {
+            let attributes = try FileManager.default.attributesOfFileSystem(forPath: documentsPath.path)
+            if let freeSize = attributes[.systemFreeSize] as? NSNumber {
+                let freeMB = freeSize.int64Value / (1024 * 1024)
+                // Require at least 500MB of free space
+                return freeMB > 500
+            }
+        } catch {
+            print("Error checking storage space: \(error)")
+        }
+        
+        return false
+    }
 
     func stopRecording() {
         sessionQueue.async {
-            guard self.isRecording else { return }
+            guard self.isRecording else {
+                print("DEBUG: Not recording, cannot stop")
+                return
+            }
 
+            print("DEBUG: Stopping recording...")
             if self.frontMovieOutput?.isRecording == true {
                 self.frontMovieOutput?.stopRecording()
+                print("DEBUG: Stopped front camera recording")
             }
 
             if self.backMovieOutput?.isRecording == true {
                 self.backMovieOutput?.stopRecording()
+                print("DEBUG: Stopped back camera recording")
             }
 
             // Stop triple output
             if self.enableTripleOutput {
                 self.finishAssetWriter()
+                print("DEBUG: Finished triple output recording")
             }
 
             self.isRecording = false
+            
+            // Performance monitoring
+            PerformanceMonitor.shared.endRecording()
+            
+            print("DEBUG: Recording stopped")
         }
     }
 
@@ -557,25 +786,78 @@ final class DualCameraManager: NSObject {
             }
         }
     }
+    
+    // MARK: - Performance Management
+    
+    func reduceQualityForMemoryPressure() {
+        sessionQueue.async {
+            // Reduce video quality temporarily
+            if self.activeVideoQuality == .uhd4k {
+                self.videoQuality = .hd1080
+            } else if self.activeVideoQuality == .hd1080 {
+                self.videoQuality = .hd720
+            }
+            
+            // Reduce frame compositor quality
+            self.frameCompositor?.setCurrentQualityLevel(0.7)
+            
+            PerformanceMonitor.shared.logEvent("Performance", "Reduced quality due to memory pressure")
+        }
+    }
+    
+    func restoreQualityAfterMemoryPressure() {
+        sessionQueue.async {
+            // Gradually restore quality
+            self.frameCompositor?.setCurrentQualityLevel(1.0)
+            
+            PerformanceMonitor.shared.logEvent("Performance", "Restored quality after memory pressure")
+        }
+    }
+    
+    func getPerformanceMetrics() -> [String: Any] {
+        return PerformanceMonitor.shared.getPerformanceSummary()
+    }
 
 }
 
 extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
         if let error {
-            print("Recording error: \(error)")
+            print("DEBUG: Recording error for \(outputFileURL.lastPathComponent): \(error)")
             DispatchQueue.main.async {
+                // Use error handling manager
+                ErrorHandlingManager.shared.handleError(error)
                 self.delegate?.didFailWithError(error)
             }
             return
         }
 
-        print("Recording finished successfully to: \(outputFileURL)")
+        print("DEBUG: Recording finished successfully to: \(outputFileURL)")
+        // Check file size
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: outputFileURL.path)
+            let fileSize = attributes[.size] as? Int64 ?? 0
+            print("DEBUG: Recorded file size: \(fileSize) bytes")
+            
+            // Check if file is too small (indicating a failed recording)
+            if fileSize < 1024 { // Less than 1KB
+                let error = DualCameraError.configurationFailed("Recording file is too small, likely failed")
+                DispatchQueue.main.async {
+                    ErrorHandlingManager.shared.handleError(error)
+                    self.delegate?.didFailWithError(error)
+                }
+                return
+            }
+        } catch {
+            print("DEBUG: Could not get file size: \(error)")
+        }
 
         let frontFinished = frontMovieOutput?.isRecording == false
         let backFinished = backMovieOutput?.isRecording == false
+        print("DEBUG: Front finished: \(frontFinished), Back finished: \(backFinished)")
 
         if frontFinished && backFinished {
+            print("DEBUG: Both recordings finished, notifying delegate")
             DispatchQueue.main.async {
                 self.delegate?.didStopRecording()
             }
@@ -620,6 +902,9 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
 
         guard isRecording, enableTripleOutput else { return }
 
+        // Performance monitoring
+        PerformanceMonitor.shared.recordFrame()
+        
         frameSyncQueue.sync {
             if output == frontDataOutput {
                 frontFrameBuffer = sampleBuffer
@@ -643,11 +928,15 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     }
 
     private func processFramePair(front: CMSampleBuffer, back: CMSampleBuffer) {
+        // Performance monitoring
+        PerformanceMonitor.shared.beginFrameProcessing()
+        
         guard let frontPixelBuffer = CMSampleBufferGetImageBuffer(front),
               let backPixelBuffer = CMSampleBufferGetImageBuffer(back),
               assetWriter != nil,
               let videoWriterInput = videoWriterInput,
               let pixelBufferAdaptor = pixelBufferAdaptor else {
+            PerformanceMonitor.shared.endFrameProcessing()
             return
         }
 
@@ -664,15 +953,19 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
 
         // Calculate relative time
-        guard let startTime = recordingStartTime else { return }
+        guard let startTime = recordingStartTime else {
+            PerformanceMonitor.shared.endFrameProcessing()
+            return
+        }
         let relativeTime = CMTimeSubtract(presentationTime, startTime)
 
-        // Compose frames
+        // Compose frames with performance monitoring
         guard let composedBuffer = frameCompositor?.composite(
             frontBuffer: frontPixelBuffer,
             backBuffer: backPixelBuffer,
             timestamp: relativeTime
         ) else {
+            PerformanceMonitor.shared.endFrameProcessing()
             return
         }
 
@@ -680,6 +973,8 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         if videoWriterInput.isReadyForMoreMediaData {
             pixelBufferAdaptor.append(composedBuffer, withPresentationTime: relativeTime)
         }
+        
+        PerformanceMonitor.shared.endFrameProcessing()
     }
 
     private func setupAssetWriter() {

@@ -97,7 +97,9 @@ class PermissionManager {
     // MARK: - Permission Requests
     
     func requestCameraPermission(completion: @escaping (Bool) -> Void) {
+        print("DEBUG: Requesting camera permission...")
         AVCaptureDevice.requestAccess(for: .video) { granted in
+            print("DEBUG: Camera permission granted: \(granted)")
             DispatchQueue.main.async {
                 completion(granted)
             }
@@ -105,54 +107,98 @@ class PermissionManager {
     }
     
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
+        print("DEBUG: Requesting microphone permission...")
         AVCaptureDevice.requestAccess(for: .audio) { granted in
+            print("DEBUG: Microphone permission granted: \(granted)")
+            DispatchQueue.main.async {
+                completion(granted)
+            }
+        }
+    }
+
+    func requestPhotoLibraryPermission(completion: @escaping (Bool) -> Void) {
+        print("DEBUG: Requesting photo library permission...")
+        PHPhotoLibrary.requestAuthorization { status in
+            let granted = status == .authorized || status == .limited
+            print("DEBUG: Photo library permission granted: \(granted) (status: \(status))")
             DispatchQueue.main.async {
                 completion(granted)
             }
         }
     }
     
-    func requestPhotoLibraryPermission(completion: @escaping (Bool) -> Void) {
-        PHPhotoLibrary.requestAuthorization { status in
-            DispatchQueue.main.async {
-                completion(status == .authorized || status == .limited)
-            }
-        }
-    }
-    
     // MARK: - Comprehensive Permission Flow
     
-    /// Request all required permissions in sequence
+    /// Request all required permissions in sequence with better UX
     func requestAllPermissions(completion: @escaping (Bool, [PermissionType]) -> Void) {
         var deniedPermissions: [PermissionType] = []
         
-        // Step 1: Request camera permission
-        requestCameraPermission { [weak self] cameraGranted in
-            guard let self = self else { return }
-            
-            if !cameraGranted {
-                deniedPermissions.append(.camera)
-                completion(false, deniedPermissions)
-                return
+        // Check current status first to avoid unnecessary requests
+        let currentCameraStatus = cameraPermissionStatus()
+        let currentMicStatus = microphonePermissionStatus()
+        
+        // Request camera permission if needed
+        if currentCameraStatus == .notDetermined {
+            requestCameraPermission { [weak self] cameraGranted in
+                guard let self = self else { return }
+                
+                if !cameraGranted {
+                    deniedPermissions.append(.camera)
+                }
+                
+                // Continue with microphone
+                self.requestMicrophoneIfNeeded(currentStatus: currentMicStatus, initialDenied: deniedPermissions, completion: completion)
             }
-            
-            // Step 2: Request microphone permission
-            self.requestMicrophonePermission { micGranted in
+        } else if currentCameraStatus == .authorized {
+            requestMicrophoneIfNeeded(currentStatus: currentMicStatus, initialDenied: deniedPermissions, completion: completion)
+        } else {
+            deniedPermissions.append(.camera)
+            requestMicrophoneIfNeeded(currentStatus: currentMicStatus, initialDenied: deniedPermissions, completion: completion)
+        }
+    }
+    
+    private func requestMicrophoneIfNeeded(currentStatus: PermissionStatus, initialDenied: [PermissionType], completion: @escaping (Bool, [PermissionType]) -> Void) {
+        if currentStatus == .notDetermined {
+            requestMicrophonePermission { [weak self] micGranted in
+                guard let self = self else { return }
+                
+                var deniedPermissions = initialDenied
                 if !micGranted {
                     deniedPermissions.append(.microphone)
                 }
                 
-                // Step 3: Request photo library permission
-                self.requestPhotoLibraryPermission { photoGranted in
-                    if !photoGranted {
-                        deniedPermissions.append(.photoLibrary)
-                    }
-                    
-                    // All permissions requested
-                    let allGranted = deniedPermissions.isEmpty
-                    completion(allGranted, deniedPermissions)
-                }
+                self.requestPhotoLibraryIfNeeded(initialDenied: deniedPermissions, completion: completion)
             }
+        } else if currentStatus == .authorized {
+            requestPhotoLibraryIfNeeded(initialDenied: initialDenied, completion: completion)
+        } else {
+            var deniedPermissions = initialDenied
+            deniedPermissions.append(.microphone)
+            requestPhotoLibraryIfNeeded(initialDenied: deniedPermissions, completion: completion)
+        }
+    }
+    
+    private func requestPhotoLibraryIfNeeded(initialDenied: [PermissionType], completion: @escaping (Bool, [PermissionType]) -> Void) {
+        let currentPhotoStatus = photoLibraryPermissionStatus()
+        
+        if currentPhotoStatus == .notDetermined {
+            requestPhotoLibraryPermission { photoGranted in
+                var deniedPermissions = initialDenied
+                if !photoGranted {
+                    deniedPermissions.append(.photoLibrary)
+                }
+                
+                let allGranted = deniedPermissions.isEmpty
+                completion(allGranted, deniedPermissions)
+            }
+        } else if currentPhotoStatus != .authorized {
+            var deniedPermissions = initialDenied
+            deniedPermissions.append(.photoLibrary)
+            let allGranted = deniedPermissions.isEmpty
+            completion(allGranted, deniedPermissions)
+        } else {
+            let allGranted = initialDenied.isEmpty
+            completion(allGranted, initialDenied)
         }
     }
     

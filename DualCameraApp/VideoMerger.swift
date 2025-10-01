@@ -9,13 +9,30 @@ class VideoMerger {
     }
 
     func mergeVideos(frontURL: URL, backURL: URL, layout: VideoLayout = .sideBySide, quality: VideoQuality, completion: @escaping (Result<URL, Error>) -> Void) {
+        print("VIDEOMERGER: Starting video merge, front: \(frontURL.lastPathComponent), back: \(backURL.lastPathComponent)")
+        
+        // Validate input files exist
+        guard FileManager.default.fileExists(atPath: frontURL.path) else {
+            let error = NSError(domain: "VideoMerger", code: 100, userInfo: [NSLocalizedDescriptionKey: "Front video file not found"])
+            completion(.failure(error))
+            return
+        }
+        
+        guard FileManager.default.fileExists(atPath: backURL.path) else {
+            let error = NSError(domain: "VideoMerger", code: 101, userInfo: [NSLocalizedDescriptionKey: "Back video file not found"])
+            completion(.failure(error))
+            return
+        }
+        
         let composition = AVMutableComposition()
 
         // Create separate video tracks for front and back cameras
         guard let frontVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
               let backVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
               let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            completion(.failure(NSError(domain: "VideoMerger", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create composition tracks"])))
+            print("VIDEOMERGER: Failed to create composition tracks")
+            let error = NSError(domain: "VideoMerger", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create composition tracks"])
+            completion(.failure(error))
             return
         }
 
@@ -134,14 +151,14 @@ class VideoMerger {
     ) -> AVVideoComposition {
 
         let videoComposition = AVMutableVideoComposition()
-        videoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30) // 30 FPS
+        videoComposition.frameDuration = CMTime(value: 1, timescale: 30) // 30 FPS
 
         let renderSize = quality.renderSize
         videoComposition.renderSize = renderSize
 
         // Create composition instruction
         let instruction = AVMutableVideoCompositionInstruction()
-        instruction.timeRange = CMTimeRangeMake(start: .zero, duration: composition.duration)
+        instruction.timeRange = CMTimeRange(start: .zero, duration: composition.duration)
 
         switch layout {
         case .sideBySide:
@@ -166,20 +183,27 @@ class VideoMerger {
             // Front camera as picture-in-picture (small overlay)
             let frontLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: frontTrack)
             let pipScale: CGFloat = 0.25 // 25% of original size
-            let pipX = renderSize.width * 0.75
-            let pipY = renderSize.height * 0.75
+            let pipWidth = renderSize.width * pipScale
+            let pipHeight = renderSize.height * pipScale
+            let pipX = renderSize.width - pipWidth - 20 // 20px margin from right
+            let pipY = renderSize.height - pipHeight - 20 // 20px margin from bottom
             let pipTransform = CGAffineTransform(scaleX: pipScale, y: pipScale)
-                .concatenating(CGAffineTransform(translationX: pipX, y: pipY)) // Position in bottom-right
+                .concatenating(CGAffineTransform(translationX: pipX, y: pipY))
             frontLayerInstruction.setTransform(pipTransform, at: .zero)
 
             instruction.layerInstructions = [backLayerInstruction, frontLayerInstruction]
         }
 
         videoComposition.instructions = [instruction]
+        
+        // Add proper video composition properties for better quality
+        videoComposition.renderScale = 1.0
+        
         return videoComposition
     }
 
     private func exportMergedVideo(composition: AVMutableComposition, videoComposition: AVVideoComposition, completion: @escaping (Result<URL, Error>) -> Void) {
+        print("VIDEOMERGER: Starting export of merged video")
         // Create output URL
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let timestamp = Int(Date().timeIntervalSince1970)
@@ -190,6 +214,7 @@ class VideoMerger {
 
         // Create export session
         guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            print("VIDEOMERGER: Failed to create export session")
             completion(.failure(NSError(domain: "VideoMerger", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to create export session"])))
             return
         }
@@ -199,21 +224,27 @@ class VideoMerger {
         exportSession.videoComposition = videoComposition
 
         exportSession.exportAsynchronously {
+            print("VIDEOMERGER: Export completed with status: \(exportSession.status.rawValue)")
             switch exportSession.status {
             case .completed:
+                print("VIDEOMERGER: Export successful, saving to photos")
                 self.saveMergedVideoToPhotos(url: outputURL) { result in
                     switch result {
                     case .success:
                         completion(.success(outputURL))
                     case .failure(let error):
+                        print("VIDEOMERGER: Failed to save to photos: \(error)")
                         completion(.failure(error))
                     }
                 }
             case .failed:
+                print("VIDEOMERGER: Export failed: \(exportSession.error?.localizedDescription ?? "unknown error")")
                 completion(.failure(exportSession.error ?? NSError(domain: "VideoMerger", code: 4, userInfo: [NSLocalizedDescriptionKey: "Export failed"])))
             case .cancelled:
+                print("VIDEOMERGER: Export cancelled")
                 completion(.failure(NSError(domain: "VideoMerger", code: 5, userInfo: [NSLocalizedDescriptionKey: "Export cancelled"])))
             default:
+                print("VIDEOMERGER: Export failed with unknown status")
                 completion(.failure(NSError(domain: "VideoMerger", code: 6, userInfo: [NSLocalizedDescriptionKey: "Export failed with unknown status"])))
             }
         }

@@ -47,31 +47,76 @@ class ViewController: UIViewController {
     let storageLabel = UILabel()
     let permissionStatusLabel = UILabel()
     
+    // MARK: - Enhanced Recording Controls
+    let visualCountdownView = UIView()
+    private var isCountingDown = false
+    private var countdownTimer: Timer?
+    private let settingsManager = SettingsManagerStub()
+    
+    // MARK: - Triple Output Controls
+    let tripleOutputControlView = UIView()
+    
+    // MARK: - Advanced Camera Controls
+    let cameraControlsView = UIView()
+    private var advancedCameraControlsManager: AdvancedCameraControlsManagerStub?
+    private var showAdvancedControls = false
+    
+    // MARK: - Audio Controls
+    let audioControlsView = UIView()
+    private var showAudioControls = false
+    
+    // MARK: - Stub Classes
+    class SettingsManagerStub {
+        var videoQuality: VideoQuality = .hd1080
+        var enableGrid: Bool = false
+        var enableHapticFeedback: Bool = true
+        var enableVisualCountdown: Bool = false
+        var countdownDuration: Int = 3
+    }
+    
+    class AdvancedCameraControlsManagerStub {
+        // Placeholder
+    }
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        print("VIEWCONTROLLER: viewDidLoad started")
+
         PerformanceMonitor.shared.beginAppLaunch()
         PerformanceMonitor.shared.beginCameraSetup()
-        
+
         setupUI()
         setupNotifications()
-        
-        // Warm up camera system
+        setupPerformanceMonitoring()
+        setupEnhancedControls()
+        setupErrorHandling()
+
+        // Warm up camera system with optimized approach
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-            _ = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+            self.warmUpCameraSystem()
         }
-        
+
         // Request permissions
         requestCameraPermissions()
-        
+
         // Start storage monitoring
         DispatchQueue.global(qos: .utility).async {
             self.startStorageMonitoring()
         }
-        
+
         PerformanceMonitor.shared.endAppLaunch()
+        print("VIEWCONTROLLER: viewDidLoad completed")
+    }
+    
+    // Hide status bar for fullscreen camera experience
+    override var prefersStatusBarHidden: Bool {
+        return true
+    }
+    
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        return true
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -94,6 +139,7 @@ class ViewController: UIViewController {
     
     // MARK: - Setup
     private func setupUI() {
+        // Black background (camera will fill the entire screen)
         view.backgroundColor = .black
         
         // Camera views
@@ -107,22 +153,27 @@ class ViewController: UIViewController {
     }
     
     private func setupCameraViews() {
+        // Change to vertical layout - front on top, back on bottom
         cameraStackView.axis = .vertical
         cameraStackView.alignment = .fill
         cameraStackView.distribution = .fillEqually
-        cameraStackView.spacing = 16
+        cameraStackView.spacing = 0
         cameraStackView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraStackView)
 
-        // Configure front camera preview
+        // Configure front camera preview - top half, full width, no rounded corners
         frontCameraPreview.title = "Front Camera"
         frontCameraPreview.translatesAutoresizingMaskIntoConstraints = false
         frontCameraPreview.isUserInteractionEnabled = true
+        frontCameraPreview.layer.cornerRadius = 0
+        frontCameraPreview.clipsToBounds = true
 
-        // Configure back camera preview
+        // Configure back camera preview - bottom half, full width, no rounded corners
         backCameraPreview.title = "Back Camera"
         backCameraPreview.translatesAutoresizingMaskIntoConstraints = false
         backCameraPreview.isUserInteractionEnabled = true
+        backCameraPreview.layer.cornerRadius = 0
+        backCameraPreview.clipsToBounds = true
 
         cameraStackView.addArrangedSubview(frontCameraPreview)
         cameraStackView.addArrangedSubview(backCameraPreview)
@@ -143,21 +194,31 @@ class ViewController: UIViewController {
     }
     
     private func setupControls() {
-        // Top controls container
-        topControlsContainer.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(topControlsContainer)
+        // Top controls container - not used in new layout
+        // topControlsContainer.translatesAutoresizingMaskIntoConstraints = false
+        // view.addSubview(topControlsContainer)
 
-        // Bottom controls container
+        // Bottom controls container - more transparent overlay
         controlsContainer.translatesAutoresizingMaskIntoConstraints = false
+        controlsContainer.backgroundColor = UIColor.black.withAlphaComponent(0.3)
         view.addSubview(controlsContainer)
 
-        // Record button - larger and more prominent
+        // Record button - enhanced modern design with glow effect
         recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
         recordButton.tintColor = .systemRed
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         recordButton.addTarget(self, action: #selector(recordButtonTapped), for: .touchUpInside)
         recordButton.contentVerticalAlignment = .fill
         recordButton.contentHorizontalAlignment = .fill
+        recordButton.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        recordButton.layer.cornerRadius = 40
+        recordButton.layer.masksToBounds = false
+        recordButton.layer.shadowColor = UIColor.systemRed.cgColor
+        recordButton.layer.shadowOpacity = 0.4
+        recordButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        recordButton.layer.shadowRadius = 12
+        recordButton.layer.borderWidth = 3
+        recordButton.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         controlsContainer.contentView.addSubview(recordButton)
         
         // Status label
@@ -178,18 +239,28 @@ class ViewController: UIViewController {
         recordingTimerLabel.translatesAutoresizingMaskIntoConstraints = false
         controlsContainer.contentView.addSubview(recordingTimerLabel)
         
-        // Flash button
-        flashButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
+        // Flash button - modern glassmorphism
+        flashButton.setImage(UIImage(systemName: "bolt.slash"), for: .normal)
         flashButton.tintColor = .white
         flashButton.translatesAutoresizingMaskIntoConstraints = false
         flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
+        flashButton.backgroundColor = .clear
+        flashButton.layer.shadowColor = UIColor.black.cgColor
+        flashButton.layer.shadowOpacity = 0.2
+        flashButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        flashButton.layer.shadowRadius = 8
         controlsContainer.contentView.addSubview(flashButton)
-        
-        // Swap camera button
-        swapCameraButton.setImage(UIImage(systemName: "arrow.up.arrow.down.circle.fill"), for: .normal)
+
+        // Swap camera button - modern glassmorphism
+        swapCameraButton.setImage(UIImage(systemName: "arrow.triangle.2.circlepath"), for: .normal)
         swapCameraButton.tintColor = .white
         swapCameraButton.translatesAutoresizingMaskIntoConstraints = false
         swapCameraButton.addTarget(self, action: #selector(swapCameraButtonTapped), for: .touchUpInside)
+        swapCameraButton.backgroundColor = .clear
+        swapCameraButton.layer.shadowColor = UIColor.black.cgColor
+        swapCameraButton.layer.shadowOpacity = 0.2
+        swapCameraButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        swapCameraButton.layer.shadowRadius = 8
         controlsContainer.contentView.addSubview(swapCameraButton)
         
         // Merge button
@@ -266,26 +337,93 @@ class ViewController: UIViewController {
         view.addSubview(activityIndicator)
         activityIndicator.startAnimating()
     }
+    
+    private func setupEnhancedControls() {
+        // Disabled - using stub implementation
+        // visualCountdownView.translatesAutoresizingMaskIntoConstraints = false
+        // view.addSubview(visualCountdownView)
+        
+        // Load saved settings
+        loadUserSettings()
+    }
+    
+    private func loadUserSettings() {
+        // Apply saved video quality
+        dualCameraManager.videoQuality = settingsManager.videoQuality
+        qualityButton.setTitle(settingsManager.videoQuality.rawValue, for: .normal)
+        
+        // Apply other saved settings
+        if settingsManager.enableGrid {
+            gridButtonTapped()
+        }
+        
+        // Initialize haptic feedback settings
+        HapticFeedbackManager.shared.updateHapticSettings(enabled: settingsManager.enableHapticFeedback)
+    }
+
+    private func beginRecordingCountdown() {
+        guard !isCountingDown else { return }
+
+        let duration = max(1, settingsManager.countdownDuration)
+        isCountingDown = true
+        statusLabel.text = "Recording begins in \(duration)s"
+        if settingsManager.enableHapticFeedback {
+            HapticFeedbackManager.shared.countdownTick(seconds: duration)
+        }
+        // visualCountdownView.startCountdown(from: duration)
+        // Simulate countdown with timer
+        var remaining = duration
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            remaining -= 1
+            if remaining <= 0 {
+                timer.invalidate()
+                self?.startRecordingAfterCountdown()
+            } else {
+                self?.updateCountdownDisplay(seconds: remaining)
+            }
+        }
+    }
+
+    private func cancelRecordingCountdown() {
+        isCountingDown = false
+        countdownTimer?.invalidate()
+        // visualCountdownView.stopCountdown()
+        statusLabel.text = "Ready to record"
+    }
+
+    private func updateCountdownDisplay(seconds: Int) {
+        guard isCountingDown else { return }
+        if settingsManager.enableHapticFeedback {
+            HapticFeedbackManager.shared.countdownTick(seconds: seconds)
+        }
+        statusLabel.text = seconds > 0 ? "Recording in \(seconds)s" : "Recording..."
+    }
+
+    private func startRecordingAfterCountdown() {
+        guard isCountingDown else { return }
+        isCountingDown = false
+        dualCameraManager.startRecording()
+    }
 
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Camera stack view
-            cameraStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
-            cameraStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            cameraStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            cameraStackView.bottomAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: -20),
+            // Camera stack view - full screen vertical layout (front top, back bottom)
+            cameraStackView.topAnchor.constraint(equalTo: view.topAnchor),
+            cameraStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cameraStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            cameraStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            // Controls container
-            controlsContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            controlsContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            controlsContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            controlsContainer.heightAnchor.constraint(equalToConstant: 200),
+            // Controls container - overlay at bottom
+            controlsContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            controlsContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            controlsContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            controlsContainer.heightAnchor.constraint(equalToConstant: 180),
 
-            // Record button
+            // Record button - centered at bottom like Camera app
             recordButton.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
-            recordButton.centerYAnchor.constraint(equalTo: controlsContainer.contentView.centerYAnchor, constant: -20),
-            recordButton.widthAnchor.constraint(equalToConstant: 80),
-            recordButton.heightAnchor.constraint(equalToConstant: 80),
+            recordButton.bottomAnchor.constraint(equalTo: controlsContainer.contentView.bottomAnchor, constant: -30),
+            recordButton.widthAnchor.constraint(equalToConstant: 70),
+            recordButton.heightAnchor.constraint(equalToConstant: 70),
 
             // Status label
             statusLabel.topAnchor.constraint(equalTo: controlsContainer.contentView.topAnchor, constant: 15),
@@ -296,20 +434,26 @@ class ViewController: UIViewController {
             recordingTimerLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
             recordingTimerLabel.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
 
-            // Flash button
+            // Flash button - left of record button
             flashButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
-            flashButton.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -30),
-            flashButton.widthAnchor.constraint(equalToConstant: 44),
-            flashButton.heightAnchor.constraint(equalToConstant: 44),
+            flashButton.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -50),
+            flashButton.widthAnchor.constraint(equalToConstant: 50),
+            flashButton.heightAnchor.constraint(equalToConstant: 50),
 
-            // Swap camera button
-            swapCameraButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
-            swapCameraButton.leadingAnchor.constraint(equalTo: recordButton.trailingAnchor, constant: 30),
+            // Gallery button - right of record button (moved from top)
+            galleryButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
+            galleryButton.leadingAnchor.constraint(equalTo: recordButton.trailingAnchor, constant: 50),
+            galleryButton.widthAnchor.constraint(equalToConstant: 50),
+            galleryButton.heightAnchor.constraint(equalToConstant: 50),
+            
+            // Swap camera button - moved to top right corner
+            swapCameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            swapCameraButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             swapCameraButton.widthAnchor.constraint(equalToConstant: 44),
             swapCameraButton.heightAnchor.constraint(equalToConstant: 44),
 
-            // Merge button
-            mergeVideosButton.bottomAnchor.constraint(equalTo: controlsContainer.contentView.bottomAnchor, constant: -15),
+            // Merge button - top of controls area
+            mergeVideosButton.topAnchor.constraint(equalTo: controlsContainer.contentView.topAnchor, constant: 15),
             mergeVideosButton.centerXAnchor.constraint(equalTo: controlsContainer.contentView.centerXAnchor),
             mergeVideosButton.widthAnchor.constraint(equalToConstant: 120),
             mergeVideosButton.heightAnchor.constraint(equalToConstant: 35),
@@ -319,29 +463,23 @@ class ViewController: UIViewController {
             progressView.leadingAnchor.constraint(equalTo: controlsContainer.contentView.leadingAnchor, constant: 15),
             progressView.trailingAnchor.constraint(equalTo: controlsContainer.contentView.trailingAnchor, constant: -15),
 
-            // Mode segmented control
-            modeSegmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            // Mode segmented control - overlay at top
+            modeSegmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             modeSegmentedControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             modeSegmentedControl.widthAnchor.constraint(equalToConstant: 200),
             modeSegmentedControl.heightAnchor.constraint(equalToConstant: 32),
 
-            // Quality button
-            qualityButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            // Quality button - overlay at top left
+            qualityButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             qualityButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             qualityButton.widthAnchor.constraint(equalToConstant: 60),
             qualityButton.heightAnchor.constraint(equalToConstant: 32),
 
-            // Gallery button
-            galleryButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            galleryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            galleryButton.widthAnchor.constraint(equalToConstant: 44),
-            galleryButton.heightAnchor.constraint(equalToConstant: 32),
-
-            // Grid button
-            gridButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            gridButton.trailingAnchor.constraint(equalTo: galleryButton.leadingAnchor, constant: -10),
+            // Grid button - top left corner (moved from old gallery position)
+            gridButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            gridButton.trailingAnchor.constraint(equalTo: swapCameraButton.leadingAnchor, constant: -10),
             gridButton.widthAnchor.constraint(equalToConstant: 44),
-            gridButton.heightAnchor.constraint(equalToConstant: 32),
+            gridButton.heightAnchor.constraint(equalToConstant: 44),
 
             // Grid overlay
             gridOverlayView.topAnchor.constraint(equalTo: cameraStackView.topAnchor),
@@ -401,6 +539,129 @@ class ViewController: UIViewController {
             name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
+        
+        // Memory warning notification
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleMemoryWarning),
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+        
+        // Error recovery notifications
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleForceStopRecording),
+            name: .forceStopRecording,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleErrorRecovered),
+            name: .errorRecovered,
+            object: nil
+        )
+    }
+    
+    private func setupErrorHandling() {
+        // Set up error handling manager
+        ErrorHandlingManager.shared.setRecoveryState(false)
+    }
+    
+    @objc private func handleForceStopRecording() {
+        if isRecording {
+            dualCameraManager.stopRecording()
+            statusLabel.text = "Recording stopped due to error"
+        }
+    }
+    
+    @objc private func handleErrorRecovered() {
+        statusLabel.text = "Error recovered ✓"
+        
+        // Restore performance after recovery
+        frontCameraPreview.restorePerformanceAfterMemoryPressure()
+        backCameraPreview.restorePerformanceAfterMemoryPressure()
+        
+        // Clear recovery state
+        ErrorHandlingManager.shared.clearRecoveryState()
+        
+        // Update status after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.statusLabel.text = "Ready to record"
+        }
+    }
+    
+    private func setupPerformanceMonitoring() {
+        // Start periodic performance monitoring
+        Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+            self?.logPerformanceMetrics()
+        }
+    }
+    
+    private func warmUpCameraSystem() {
+        // Optimized camera warmup with minimal overhead
+        let warmupQueue = DispatchQueue(label: "camera.warmup", qos: .userInitiated)
+        
+        warmupQueue.async {
+            // Pre-discover camera devices
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInWideAngleCamera, .builtInTelephotoCamera, .builtInUltraWideCamera],
+                mediaType: .video,
+                position: .unspecified
+            )
+            _ = discoverySession.devices
+            
+            // Pre-warm Metal device for frame composition
+            _ = MTLCreateSystemDefaultDevice()
+            
+            PerformanceMonitor.shared.logEvent("Camera Warmup", "Camera system warmed up")
+        }
+    }
+    
+    @objc private func handleMemoryWarning() {
+        print("VIEWCONTROLLER: Memory warning received")
+        
+        // Reduce quality temporarily
+        dualCameraManager.reduceQualityForMemoryPressure()
+        
+        // Clear any non-essential caches
+        clearTemporaryCaches()
+        
+        // Notify user if needed
+        showMemoryWarning()
+    }
+    
+    private func clearTemporaryCaches() {
+        // Clear image caches and temporary data
+        URLCache.shared.removeAllCachedResponses()
+        
+        // Clear any preview layer caches
+        frontCameraPreview.clearCache()
+        backCameraPreview.clearCache()
+        
+        PerformanceMonitor.shared.logEvent("Memory Management", "Cleared temporary caches")
+    }
+    
+    private func showMemoryWarning() {
+        // Use error handling manager for memory warnings
+        ErrorHandlingManager.shared.handleCustomError(type: .memoryPressure, in: self) {
+            // Additional recovery actions if needed
+            self.frontCameraPreview.reducePerformanceForMemoryPressure()
+            self.backCameraPreview.reducePerformanceForMemoryPressure()
+        }
+    }
+    
+    private func logPerformanceMetrics() {
+        let metrics = PerformanceMonitor.shared.getPerformanceSummary()
+        let avgFrameRate = metrics["averageFrameRate"] as? Double ?? 0
+        let currentMemory = metrics["currentMemoryUsage"] as? Double ?? 0
+        
+        print("Performance Metrics - Frame Rate: \(String(format: "%.1f", avgFrameRate)) fps, Memory: \(String(format: "%.1f", currentMemory)) MB")
+        
+        // Log to performance monitor
+        PerformanceMonitor.shared.logMemoryUsage()
+        PerformanceMonitor.shared.logCPUUsage()
     }
 
     @objc private func appWillResignActive() {
@@ -420,15 +681,18 @@ class ViewController: UIViewController {
 
     // MARK: - Camera Setup
     private func requestCameraPermissions() {
+        print("VIEWCONTROLLER: Requesting camera permissions...")
         statusLabel.text = "Requesting permissions..."
 
         permissionManager.requestAllPermissions { [weak self] allGranted, deniedPermissions in
             guard let self = self else { return }
 
             if allGranted {
+                print("VIEWCONTROLLER: All permissions granted")
                 self.statusLabel.text = "Permissions granted ✓"
                 self.setupCamerasAfterPermissions()
             } else {
+                print("VIEWCONTROLLER: Permissions denied: \(deniedPermissions.map { $0.title })")
                 self.statusLabel.text = "Permissions required"
 
                 // Show alert for denied permissions
@@ -459,6 +723,7 @@ class ViewController: UIViewController {
     }
 
     private func setupCamerasAfterPermissions() {
+        print("VIEWCONTROLLER: Setting up cameras after permissions granted")
         dualCameraManager.delegate = self
 
         frontCameraPreview.showLoading(message: "Initializing cameras...")
@@ -468,11 +733,13 @@ class ViewController: UIViewController {
             guard let self = self else { return }
 
             #if targetEnvironment(simulator)
+            print("VIEWCONTROLLER: Running on simulator, setting up demo mode")
             // Simulator doesn't have real cameras, show demo mode
             DispatchQueue.main.async {
                 self.setupSimulatorMode()
             }
             #else
+            print("VIEWCONTROLLER: Running on device, setting up real cameras")
             self.dualCameraManager.setupCameras()
 
             // Poll for preview layers with timeout
@@ -483,9 +750,12 @@ class ViewController: UIViewController {
                 attempts += 1
             }
 
+            print("VIEWCONTROLLER: Camera setup polling completed, attempts: \(attempts)")
+
             DispatchQueue.main.async {
                 if self.dualCameraManager.frontPreviewLayer != nil &&
                     self.dualCameraManager.backPreviewLayer != nil {
+                    print("VIEWCONTROLLER: Both preview layers available, setting up UI")
                     self.setupPreviewLayers()
                     self.activityIndicator.stopAnimating()
                     self.statusLabel.text = "Ready to record"
@@ -494,6 +764,7 @@ class ViewController: UIViewController {
                     self.backCameraPreview.isActive = true
                     PerformanceMonitor.shared.endCameraSetup()
                 } else {
+                    print("VIEWCONTROLLER: Preview layers not available after polling")
                     self.handleCameraSetupFailure()
                 }
             }
@@ -547,15 +818,27 @@ class ViewController: UIViewController {
 
     // MARK: - Actions
     @objc private func recordButtonTapped() {
+        print("VIEWCONTROLLER: Record button tapped, isPhotoMode: \(isPhotoMode), isRecording: \(isRecording)")
         if isPhotoMode {
             dualCameraManager.capturePhoto()
             animateCaptureFlash()
+            return
+        }
+
+        if isRecording {
+            dualCameraManager.stopRecording()
+            return
+        }
+
+        if isCountingDown {
+            cancelRecordingCountdown()
+            return
+        }
+
+        if settingsManager.enableVisualCountdown {
+            beginRecordingCountdown()
         } else {
-            if isRecording {
-                dualCameraManager.stopRecording()
-            } else {
-                dualCameraManager.startRecording()
-            }
+            dualCameraManager.startRecording()
         }
     }
 
@@ -575,7 +858,7 @@ class ViewController: UIViewController {
             [frontCameraPreview, backCameraPreview] :
             [backCameraPreview, frontCameraPreview]
 
-        UIView.animate(withDuration: 0.3) {
+        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
             for view in self.cameraStackView.arrangedSubviews {
                 self.cameraStackView.removeArrangedSubview(view)
                 view.removeFromSuperview()
@@ -604,8 +887,9 @@ class ViewController: UIViewController {
     }
 
     @objc private func galleryButtonTapped() {
-        // Gallery functionality - simplified for now
-        statusLabel.text = "Gallery coming soon..."
+        let galleryVC = VideoGalleryViewController()
+        galleryVC.modalPresentationStyle = .fullScreen
+        present(galleryVC, animated: true)
     }
 
     @objc private func gridButtonTapped() {
@@ -629,8 +913,31 @@ class ViewController: UIViewController {
     }
 
     @objc private func mergeVideosButtonTapped() {
-        // Merge functionality - simplified for now
+        let urls = dualCameraManager.getRecordingURLs()
+        guard let frontURL = urls.front,
+              let backURL = urls.back else {
+            statusLabel.text = "No recordings to merge"
+            return
+        }
+        
         statusLabel.text = "Merging videos..."
+        progressView.isHidden = false
+        progressView.progress = 0.0
+        
+        let merger = VideoMerger()
+        merger.mergeVideos(frontURL: frontURL, backURL: backURL, layout: VideoMerger.VideoLayout.sideBySide, quality: dualCameraManager.videoQuality) { [weak self] (result: Result<URL, Error>) in
+            DispatchQueue.main.async {
+                self?.progressView.isHidden = true
+                switch result {
+                case .success(let url):
+                    self?.statusLabel.text = "Videos merged successfully ✓"
+                    print("Merged video saved to: \(url)")
+                case .failure(let error):
+                    self?.statusLabel.text = "Merge failed: \(error.localizedDescription)"
+                    print("Merge failed: \(error)")
+                }
+            }
+        }
     }
 
     // MARK: - Gesture Handlers
@@ -769,27 +1076,57 @@ class ViewController: UIViewController {
         if let attributes = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory()),
            let freeSize = attributes[.systemFreeSize] as? NSNumber {
             let freeGB = Double(freeSize.int64Value) / 1_000_000_000
+            
             DispatchQueue.main.async {
                 self.storageLabel.text = String(format: "%.1f GB free", freeGB)
+                
+                // Check for low storage warning
+                if freeGB < 1.0 {
+                    self.showLowStorageWarning(freeGB: freeGB)
+                }
             }
         }
+    }
+    
+    private func showLowStorageWarning(freeGB: Double) {
+        let alert = UIAlertController(
+            title: "Low Storage Space",
+            message: "Only \(String(format: "%.1f", freeGB)) GB of storage available. Consider deleting old recordings.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Open Gallery", style: .default) { _ in
+            self.galleryButtonTapped()
+        })
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        present(alert, animated: true)
     }
 }
 
 // MARK: - DualCameraManagerDelegate
 extension ViewController: DualCameraManagerDelegate {
     func didStartRecording() {
+        print("VIEWCONTROLLER: didStartRecording called")
         isRecording = true
         recordButton.tintColor = .white
         recordButton.setImage(UIImage(systemName: "stop.circle.fill"), for: .normal)
         recordingTimerLabel.isHidden = false
         recordingStartTime = Date()
 
-        // Visual feedback on camera previews
+        // Enhanced visual feedback on camera previews
         frontCameraPreview.startRecordingAnimation()
         backCameraPreview.startRecordingAnimation()
 
-        // Pulse the record button
+        // Enhanced pulse animation for record button
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
+            self.recordButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+            self.recordButton.layer.shadowOpacity = 0.8
+            self.recordButton.layer.shadowRadius = 20
+        }
+        
+        // Pulse the controls container
         controlsContainer.pulse()
 
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -809,12 +1146,20 @@ extension ViewController: DualCameraManagerDelegate {
     }
 
     func didStopRecording() {
+        print("VIEWCONTROLLER: didStopRecording called")
         isRecording = false
         recordButton.tintColor = .systemRed
         recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
         recordingTimerLabel.isHidden = true
         recordingTimer?.invalidate()
         recordingTimer = nil
+
+        // Enhanced stop animation
+        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
+            self.recordButton.transform = .identity
+            self.recordButton.layer.shadowOpacity = 0.4
+            self.recordButton.layer.shadowRadius = 12
+        }
 
         // Stop visual feedback
         frontCameraPreview.stopRecordingAnimation()

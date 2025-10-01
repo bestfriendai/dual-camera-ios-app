@@ -1,0 +1,6 @@
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:51:31: error: cannot find 'VisualCountdownView' in scope
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:54:35: error: cannot find 'SettingsManager' in scope
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:57:35: error: cannot find 'TripleOutputControlView' in scope
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:60:30: error: cannot find 'CameraControlsView' in scope
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:61:48: error: cannot find type 'AdvancedCameraControlsManager' in scope
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift:65:29: error: cannot find 'AudioControlsView' in scope

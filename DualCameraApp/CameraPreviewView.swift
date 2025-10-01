@@ -221,5 +221,45 @@ class CameraPreviewView: UIView {
         layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
         statusIndicator.backgroundColor = .systemGreen
     }
+    
+    // MARK: - Performance Management
+    
+    func clearCache() {
+        // Clear any cached images or resources
+        layer.sublayers?.forEach { layer in
+            if layer is AVCaptureVideoPreviewLayer {
+                // Don't remove preview layer, but clear any caches
+                layer.contents = nil
+            }
+        }
+        
+        // Reset any image caches
+        if let previewLayer = previewLayer {
+            previewLayer.connection?.automaticallyAdjustsVideoMirroring = false
+            previewLayer.connection?.automaticallyAdjustsVideoMirroring = true
+        }
+    }
+    
+    func reducePerformanceForMemoryPressure() {
+        // Reduce visual effects temporarily
+        layer.removeAllAnimations()
+        statusIndicator.layer.removeAllAnimations()
+        
+        // Reduce border complexity
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
+        
+        // Hide non-essential UI elements
+        focusIndicator.alpha = 0
+    }
+    
+    func restorePerformanceAfterMemoryPressure() {
+        // Restore visual effects
+        layer.borderWidth = 2
+        layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
+        
+        // Restore status indicator
+        updateStatusIndicator()
+    }
 }
 
