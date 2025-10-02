@@ -466,23 +466,28 @@ class FrameCompositor {
     private func composeSideBySide(front: CIImage, back: CIImage) -> CIImage {
         let halfWidth = renderSize.width / 2
         
+        // Create background first
+        let background = CIImage(color: CIColor.black)
+            .cropped(to: CGRect(origin: .zero, size: renderSize))
+        
         // Scale and position front camera (left side)
         let frontScaled = front
             .transformed(by: CGAffineTransform(scaleX: halfWidth / front.extent.width,
                                                y: renderSize.height / front.extent.height))
         
-        // Scale and position back camera (right side)
+        // Scale and position back camera (right side)  
         let backScaled = back
             .transformed(by: CGAffineTransform(scaleX: halfWidth / back.extent.width,
                                               y: renderSize.height / back.extent.height))
             .transformed(by: CGAffineTransform(translationX: halfWidth, y: 0))
         
-        // Create background
-        let background = CIImage(color: CIColor.black)
-            .cropped(to: CGRect(origin: .zero, size: renderSize))
+        // FIXED: Composite both cameras over the background
+        // First layer frontScaled over background, then backScaled over that result
+        // This creates proper side-by-side with both cameras visible
+        let withFront = frontScaled.composited(over: background)
+        let final = backScaled.composited(over: withFront)
         
-        // Composite both images
-        return backScaled.composited(over: frontScaled).composited(over: background)
+        return final
     }
     
     private func composePIP(front: CIImage, back: CIImage, 

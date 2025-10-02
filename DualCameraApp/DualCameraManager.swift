@@ -148,6 +148,10 @@ final class DualCameraManager: NSObject {
         guard !isSetupComplete else { return }
 
         print("DEBUG: Setting up cameras...")
+        
+        // Configure audio session for recording
+        configureAudioSession()
+        
         // Get devices immediately (fast operation)
         frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -469,6 +473,32 @@ final class DualCameraManager: NSObject {
         }
 
         print("DEBUG: ✅ Configuration complete - all outputs configured successfully")
+    }
+    
+    // MARK: - Audio Configuration
+    private func configureAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            
+            // Configure for recording with playback
+            try audioSession.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetooth])
+            
+            // Set preferred sample rate to 44.1kHz (standard for video)
+            try audioSession.setPreferredSampleRate(44100.0)
+            
+            // Set preferred I/O buffer duration to minimize latency
+            try audioSession.setPreferredIOBufferDuration(0.005)
+            
+            // Activate the session
+            try audioSession.setActive(true)
+            
+            print("DEBUG: ✅ Audio session configured for recording")
+            print("DEBUG: Audio session sample rate: \(audioSession.sampleRate)")
+            print("DEBUG: Audio session category: \(audioSession.category)")
+            
+        } catch {
+            print("DEBUG: ⚠️ Failed to configure audio session: \(error)")
+        }
     }
     
     // MARK: - Professional Camera Features
@@ -1050,12 +1080,29 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
     }
     
     private func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard let audioWriterInput = audioWriterInput,
-              audioWriterInput.isReadyForMoreMediaData else {
+        guard let audioWriterInput = audioWriterInput else {
+            print("DEBUG: ⚠️ Audio writer input is nil")
             return
         }
         
-        audioWriterInput.append(sampleBuffer)
+        guard audioWriterInput.isReadyForMoreMediaData else {
+            print("DEBUG: ⚠️ Audio writer input not ready for data")
+            return
+        }
+        
+        // Adjust audio timing to match video if needed
+        if let recordingStartTime = recordingStartTime {
+            let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            let relativeTime = CMTimeSubtract(presentationTime, recordingStartTime)
+            
+            // Only append audio if the time is valid
+            if relativeTime.seconds >= 0 {
+                audioWriterInput.append(sampleBuffer)
+            }
+        } else {
+            // If recording just started, append anyway
+            audioWriterInput.append(sampleBuffer)
+        }
     }
 
     private func processFramePair(front: CMSampleBuffer, back: CMSampleBuffer) {
