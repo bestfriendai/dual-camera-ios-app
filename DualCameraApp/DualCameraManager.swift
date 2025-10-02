@@ -719,8 +719,19 @@ final class DualCameraManager: NSObject {
                 print("DEBUG: Cannot start recording - setupComplete: \(self.isSetupComplete), alreadyRecording: \(self.isRecording)")
                 return
             }
+            
+            // CRITICAL: Check if session is running before recording
+            guard let session = self.captureSession, session.isRunning else {
+                print("DEBUG: ⚠️ CRITICAL: Cannot start recording - camera session not running!")
+                DispatchQueue.main.async {
+                    let error = DualCameraError.configurationFailed("Camera session not running. Please restart the app.")
+                    ErrorHandlingManager.shared.handleError(error)
+                    self.delegate?.didFailWithError(error)
+                }
+                return
+            }
 
-            print("DEBUG: Starting recording... session running: \(self.captureSession?.isRunning ?? false)")
+            print("DEBUG: ✅ Starting recording... session running: \(session.isRunning)")
             
             // Performance monitoring
             PerformanceMonitor.shared.beginRecording()

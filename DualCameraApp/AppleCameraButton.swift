@@ -9,6 +9,10 @@ import UIKit
 
 class AppleCameraButton: UIButton {
     
+    convenience init() {
+        self.init(frame: .zero)
+    }
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupAppleStyle()
@@ -19,8 +23,20 @@ class AppleCameraButton: UIButton {
         setupAppleStyle()
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if let imageView = self.imageView {
+            bringSubviewToFront(imageView)
+        }
+        if let titleLabel = self.titleLabel {
+            bringSubviewToFront(titleLabel)
+        }
+    }
+    
     private func setupAppleStyle() {
         tintColor = .white
+        backgroundColor = .clear
+        imageView?.contentMode = .center
         
         let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
         let blurView = UIVisualEffectView(effect: blurEffect)
@@ -28,8 +44,11 @@ class AppleCameraButton: UIButton {
         blurView.layer.cornerRadius = 20
         blurView.clipsToBounds = true
         blurView.translatesAutoresizingMaskIntoConstraints = false
+        blurView.tag = 9999
         
-        insertSubview(blurView, at: 0)
+        if viewWithTag(9999) == nil {
+            insertSubview(blurView, at: 0)
+        }
         
         NSLayoutConstraint.activate([
             blurView.topAnchor.constraint(equalTo: topAnchor),
@@ -39,28 +58,37 @@ class AppleCameraButton: UIButton {
         ])
         
         layer.cornerRadius = 20
-        clipsToBounds = true
+        clipsToBounds = false
+        
+        if let imageView = self.imageView {
+            imageView.tintColor = .white
+            bringSubviewToFront(imageView)
+        }
+        if let titleLabel = self.titleLabel {
+            titleLabel.textColor = .white
+            bringSubviewToFront(titleLabel)
+        }
         
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium, scale: .medium)
         setPreferredSymbolConfiguration(config, forImageIn: .normal)
+        
+        adjustsImageWhenHighlighted = false
         
         addTarget(self, action: #selector(touchDown), for: .touchDown)
         addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1) {
+        UIView.animate(withDuration: 0.1, animations: {
             self.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
-            self.alpha = 0.6
-        }
+        }, completion: nil)
         HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, animations: {
             self.transform = .identity
-            self.alpha = 1.0
-        }
+        }, completion: nil)
     }
 }
 
@@ -79,17 +107,15 @@ class AppleRecordButton: UIButton {
     }
     
     private func setupRecordButton() {
-        // Apple's record button: Simple white circle
         backgroundColor = .white
-        layer.cornerRadius = 35 // Will be 70x70
+        layer.cornerRadius = 35
+        clipsToBounds = false
         
-        // Shadow for depth
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOffset = CGSize(width: 0, height: 3)
         layer.shadowRadius = 10
         layer.shadowOpacity = 0.3
         
-        // Touch feedback
         addTarget(self, action: #selector(touchDown), for: .touchDown)
         addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
     }
