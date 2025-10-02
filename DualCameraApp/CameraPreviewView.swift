@@ -42,14 +42,34 @@ class CameraPreviewView: UIView {
         }
     }
     
+    private var isFullySetup = false
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupView()
-        startFPSMonitoring()
+        setupMinimalView()
+        // Defer heavy setup to avoid blocking app launch
     }
-    
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        setupMinimalView()
+        // Defer heavy setup to avoid blocking app launch
+    }
+
+    private func setupMinimalView() {
+        // Only essential setup for initial display
+        backgroundColor = UIColor(white: 0.05, alpha: 1.0)
+        layer.cornerRadius = 24
+        layer.cornerCurve = .continuous
+        layer.masksToBounds = true
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
+    }
+
+    func completeSetup() {
+        guard !isFullySetup else { return }
+        isFullySetup = true
+
         setupView()
         startFPSMonitoring()
     }
@@ -196,7 +216,6 @@ class CameraPreviewView: UIView {
         layer.sublayers?.first(where: { $0 is AVCaptureVideoPreviewLayer })?.removeFromSuperlayer()
         
         previewLayer.videoGravity = .resizeAspectFill
-        previewLayer.frame = bounds
         
         if let connection = previewLayer.connection, connection.isVideoOrientationSupported {
             connection.videoOrientation = .portrait
@@ -205,10 +224,15 @@ class CameraPreviewView: UIView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         layer.insertSublayer(previewLayer, at: 0)
+        previewLayer.frame = bounds
         CATransaction.commit()
         
+        setNeedsLayout()
+        layoutIfNeeded()
+        
         DispatchQueue.main.async {
-            previewLayer.frame = self.bounds
+            self.setNeedsLayout()
+            self.layoutIfNeeded()
         }
         
         placeholderLabel.isHidden = true
@@ -220,10 +244,35 @@ class CameraPreviewView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        previewLayer?.frame = bounds
-        CATransaction.commit()
+        if let previewLayer = previewLayer {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            previewLayer.frame = bounds
+            
+            if let connection = previewLayer.connection, connection.isVideoOrientationSupported {
+                let orientation: AVCaptureVideoOrientation
+                if #available(iOS 13.0, *) {
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    switch windowScene?.interfaceOrientation {
+                    case .portrait:
+                        orientation = .portrait
+                    case .portraitUpsideDown:
+                        orientation = .portraitUpsideDown
+                    case .landscapeLeft:
+                        orientation = .landscapeLeft
+                    case .landscapeRight:
+                        orientation = .landscapeRight
+                    default:
+                        orientation = .portrait
+                    }
+                } else {
+                    orientation = .portrait
+                }
+                connection.videoOrientation = orientation
+            }
+            
+            CATransaction.commit()
+        }
         
         let statusPath = UIBezierPath(
             arcCenter: CGPoint(x: 4, y: 4),
@@ -392,6 +441,11 @@ class CameraPreviewView: UIView {
         placeholderLabel.textColor = .white.withAlphaComponent(0.8)
         placeholderLabel.isHidden = false
         loadingIndicator.startAnimating()
+    }
+    
+    func hideLoading() {
+        placeholderLabel.isHidden = true
+        loadingIndicator.stopAnimating()
     }
     
     func clearCache() {

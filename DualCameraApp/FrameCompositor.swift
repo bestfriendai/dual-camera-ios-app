@@ -133,6 +133,7 @@ class FrameCompositor {
         let startTime = CACurrentMediaTime()
         
         if shouldDropFrame() {
+            print("DEBUG: ⚠️ Dropping frame due to performance")
             return nil
         }
         
@@ -149,7 +150,6 @@ class FrameCompositor {
         case .sideBySide:
             composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
         case .pictureInPicture:
-            // Use proper PIP with front camera in bottom-right corner, medium size
             composedImage = composePIP(front: processedFrontImage, back: processedBackImage, 
                                       position: .bottomRight, size: .medium)
         case .frontPrimary:
@@ -159,6 +159,7 @@ class FrameCompositor {
         }
         
         guard let result = renderToPixelBuffer(composedImage) else {
+            print("DEBUG: ⚠️ Failed to render composed frame to pixel buffer")
             return nil
         }
         
@@ -581,12 +582,14 @@ class FrameCompositor {
     private func renderToPixelBuffer(_ image: CIImage) -> CVPixelBuffer? {
         var pixelBuffer: CVPixelBuffer?
         
-        // Try to use pool first for better performance
         if let pool = pixelBufferPool {
-            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
+            let status = CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
+            if status != kCVReturnSuccess {
+                print("DEBUG: ⚠️ Failed to get pixel buffer from pool: \(status)")
+                pixelBuffer = nil
+            }
         }
         
-        // Fallback to creating new buffer if pool fails
         if pixelBuffer == nil {
             let attrs = [
                 kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue as Any,
@@ -602,15 +605,14 @@ class FrameCompositor {
                                             attrs,
                                             &pixelBuffer)
             
-            guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
-                print("Failed to create pixel buffer: \(status)")
+            guard status == kCVReturnSuccess, pixelBuffer != nil else {
+                print("DEBUG: ⚠️ Failed to create pixel buffer: \(status)")
                 return nil
             }
         }
         
         guard let buffer = pixelBuffer else { return nil }
         
-        // Render with performance optimization
         ciContext.render(image,
                         to: buffer,
                         bounds: CGRect(origin: .zero, size: renderSize),
@@ -637,6 +639,22 @@ class FrameCompositor {
         frameProcessingTimes.removeAll()
         currentQualityLevel = 1.0
         lastPerformanceCheck = 0
+    }
+    
+    deinit {
+        if let pool = pixelBufferPool {
+            CVPixelBufferPoolFlush(pool, .excessBuffers)
+        }
+        metalCommandQueue = nil
+        renderPipelineState = nil
+        textureCache = nil
+        pixelBufferPool = nil
+    }
+    
+    func flushBufferPool() {
+        if let pool = pixelBufferPool {
+            CVPixelBufferPoolFlush(pool, .excessBuffers)
+        }
     }
 }
 

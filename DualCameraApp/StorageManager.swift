@@ -102,7 +102,7 @@ class StorageManager {
     
     private func checkStorageStatus() {
         let (usedSpace, availableSpace) = getStorageInfo()
-        let totalSpace = usedSpace + availableSpace
+        _ = usedSpace + availableSpace
         
         // Record in history
         storageHistory.append((Date(), usedSpace, availableSpace))

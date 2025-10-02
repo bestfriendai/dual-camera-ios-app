@@ -122,7 +122,18 @@ enum ErrorSeverity {
 class ErrorHandlingManager {
     static let shared = ErrorHandlingManager()
     
+    private var errorLog: [(error: DualCameraErrorType, timestamp: Date)] = []
+    private let maxLogSize = 100
+    
     private init() {}
+    
+    func getRecentErrors(limit: Int = 10) -> [(error: DualCameraErrorType, timestamp: Date)] {
+        Array(errorLog.prefix(limit))
+    }
+    
+    func clearErrorLog() {
+        errorLog.removeAll()
+    }
     
     // MARK: - Error Handling
     
@@ -338,17 +349,22 @@ class ErrorHandlingManager {
     private func logError(_ error: Error, type: DualCameraErrorType) {
         print("ERROR: \(type.title) - \(error.localizedDescription)")
         
-        // Log to performance monitor
-        PerformanceMonitor.shared.logEvent("Error", "\(type.rawValue): \(error.localizedDescription)")
+        errorLog.insert((error: type, timestamp: Date()), at: 0)
+        if errorLog.count > maxLogSize {
+            errorLog.removeLast()
+        }
         
-        // In a production app, you would also log to a crash reporting service
-        // like Crashlytics or Sentry
+        PerformanceMonitor.shared.logEvent("Error", "\(type.rawValue): \(error.localizedDescription)")
     }
     
     private func logCustomError(_ type: DualCameraErrorType) {
         print("ERROR: \(type.title) - \(type.userFriendlyMessage)")
         
-        // Log to performance monitor
+        errorLog.insert((error: type, timestamp: Date()), at: 0)
+        if errorLog.count > maxLogSize {
+            errorLog.removeLast()
+        }
+        
         PerformanceMonitor.shared.logEvent("Error", "\(type.rawValue): \(type.userFriendlyMessage)")
     }
     

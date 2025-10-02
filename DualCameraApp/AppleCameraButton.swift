@@ -28,12 +28,17 @@ class AppleCameraButton: UIButton {
         
         if let imageView = self.imageView {
             imageView.tintColor = .white
+            imageView.isUserInteractionEnabled = false
             bringSubviewToFront(imageView)
         }
         if let titleLabel = self.titleLabel {
             titleLabel.textColor = .white
+            titleLabel.isUserInteractionEnabled = false
             bringSubviewToFront(titleLabel)
         }
+        
+        // Ensure button can receive touches
+        self.isUserInteractionEnabled = true
     }
     
     private func setupAppleStyle() {
@@ -78,21 +83,21 @@ class AppleCameraButton: UIButton {
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium, scale: .medium)
         setPreferredSymbolConfiguration(config, forImageIn: .normal)
         
-        adjustsImageWhenHighlighted = false
+        isUserInteractionEnabled = true
         
-        addTarget(self, action: #selector(touchDown), for: .touchDown)
-        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        addTarget(self, action: #selector(touchDown), for: [.touchDown, .touchDragEnter])
+        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1, animations: {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
             self.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
         }, completion: nil)
         HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, animations: {
+        UIView.animate(withDuration: 0.15, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut], animations: {
             self.transform = .identity
         }, completion: nil)
     }
@@ -126,8 +131,10 @@ class AppleRecordButton: UIButton {
         layer.borderWidth = 3
         layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         
-        addTarget(self, action: #selector(touchDown), for: .touchDown)
-        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        isUserInteractionEnabled = true
+        
+        addTarget(self, action: #selector(touchDown), for: [.touchDown, .touchDragEnter])
+        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
     }
     
     func setRecording(_ recording: Bool, animated: Bool = true) {
@@ -155,19 +162,19 @@ class AppleRecordButton: UIButton {
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
             self.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        }
+        })
         HapticFeedbackManager.shared.mediumImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut], animations: {
             if self.isRecording {
                 self.transform = CGAffineTransform(scaleX: 0.6, y: 0.6)
             } else {
                 self.transform = .identity
             }
-        }
+        })
     }
 }

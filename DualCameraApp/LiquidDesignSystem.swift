@@ -329,8 +329,8 @@ final class ModernLiquidGlassButton: UIButton {
             contentContainer.bottomAnchor.constraint(equalTo: vibrancyEffectView.contentView.bottomAnchor)
         ])
         
-        addTarget(self, action: #selector(touchDown), for: .touchDown)
-        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        addTarget(self, action: #selector(touchDown), for: [.touchDown, .touchDragEnter])
+        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
     }
     
     override func layoutSubviews() {
@@ -341,6 +341,7 @@ final class ModernLiquidGlassButton: UIButton {
         
         if let imageView = self.imageView {
             imageView.tintColor = .white
+            imageView.isUserInteractionEnabled = false
             if imageView.superview != contentContainer {
                 imageView.removeFromSuperview()
                 contentContainer.addSubview(imageView)
@@ -349,24 +350,27 @@ final class ModernLiquidGlassButton: UIButton {
         
         if let titleLabel = self.titleLabel {
             titleLabel.textColor = .white
+            titleLabel.isUserInteractionEnabled = false
         }
+        
+        // Ensure button can receive touches
+        self.isUserInteractionEnabled = true
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
             self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
             self.glowLayer.shadowOpacity = 0.5
-        }
+        })
         
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
             self.transform = .identity
             self.glowLayer.shadowOpacity = 0
-        }
+        })
     }
     
     private func updateGradient() {

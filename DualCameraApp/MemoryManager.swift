@@ -97,8 +97,7 @@ class MemoryManager {
             object: nil
         )
         
-        // Start periodic memory checks
-        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        _ = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             self?.checkMemoryUsage()
         }
         
@@ -479,9 +478,17 @@ class MemoryManager {
         os_signpost(.event, log: log, name: name, "%{public}s", message)
     }
     
+    func forceCleanup() {
+        pixelBufferPools.removeAll()
+        poolAttributes.removeAll()
+        memoryUsageHistory.removeAll()
+        os_log("Forced memory cleanup completed", log: log, type: .info)
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
         memoryPressureHandler?.cancel()
+        pixelBufferPools.removeAll()
     }
 }
 

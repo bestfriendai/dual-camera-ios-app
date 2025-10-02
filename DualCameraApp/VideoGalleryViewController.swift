@@ -6,6 +6,7 @@ class VideoGalleryViewController: UIViewController {
     
     private let collectionView: UICollectionView
     private var videoURLs: [URL] = []
+    private var gradientLayer: CAGradientLayer?
     
     init() {
         let layout = UICollectionViewFlowLayout()
@@ -28,18 +29,27 @@ class VideoGalleryViewController: UIViewController {
         loadVideos()
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        gradientLayer?.frame = view.bounds
+        CATransaction.commit()
+    }
+    
     private func setupUI() {
-        // Modern dark theme background
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [
+        let gradient = CAGradientLayer()
+        gradient.colors = [
             UIColor(hex: "0A0A0F").cgColor,
             UIColor(hex: "0F0F1A").cgColor,
             UIColor(hex: "1A1A2E").cgColor
         ]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint = CGPoint(x: 0, y: 1)
-        gradientLayer.frame = view.bounds
-        view.layer.insertSublayer(gradientLayer, at: 0)
+        gradient.startPoint = CGPoint(x: 0, y: 0)
+        gradient.endPoint = CGPoint(x: 0, y: 1)
+        gradient.frame = view.bounds
+        view.layer.insertSublayer(gradient, at: 0)
+        gradientLayer = gradient
 
         title = "Video Gallery"
 
@@ -183,25 +193,15 @@ class VideoCell: UICollectionViewCell {
     }
     
     private func setupUI() {
-        // Modern glassmorphism styling
         contentView.backgroundColor = .clear
         contentView.layer.cornerRadius = 16
-        contentView.layer.masksToBounds = false
+        contentView.clipsToBounds = true
 
-        // Glassmorphism background
         let glassmorphismView = UIView()
         glassmorphismView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
         glassmorphismView.layer.cornerRadius = 16
-        glassmorphismView.layer.masksToBounds = false
         glassmorphismView.layer.borderWidth = 1
         glassmorphismView.layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
-
-        // Subtle shadow
-        glassmorphismView.layer.shadowColor = UIColor.black.cgColor
-        glassmorphismView.layer.shadowOpacity = 0.3
-        glassmorphismView.layer.shadowOffset = CGSize(width: 0, height: 4)
-        glassmorphismView.layer.shadowRadius = 8
-
         glassmorphismView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(glassmorphismView)
 
@@ -216,7 +216,7 @@ class VideoCell: UICollectionViewCell {
         durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         durationLabel.textAlignment = .center
         durationLabel.layer.cornerRadius = 8
-        durationLabel.layer.masksToBounds = true
+        durationLabel.clipsToBounds = true
         durationLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(durationLabel)
 
@@ -226,28 +226,25 @@ class VideoCell: UICollectionViewCell {
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(nameLabel)
 
-        // Glassmorphism view constraints
         NSLayoutConstraint.activate([
             glassmorphismView.topAnchor.constraint(equalTo: contentView.topAnchor),
             glassmorphismView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             glassmorphismView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             glassmorphismView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-        ])
-        
-        NSLayoutConstraint.activate([
-            thumbnailImageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            thumbnailImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            thumbnailImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            thumbnailImageView.bottomAnchor.constraint(equalTo: nameLabel.topAnchor, constant: -5),
             
-            durationLabel.bottomAnchor.constraint(equalTo: thumbnailImageView.bottomAnchor, constant: -5),
-            durationLabel.trailingAnchor.constraint(equalTo: thumbnailImageView.trailingAnchor, constant: -5),
-            durationLabel.widthAnchor.constraint(equalToConstant: 50),
+            thumbnailImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            thumbnailImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4),
+            thumbnailImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
+            thumbnailImageView.bottomAnchor.constraint(equalTo: nameLabel.topAnchor, constant: -4),
+            
+            durationLabel.bottomAnchor.constraint(equalTo: thumbnailImageView.bottomAnchor, constant: -8),
+            durationLabel.trailingAnchor.constraint(equalTo: thumbnailImageView.trailingAnchor, constant: -8),
             durationLabel.heightAnchor.constraint(equalToConstant: 20),
+            durationLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 50),
             
-            nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5),
-            nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -5),
-            nameLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            nameLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
             nameLabel.heightAnchor.constraint(equalToConstant: 30)
         ])
     }

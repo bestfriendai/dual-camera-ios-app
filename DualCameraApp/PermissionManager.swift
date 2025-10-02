@@ -9,6 +9,8 @@ import AVFoundation
 import Photos
 import UIKit
 
+// MARK: - Permission Types
+
 enum PermissionType {
     case camera
     case microphone
@@ -42,26 +44,73 @@ enum PermissionStatus {
 }
 
 class PermissionManager {
-    
+
     static let shared = PermissionManager()
-    
+
+    // Cache permission status to avoid redundant checks
+    private var cachedCameraStatus: PermissionStatus?
+    private var cachedMicrophoneStatus: PermissionStatus?
+    private var cachedPhotoLibraryStatus: PermissionStatus?
+    private var lastPermissionCheckTime: Date?
+    private let cacheValidityDuration: TimeInterval = 2.0 // Cache valid for 2 seconds
+
     private init() {}
     
     // MARK: - Permission Status Checks
-    
+
     func cameraPermissionStatus() -> PermissionStatus {
+        // Use cache if valid
+        if let cached = cachedCameraStatus, isCacheValid() {
+            return cached
+        }
+
         let status = AVCaptureDevice.authorizationStatus(for: .video)
-        return convertAVAuthorizationStatus(status)
+        let permissionStatus = convertAVAuthorizationStatus(status)
+        cachedCameraStatus = permissionStatus
+        updateCacheTime()
+        return permissionStatus
     }
-    
+
     func microphonePermissionStatus() -> PermissionStatus {
+        // Use cache if valid
+        if let cached = cachedMicrophoneStatus, isCacheValid() {
+            return cached
+        }
+
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
-        return convertAVAuthorizationStatus(status)
+        let permissionStatus = convertAVAuthorizationStatus(status)
+        cachedMicrophoneStatus = permissionStatus
+        updateCacheTime()
+        return permissionStatus
     }
-    
+
     func photoLibraryPermissionStatus() -> PermissionStatus {
+        // Use cache if valid
+        if let cached = cachedPhotoLibraryStatus, isCacheValid() {
+            return cached
+        }
+
         let status = PHPhotoLibrary.authorizationStatus()
-        return convertPHAuthorizationStatus(status)
+        let permissionStatus = convertPHAuthorizationStatus(status)
+        cachedPhotoLibraryStatus = permissionStatus
+        updateCacheTime()
+        return permissionStatus
+    }
+
+    private func isCacheValid() -> Bool {
+        guard let lastCheck = lastPermissionCheckTime else { return false }
+        return Date().timeIntervalSince(lastCheck) < cacheValidityDuration
+    }
+
+    private func updateCacheTime() {
+        lastPermissionCheckTime = Date()
+    }
+
+    private func invalidateCache() {
+        cachedCameraStatus = nil
+        cachedMicrophoneStatus = nil
+        cachedPhotoLibraryStatus = nil
+        lastPermissionCheckTime = nil
     }
     
     private func convertAVAuthorizationStatus(_ status: AVAuthorizationStatus) -> PermissionStatus {
@@ -98,6 +147,7 @@ class PermissionManager {
     
     func requestCameraPermission(completion: @escaping (Bool) -> Void) {
         print("DEBUG: Requesting camera permission...")
+        invalidateCache() // Invalidate cache before requesting
         AVCaptureDevice.requestAccess(for: .video) { granted in
             print("DEBUG: Camera permission granted: \(granted)")
             DispatchQueue.main.async {
@@ -105,9 +155,10 @@ class PermissionManager {
             }
         }
     }
-    
+
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
         print("DEBUG: Requesting microphone permission...")
+        invalidateCache() // Invalidate cache before requesting
         AVCaptureDevice.requestAccess(for: .audio) { granted in
             print("DEBUG: Microphone permission granted: \(granted)")
             DispatchQueue.main.async {
@@ -118,12 +169,83 @@ class PermissionManager {
 
     func requestPhotoLibraryPermission(completion: @escaping (Bool) -> Void) {
         print("DEBUG: Requesting photo library permission...")
+        invalidateCache() // Invalidate cache before requesting
         PHPhotoLibrary.requestAuthorization { status in
             let granted = status == .authorized || status == .limited
             print("DEBUG: Photo library permission granted: \(granted) (status: \(status))")
             DispatchQueue.main.async {
                 completion(granted)
             }
+        }
+    }
+
+    // MARK: - Parallel Permission Requests (OPTIMIZED)
+
+    /// Request all permissions in parallel for faster UX
+    func requestAllPermissionsParallel(completion: @escaping (Bool, [PermissionType]) -> Void) {
+        print("DEBUG: Requesting all permissions in parallel...")
+        invalidateCache()
+
+        let dispatchGroup = DispatchGroup()
+        var deniedPermissions: [PermissionType] = []
+        let syncQueue = DispatchQueue(label: "PermissionManager.Sync")
+
+        // Check current status first
+        let currentCameraStatus = cameraPermissionStatus()
+        let currentMicStatus = microphonePermissionStatus()
+        let currentPhotoStatus = photoLibraryPermissionStatus()
+
+        // Request camera permission if needed
+        if currentCameraStatus == .notDetermined {
+            dispatchGroup.enter()
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                if !granted {
+                    syncQueue.async {
+                        deniedPermissions.append(.camera)
+                    }
+                }
+                dispatchGroup.leave()
+            }
+        } else if currentCameraStatus != .authorized {
+            deniedPermissions.append(.camera)
+        }
+
+        // Request microphone permission if needed
+        if currentMicStatus == .notDetermined {
+            dispatchGroup.enter()
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                if !granted {
+                    syncQueue.async {
+                        deniedPermissions.append(.microphone)
+                    }
+                }
+                dispatchGroup.leave()
+            }
+        } else if currentMicStatus != .authorized {
+            deniedPermissions.append(.microphone)
+        }
+
+        // Request photo library permission if needed
+        if currentPhotoStatus == .notDetermined {
+            dispatchGroup.enter()
+            PHPhotoLibrary.requestAuthorization { status in
+                let granted = status == .authorized || status == .limited
+                if !granted {
+                    syncQueue.async {
+                        deniedPermissions.append(.photoLibrary)
+                    }
+                }
+                dispatchGroup.leave()
+            }
+        } else if currentPhotoStatus != .authorized {
+            deniedPermissions.append(.photoLibrary)
+        }
+
+        // Wait for all requests to complete
+        dispatchGroup.notify(queue: .main) {
+            let allGranted = deniedPermissions.isEmpty
+            print("DEBUG: All permissions completed - granted: \(allGranted), denied: \(deniedPermissions)")
+            completion(allGranted, deniedPermissions)
         }
     }
     

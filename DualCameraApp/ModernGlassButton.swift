@@ -99,9 +99,9 @@ class ModernGlassButton: UIButton {
             contentContainer.bottomAnchor.constraint(equalTo: vibrancyEffectView.contentView.bottomAnchor)
         ])
         
-        // Touch animations
-        addTarget(self, action: #selector(touchDown), for: .touchDown)
-        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        // Touch animations - critical: use all touch events for reliable feedback
+        addTarget(self, action: #selector(touchDown), for: [.touchDown, .touchDragEnter])
+        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
     }
     
     override func layoutSubviews() {
@@ -111,6 +111,7 @@ class ModernGlassButton: UIButton {
         // Ensure imageView is in vibrancy container with proper color
         if let imageView = self.imageView {
             imageView.tintColor = .white
+            imageView.isUserInteractionEnabled = false
             if imageView.superview != contentContainer {
                 imageView.removeFromSuperview()
                 contentContainer.addSubview(imageView)
@@ -120,25 +121,29 @@ class ModernGlassButton: UIButton {
         // Ensure title label has proper color
         if let titleLabel = self.titleLabel {
             titleLabel.textColor = .white
+            titleLabel.isUserInteractionEnabled = false
         }
+        
+        // Ensure button itself can receive touches
+        self.isUserInteractionEnabled = true
     }
     
     @objc private func touchDown() {
-        // Spring animation on touch
-        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
+        // Spring animation on touch - with beginFromCurrentState for interruption handling
+        UIView.animate(withDuration: 0.15, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut], animations: {
             self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
             self.glowLayer.shadowOpacity = 0.5
-        }
+        })
         
         // Haptic feedback
         HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+        UIView.animate(withDuration: 0.3, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut], animations: {
             self.transform = .identity
             self.glowLayer.shadowOpacity = 0
-        }
+        })
     }
     
     private func updateAppearance() {

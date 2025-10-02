@@ -217,9 +217,8 @@ class ModernPermissionManager: ObservableObject {
     
     @available(iOS 17.0, *)
     private func requestPhotosWithRationale() async throws -> Bool {
-        // Show privacy rationale if needed
-        if shouldShowRationale(for: .photos) {
-            try await showPrivacyRationale(for: .photos)
+        if shouldShowRationale(for: .photoLibrary) {
+            try await showPrivacyRationale(for: .photoLibrary)
         }
         
         return try await withCheckedThrowingContinuation { continuation in
@@ -401,6 +400,14 @@ struct DetailedPermissions {
     let camera: CameraPermissionInfo
     let microphone: MicrophonePermissionInfo
     let photos: PhotosPermissionInfo
+    
+    init(camera: CameraPermissionInfo = CameraPermissionInfo(status: .notDetermined, capabilities: CameraCapabilities()),
+         microphone: MicrophonePermissionInfo = MicrophonePermissionInfo(status: .notDetermined),
+         photos: PhotosPermissionInfo = PhotosPermissionInfo(status: .notDetermined, accessLevel: .unknown)) {
+        self.camera = camera
+        self.microphone = microphone
+        self.photos = photos
+    }
 }
 
 struct CameraPermissionInfo {
@@ -449,11 +456,7 @@ struct PermissionRequestResult {
     }
 }
 
-enum PermissionType {
-    case camera
-    case microphone
-    case photos
-}
+
 
 struct PermissionAnalytics {
     let currentState: PermissionState

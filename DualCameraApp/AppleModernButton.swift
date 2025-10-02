@@ -116,14 +116,17 @@ class AppleModernButton: UIButton {
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveEaseOut, .allowUserInteraction], animations: {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState], animations: {
             self.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
             self.alpha = 0.8
         })
+        
+        // Haptic feedback
+        HapticFeedbackManager.shared.lightImpact()
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .allowUserInteraction], animations: {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState], animations: {
             self.transform = .identity
             self.alpha = 1.0
         })

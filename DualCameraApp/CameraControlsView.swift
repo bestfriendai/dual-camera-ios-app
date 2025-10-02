@@ -762,7 +762,6 @@ class ModernSlider: UIControl {
     }
     
     func setValue(_ newValue: Float, animated: Bool) {
-        let oldValue = value
         value = newValue
         
         if animated {

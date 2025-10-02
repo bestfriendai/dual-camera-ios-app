@@ -90,7 +90,7 @@ class AudioManager: NSObject {
             let audioSession = AVAudioSession.sharedInstance()
             
             // Set category to play and record
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
             
             // Set preferred sample rate and buffer duration
             try audioSession.setPreferredSampleRate(44100.0)
@@ -221,10 +221,10 @@ class AudioManager: NSObject {
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
                 
             case .bluetooth:
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.allowBluetoothA2DP])
                 
             case .headset:
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.allowAirPlay, .allowBluetooth])
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.allowAirPlay, .allowBluetoothA2DP])
                 
             case .usb:
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
@@ -277,7 +277,7 @@ class AudioManager: NSObject {
     // MARK: - Audio Level Monitoring
     
     func startAudioLevelMonitoring() {
-        stopAudioLevelMonitoring() // Stop any existing timer
+        stopAudioLevelMonitoring()
         
         audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.updateAudioLevel()
@@ -371,7 +371,7 @@ class AudioManager: NSObject {
             let audioSession = AVAudioSession.sharedInstance()
             
             // Set category for recording
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
             
             // Set preferred sample rate and buffer duration for recording
             try audioSession.setPreferredSampleRate(44100.0)

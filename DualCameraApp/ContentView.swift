@@ -769,8 +769,11 @@ struct CameraPreviewViewWrapper: UIViewRepresentable {
         let view = FocusableCameraView()
         view.onTap = onTap
         if let layer = previewLayer {
-            layer.frame = view.bounds
             view.layer.addSublayer(layer)
+            layer.videoGravity = .resizeAspectFill
+            DispatchQueue.main.async {
+                layer.frame = view.bounds
+            }
         }
         return view
     }
@@ -778,7 +781,10 @@ struct CameraPreviewViewWrapper: UIViewRepresentable {
     func updateUIView(_ uiView: FocusableCameraView, context: Context) {
         uiView.onTap = onTap
         if let layer = previewLayer {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
             layer.frame = uiView.bounds
+            CATransaction.commit()
         }
     }
 }
@@ -799,6 +805,19 @@ class FocusableCameraView: UIView {
     private func setupTapGesture() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         addGestureRecognizer(tapGesture)
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        layer.sublayers?.forEach { sublayer in
+            if let previewLayer = sublayer as? AVCaptureVideoPreviewLayer {
+                previewLayer.frame = bounds
+            }
+        }
+        CATransaction.commit()
     }
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
