@@ -1322,9 +1322,9 @@ extension ViewController: DualCameraManagerDelegate {
         backCameraPreview.isActive = true
         PerformanceMonitor.shared.endCameraSetup()
         
-        // CRITICAL: Start the camera session immediately after setup
-        print("VIEWCONTROLLER: Starting camera sessions after setup...")
-        dualCameraManager.startSessions()
+        // Session is already started by DualCameraManager.setupCameras()
+        // No need to call startSessions() again
+        print("VIEWCONTROLLER: Camera preview should now be visible")
         
         // Complete startup optimization
         StartupOptimizer.shared.completeStartup()

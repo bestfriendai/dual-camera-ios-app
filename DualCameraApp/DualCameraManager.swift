@@ -111,7 +111,7 @@ final class DualCameraManager: NSObject {
         case overlay
     }
     
-    var recordingLayout: RecordingLayout = .sideBySide
+    var recordingLayout: RecordingLayout = .pictureInPicture  // Changed to PIP mode
     var enableTripleOutput: Bool = true
     var tripleOutputMode: TripleOutputMode = .allFiles
     
@@ -149,16 +149,10 @@ final class DualCameraManager: NSObject {
 
         print("DEBUG: Setting up cameras...")
         
-        // Configure audio session for recording
-        configureAudioSession()
-        
         // Get devices immediately (fast operation)
         frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         audioDevice = AVCaptureDevice.default(for: .audio)
-        
-        // Configure professional features for cameras
-        configureCameraProfessionalFeatures()
 
         print("DEBUG: Front camera: \(frontCamera?.localizedName ?? "nil")")
         print("DEBUG: Back camera: \(backCamera?.localizedName ?? "nil")")
@@ -167,33 +161,42 @@ final class DualCameraManager: NSObject {
         guard frontCamera != nil, backCamera != nil else {
             let error = DualCameraError.missingDevices
             DispatchQueue.main.async {
-                // Use error handling manager
                 ErrorHandlingManager.shared.handleError(error)
                 self.delegate?.didFailWithError(error)
             }
             return
         }
 
-        // Use ASYNC instead of sync - don't block!
+        // Do ALL heavy work on background queue - don't block main thread!
         sessionQueue.async {
+            // Configure audio session on background thread
+            self.configureAudioSession()
+            
+            // Configure professional features on background thread
+            self.configureCameraProfessionalFeatures()
+            
             do {
                 try self.configureSession()
                 self.isSetupComplete = true
 
-                // CRITICAL FIX: Start session immediately after setup
-                if let session = self.captureSession, !session.isRunning {
-                    print("DEBUG: ✅ Starting capture session automatically after setup")
-                    session.startRunning()
-                }
-
-                // Notify on main thread
+                // CRITICAL: Notify delegate FIRST so UI can show preview layers immediately
                 DispatchQueue.main.async {
+                    print("DEBUG: ✅ Camera setup complete - notifying delegate BEFORE starting session")
                     self.delegate?.didUpdateVideoQuality(to: self.videoQuality)
                     self.delegate?.didFinishCameraSetup()
                 }
+
+                // Then start session on background thread (won't block UI)
+                if let session = self.captureSession, !session.isRunning {
+                    print("DEBUG: ✅ Starting capture session automatically after setup")
+                    session.startRunning()
+                    
+                    DispatchQueue.main.async {
+                        print("DEBUG: ✅ Capture session is now running: \(session.isRunning)")
+                    }
+                }
             } catch {
                 DispatchQueue.main.async {
-                    // Use error handling manager
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
                 }
@@ -509,15 +512,20 @@ final class DualCameraManager: NSObject {
                 try frontCamera.lockForConfiguration()
                 
                 // Enable Center Stage (auto-framing feature)
-                if AVCaptureDevice.isCenterStageEnabled {
-                    if #available(iOS 15.4, *) {
-                        frontCamera.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
-                        print("DEBUG: ✅ Face-driven autofocus enabled (Center Stage compatible)")
-                    } else {
-                        print("DEBUG: ✅ Center Stage available but requires iOS 15.4+ for full features")
-                    }
+                if frontCamera.isCenterStageActive {
+                    print("DEBUG: ✅ Center Stage is already active")
                 } else {
-                    print("DEBUG: ℹ️ Center Stage not available on this device")
+                    // Try to enable Center Stage globally
+                    if #available(iOS 14.5, *) {
+                        // Enable Center Stage (it will only work if device supports it)
+                        AVCaptureDevice.isCenterStageEnabled = true
+                        print("DEBUG: ✅ Attempted to enable Center Stage")
+                        
+                        if #available(iOS 15.4, *) {
+                            frontCamera.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+                            print("DEBUG: ✅ Face-driven autofocus enabled")
+                        }
+                    }
                 }
                 
                 frontCamera.unlockForConfiguration()
@@ -1081,27 +1089,39 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
     
     private func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard let audioWriterInput = audioWriterInput else {
-            print("DEBUG: ⚠️ Audio writer input is nil")
             return
         }
         
         guard audioWriterInput.isReadyForMoreMediaData else {
-            print("DEBUG: ⚠️ Audio writer input not ready for data")
             return
         }
         
-        // Adjust audio timing to match video if needed
+        // Adjust audio timing to match video recording start time
         if let recordingStartTime = recordingStartTime {
             let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
             let relativeTime = CMTimeSubtract(presentationTime, recordingStartTime)
             
-            // Only append audio if the time is valid
+            // Only append audio if the time is valid and positive
             if relativeTime.seconds >= 0 {
-                audioWriterInput.append(sampleBuffer)
+                // Need to adjust the sample buffer timing to match our relative time
+                var timingInfo = CMSampleTimingInfo(
+                    duration: CMSampleBufferGetDuration(sampleBuffer),
+                    presentationTimeStamp: relativeTime,
+                    decodeTimeStamp: .invalid
+                )
+                
+                var timingArray = [timingInfo]
+                if let adjustedBuffer = try? CMSampleBuffer(copying: sampleBuffer, 
+                                                             withNewTiming: timingArray) {
+                    audioWriterInput.append(adjustedBuffer)
+                } else {
+                    // Fallback: append original if adjustment fails
+                    audioWriterInput.append(sampleBuffer)
+                }
             }
         } else {
-            // If recording just started, append anyway
-            audioWriterInput.append(sampleBuffer)
+            // No video frames yet, wait for video to establish start time
+            return
         }
     }
 
@@ -1120,7 +1140,8 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
 
         // Initialize compositor if needed
         if frameCompositor == nil {
-            frameCompositor = FrameCompositor(layout: .sideBySide, quality: activeVideoQuality)
+            // Use pictureInPicture layout by default (matches recordingLayout)
+            frameCompositor = FrameCompositor(layout: .pictureInPicture, quality: activeVideoQuality)
         }
 
         let presentationTime = CMSampleBufferGetPresentationTimeStamp(front)
@@ -1128,14 +1149,22 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
         // Set recording start time on first frame
         if recordingStartTime == nil {
             recordingStartTime = presentationTime
+            print("DEBUG: First frame received - setting recording start time: \(CMTimeGetSeconds(presentationTime))s")
         }
 
-        // Calculate relative time
+        // Calculate relative time from start
         guard let startTime = recordingStartTime else {
             PerformanceMonitor.shared.endFrameProcessing()
             return
         }
         let relativeTime = CMTimeSubtract(presentationTime, startTime)
+        
+        // Ensure time is valid and positive
+        guard relativeTime.seconds >= 0 else {
+            print("DEBUG: ⚠️ Negative relative time: \(relativeTime.seconds)s - skipping frame")
+            PerformanceMonitor.shared.endFrameProcessing()
+            return
+        }
 
         // Compose frames with performance monitoring
         guard let composedBuffer = frameCompositor?.composite(
@@ -1250,11 +1279,13 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
                 return
             }
             
+            // Start session at source time zero for proper duration calculation
             writer.startSession(atSourceTime: .zero)
 
             isWriting = true
+            // Reset recording start time so first frame sets it properly
             recordingStartTime = nil
-            print("DEBUG: ✅ Asset writer started successfully")
+            print("DEBUG: ✅ Asset writer started successfully (session time: .zero)")
 
         } catch {
             print("DEBUG: ⚠️ Failed to setup asset writer: \(error)")

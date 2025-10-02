@@ -149,7 +149,9 @@ class FrameCompositor {
         case .sideBySide:
             composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
         case .pictureInPicture:
-            composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
+            // Use proper PIP with front camera in bottom-right corner, medium size
+            composedImage = composePIP(front: processedFrontImage, back: processedBackImage, 
+                                      position: .bottomRight, size: .medium)
         case .frontPrimary:
             composedImage = composePrimary(primary: processedFrontImage, secondary: processedBackImage)
         case .backPrimary:
