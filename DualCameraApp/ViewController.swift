@@ -54,6 +54,7 @@ class ViewController: UIViewController {
     
     // MARK: - Triple Output Controls
     let tripleOutputControlView = UIView()
+    let tripleOutputButton = AppleCameraButton()
     
     // MARK: - Advanced Camera Controls
     let cameraControlsView = UIView()
@@ -63,6 +64,7 @@ class ViewController: UIViewController {
     // MARK: - Audio Controls
     let audioControlsView = UIView()
     private var showAudioControls = false
+    let audioSourceButton = AppleCameraButton()
     
     // MARK: - Stub Classes
     class SettingsManagerStub {
@@ -81,32 +83,31 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        print("VIEWCONTROLLER: viewDidLoad started")
-
+        StartupOptimizer.shared.beginStartupOptimization()
         PerformanceMonitor.shared.beginAppLaunch()
         PerformanceMonitor.shared.beginCameraSetup()
 
         setupUI()
-        setupNotifications()
-        setupPerformanceMonitoring()
-        setupEnhancedControls()
-        setupErrorHandling()
-
-        // Warm up camera system with optimized approach
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.warmUpCameraSystem()
+        
+        DispatchQueue.main.async {
+            self.setupNotifications()
+            self.setupErrorHandling()
         }
-
-        // Request permissions
+        
+        StartupOptimizer.shared.beginPhase(.permissionCheck)
         requestCameraPermissions()
 
-        // Start storage monitoring
         DispatchQueue.global(qos: .utility).async {
-            self.startStorageMonitoring()
+            self.warmUpCameraSystem()
+            
+            DispatchQueue.main.async {
+                self.startStorageMonitoring()
+                self.setupEnhancedControls()
+                self.setupPerformanceMonitoring()
+            }
         }
 
         PerformanceMonitor.shared.endAppLaunch()
-        print("VIEWCONTROLLER: viewDidLoad completed")
     }
     
     // Hide status bar for fullscreen camera experience
@@ -120,8 +121,11 @@ class ViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        print("VIEWCONTROLLER: viewWillAppear - cameraSetupComplete: \(isCameraSetupComplete)")
         if isCameraSetupComplete {
             dualCameraManager.startSessions()
+        } else {
+            print("VIEWCONTROLLER: Camera not setup yet, will start when setup completes")
         }
     }
     
@@ -256,21 +260,22 @@ class ViewController: UIViewController {
         view.addSubview(statusLabel)
         
         // Flash button - Apple minimal
-        flashButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
+        let flashImg = UIImage(systemName: "bolt.slash.fill")?.withRenderingMode(.alwaysTemplate)
+        flashButton.setImage(flashImg, for: .normal)
+        flashButton.tintColor = .white
+        flashButton.imageView?.tintColor = .white
         flashButton.translatesAutoresizingMaskIntoConstraints = false
         flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         view.addSubview(flashButton)
 
         // Swap camera button - modern glassmorphism
-        swapCameraButton.setImage(UIImage(systemName: "arrow.triangle.2.circlepath"), for: .normal)
+        let swapImg = UIImage(systemName: "arrow.triangle.2.circlepath")?.withRenderingMode(.alwaysTemplate)
+        swapCameraButton.setImage(swapImg, for: .normal)
         swapCameraButton.tintColor = .white
+        swapCameraButton.imageView?.tintColor = .white
         swapCameraButton.translatesAutoresizingMaskIntoConstraints = false
         swapCameraButton.addTarget(self, action: #selector(swapCameraButtonTapped), for: .touchUpInside)
         swapCameraButton.backgroundColor = .clear
-        swapCameraButton.layer.shadowColor = UIColor.black.cgColor
-        swapCameraButton.layer.shadowOpacity = 0.2
-        swapCameraButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        swapCameraButton.layer.shadowRadius = 8
         view.addSubview(swapCameraButton)
         
         // Merge button - iOS 26 style
@@ -298,15 +303,38 @@ class ViewController: UIViewController {
         qualityButton.addTarget(self, action: #selector(qualityButtonTapped), for: .touchUpInside)
         view.addSubview(qualityButton)
         
-        galleryButton.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
+        let galleryImg = UIImage(systemName: "photo.on.rectangle")?.withRenderingMode(.alwaysTemplate)
+        galleryButton.setImage(galleryImg, for: .normal)
+        galleryButton.tintColor = .white
+        galleryButton.imageView?.tintColor = .white
         galleryButton.translatesAutoresizingMaskIntoConstraints = false
         galleryButton.addTarget(self, action: #selector(galleryButtonTapped), for: .touchUpInside)
         view.addSubview(galleryButton)
         
-        gridButton.setImage(UIImage(systemName: "grid"), for: .normal)
+        let gridImg = UIImage(systemName: "grid")?.withRenderingMode(.alwaysTemplate)
+        gridButton.setImage(gridImg, for: .normal)
+        gridButton.tintColor = .white
+        gridButton.imageView?.tintColor = .white
         gridButton.translatesAutoresizingMaskIntoConstraints = false
         gridButton.addTarget(self, action: #selector(gridButtonTapped), for: .touchUpInside)
         view.addSubview(gridButton)
+        
+        // Triple output mode button
+        tripleOutputButton.setTitle("All", for: .normal)
+        tripleOutputButton.setTitleColor(.white, for: .normal)
+        tripleOutputButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        tripleOutputButton.translatesAutoresizingMaskIntoConstraints = false
+        tripleOutputButton.addTarget(self, action: #selector(tripleOutputButtonTapped), for: .touchUpInside)
+        view.addSubview(tripleOutputButton)
+        
+        // Audio source button
+        let micImg = UIImage(systemName: "mic.fill")?.withRenderingMode(.alwaysTemplate)
+        audioSourceButton.setImage(micImg, for: .normal)
+        audioSourceButton.tintColor = .white
+        audioSourceButton.imageView?.tintColor = .white
+        audioSourceButton.translatesAutoresizingMaskIntoConstraints = false
+        audioSourceButton.addTarget(self, action: #selector(audioSourceButtonTapped), for: .touchUpInside)
+        view.addSubview(audioSourceButton)
         
         modeSegmentedControl.selectedSegmentIndex = 0
         modeSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
@@ -485,6 +513,18 @@ class ViewController: UIViewController {
             gridButton.trailingAnchor.constraint(equalTo: swapCameraButton.leadingAnchor, constant: -12),
             gridButton.widthAnchor.constraint(equalToConstant: 40),
             gridButton.heightAnchor.constraint(equalToConstant: 40),
+            
+            // Triple output button - below quality button
+            tripleOutputButton.topAnchor.constraint(equalTo: qualityButton.bottomAnchor, constant: 12),
+            tripleOutputButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            tripleOutputButton.widthAnchor.constraint(equalToConstant: 50),
+            tripleOutputButton.heightAnchor.constraint(equalToConstant: 40),
+            
+            // Audio source button - below triple output button
+            audioSourceButton.topAnchor.constraint(equalTo: tripleOutputButton.bottomAnchor, constant: 12),
+            audioSourceButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            audioSourceButton.widthAnchor.constraint(equalToConstant: 40),
+            audioSourceButton.heightAnchor.constraint(equalToConstant: 40),
 
             // Grid overlay
             gridOverlayView.topAnchor.constraint(equalTo: cameraStackView.topAnchor),
@@ -598,9 +638,10 @@ class ViewController: UIViewController {
     }
     
     private func setupPerformanceMonitoring() {
-        // Start periodic performance monitoring
-        Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
-            self?.logPerformanceMetrics()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+                self?.logPerformanceMetrics()
+            }
         }
     }
     
@@ -729,6 +770,9 @@ class ViewController: UIViewController {
 
     private func setupCamerasAfterPermissions() {
         print("VIEWCONTROLLER: Setting up cameras after permissions granted")
+        
+        StartupOptimizer.shared.beginPhase(.cameraDiscovery)
+        
         dualCameraManager.delegate = self
         
         dualCameraManager.enableTripleOutput = true
@@ -745,6 +789,7 @@ class ViewController: UIViewController {
             // Simulator doesn't have real cameras, show demo mode
             DispatchQueue.main.async {
                 self.setupSimulatorMode()
+                StartupOptimizer.shared.completeStartup()
             }
             #else
             print("VIEWCONTROLLER: Running on device, setting up real cameras")
@@ -754,15 +799,30 @@ class ViewController: UIViewController {
     }
 
     private func setupPreviewLayers() {
+        print("VIEWCONTROLLER: Setting up preview layers")
+        
         guard let frontLayer = dualCameraManager.frontPreviewLayer,
               let backLayer = dualCameraManager.backPreviewLayer else {
+            print("VIEWCONTROLLER: ⚠️ Preview layers not available")
             handleCameraSetupFailure()
             return
         }
 
-        // Assign preview layers to custom preview views
+        print("VIEWCONTROLLER: Assigning preview layers to views")
+        
+        // CRITICAL FIX: Assign preview layers and force layout
         frontCameraPreview.previewLayer = frontLayer
         backCameraPreview.previewLayer = backLayer
+        
+        // Force immediate layout to ensure frames are correct
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+        
+        // Update preview layer frames to match view bounds
+        frontLayer.frame = frontCameraPreview.bounds
+        backLayer.frame = backCameraPreview.bounds
+        
+        print("VIEWCONTROLLER: ✅ Preview layers assigned - Front: \(frontCameraPreview.bounds), Back: \(backCameraPreview.bounds)")
     }
 
     private func setupSimulatorMode() {
@@ -799,7 +859,15 @@ class ViewController: UIViewController {
 
     // MARK: - Actions
     @objc private func recordButtonTapped() {
-        print("VIEWCONTROLLER: Record button tapped, isPhotoMode: \(isPhotoMode), isRecording: \(isRecording)")
+        print("VIEWCONTROLLER: Record button tapped, isPhotoMode: \(isPhotoMode), isRecording: \(isRecording), cameraSetupComplete: \(isCameraSetupComplete)")
+        
+        // CRITICAL: Check if camera is ready
+        guard isCameraSetupComplete else {
+            print("VIEWCONTROLLER: ⚠️ Camera not ready yet")
+            statusLabel.text = "Camera initializing..."
+            return
+        }
+        
         if isPhotoMode {
             dualCameraManager.capturePhoto()
             animateCaptureFlash()
@@ -807,6 +875,7 @@ class ViewController: UIViewController {
         }
 
         if isRecording {
+            print("VIEWCONTROLLER: Stopping recording...")
             dualCameraManager.stopRecording()
             return
         }
@@ -816,6 +885,7 @@ class ViewController: UIViewController {
             return
         }
 
+        print("VIEWCONTROLLER: Starting recording...")
         if settingsManager.enableVisualCountdown {
             beginRecordingCountdown()
         } else {
@@ -826,7 +896,10 @@ class ViewController: UIViewController {
     @objc private func flashButtonTapped() {
         dualCameraManager.toggleFlash()
         let imageName = dualCameraManager.isFlashOn ? "bolt.fill" : "bolt.slash.fill"
-        flashButton.setImage(UIImage(systemName: imageName), for: .normal)
+        let flashImg = UIImage(systemName: imageName)?.withRenderingMode(.alwaysTemplate)
+        flashButton.setImage(flashImg, for: .normal)
+        flashButton.tintColor = dualCameraManager.isFlashOn ? .systemYellow : .white
+        flashButton.imageView?.tintColor = dualCameraManager.isFlashOn ? .systemYellow : .white
     }
 
     @objc private func swapCameraButtonTapped() {
@@ -877,6 +950,47 @@ class ViewController: UIViewController {
         isGridVisible.toggle()
         gridOverlayView.isHidden = !isGridVisible
         gridButton.tintColor = isGridVisible ? .systemYellow : .white
+    }
+    
+    @objc private func tripleOutputButtonTapped() {
+        let alert = UIAlertController(title: "Triple Output Mode", message: "Choose which files to save during recording", preferredStyle: .actionSheet)
+        
+        alert.addAction(UIAlertAction(title: "All Files (Front, Back, Combined)", style: .default) { [weak self] _ in
+            self?.dualCameraManager.tripleOutputMode = .allFiles
+            self?.tripleOutputButton.setTitle("All", for: .normal)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Combined Only", style: .default) { [weak self] _ in
+            self?.dualCameraManager.tripleOutputMode = .combinedOnly
+            self?.tripleOutputButton.setTitle("1x", for: .normal)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Front & Back Only", style: .default) { [weak self] _ in
+            self?.dualCameraManager.tripleOutputMode = .frontBackOnly
+            self?.tripleOutputButton.setTitle("2x", for: .normal)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    @objc private func audioSourceButtonTapped() {
+        let alert = UIAlertController(title: "Audio Source", message: "Select the microphone to use for recording", preferredStyle: .actionSheet)
+        
+        alert.addAction(UIAlertAction(title: "Built-in Microphone", style: .default) { [weak self] _ in
+            self?.audioSourceButton.tintColor = .white
+        })
+        
+        alert.addAction(UIAlertAction(title: "Bluetooth Microphone", style: .default) { [weak self] _ in
+            self?.audioSourceButton.tintColor = .systemBlue
+        })
+        
+        alert.addAction(UIAlertAction(title: "Headset Microphone", style: .default) { [weak self] _ in
+            self?.audioSourceButton.tintColor = .systemGreen
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
 
     @objc private func modeChanged() {
@@ -1091,8 +1205,12 @@ extension ViewController: DualCameraManagerDelegate {
     func didStartRecording() {
         print("VIEWCONTROLLER: didStartRecording called")
         isRecording = true
-        recordButton.tintColor = .white
-        recordButton.setImage(UIImage(systemName: "stop.circle.fill"), for: .normal)
+        
+        // CRITICAL FIX: Update the AppleRecordButton visual state
+        recordButton.setRecording(true, animated: true)
+        
+        // Show timer blur view
+        timerBlurView.isHidden = false
         recordingTimerLabel.isHidden = false
         recordingStartTime = Date()
 
@@ -1100,21 +1218,12 @@ extension ViewController: DualCameraManagerDelegate {
         frontCameraPreview.startRecordingAnimation()
         backCameraPreview.startRecordingAnimation()
 
-        // Enhanced pulse animation for record button
-        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
-            self.recordButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
-            self.recordButton.layer.shadowOpacity = 0.8
-            self.recordButton.layer.shadowRadius = 20
-        }
-        
-        // Pulse the controls container
-
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, let startTime = self.recordingStartTime else { return }
             let elapsed = Int(Date().timeIntervalSince(startTime))
             let minutes = elapsed / 60
             let seconds = elapsed % 60
-            self.recordingTimerLabel.text = String(format: "🔴 %02d:%02d", minutes, seconds)
+            self.recordingTimerLabel.text = String(format: "%02d:%02d", minutes, seconds)
         }
 
         statusLabel.text = "Recording..."
@@ -1123,23 +1232,22 @@ extension ViewController: DualCameraManagerDelegate {
         swapCameraButton.isEnabled = false
         qualityButton.isEnabled = false
         modeSegmentedControl.isEnabled = false
+        tripleOutputButton.isEnabled = false
+        audioSourceButton.isEnabled = false
     }
 
     func didStopRecording() {
         print("VIEWCONTROLLER: didStopRecording called")
         isRecording = false
-        recordButton.tintColor = .systemRed
-        recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
+        
+        // CRITICAL FIX: Update the AppleRecordButton visual state
+        recordButton.setRecording(false, animated: true)
+        
+        // Hide timer blur view
+        timerBlurView.isHidden = true
         recordingTimerLabel.isHidden = true
         recordingTimer?.invalidate()
         recordingTimer = nil
-
-        // Enhanced stop animation
-        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
-            self.recordButton.transform = .identity
-            self.recordButton.layer.shadowOpacity = 0.4
-            self.recordButton.layer.shadowRadius = 12
-        }
 
         // Stop visual feedback
         frontCameraPreview.stopRecordingAnimation()
@@ -1153,6 +1261,8 @@ extension ViewController: DualCameraManagerDelegate {
         swapCameraButton.isEnabled = true
         qualityButton.isEnabled = true
         modeSegmentedControl.isEnabled = true
+        tripleOutputButton.isEnabled = true
+        audioSourceButton.isEnabled = true
 
         // Show success feedback
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -1211,6 +1321,17 @@ extension ViewController: DualCameraManagerDelegate {
         frontCameraPreview.isActive = true
         backCameraPreview.isActive = true
         PerformanceMonitor.shared.endCameraSetup()
+        
+        // CRITICAL: Start the camera session immediately after setup
+        print("VIEWCONTROLLER: Starting camera sessions after setup...")
+        dualCameraManager.startSessions()
+        
+        // Complete startup optimization
+        StartupOptimizer.shared.completeStartup()
+        
+        // Log startup metrics
+        let metrics = StartupOptimizer.shared.getStartupMetrics()
+        print("STARTUP METRICS: \(metrics)")
     }
 }
 

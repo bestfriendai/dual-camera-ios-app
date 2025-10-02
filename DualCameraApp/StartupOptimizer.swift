@@ -199,34 +199,14 @@ class StartupOptimizer {
     func optimizePermissionCheck() -> Bool {
         beginPhase(.permissionCheck)
         
-        // Check permissions in parallel
-        let group = DispatchGroup()
-        var hasAllPermissions = true
+        let cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        let audioStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         
-        // Camera permission
-        group.enter()
-        AVCaptureDevice.requestAccess(for: .video) { granted in
-            if !granted {
-                hasAllPermissions = false
-            }
-            group.leave()
-        }
-        
-        // Microphone permission
-        group.enter()
-        AVCaptureDevice.requestAccess(for: .audio) { granted in
-            if !granted {
-                hasAllPermissions = false
-            }
-            group.leave()
-        }
-        
-        // Wait with timeout
-        let result = group.wait(timeout: .now() + 0.5)
+        let hasAllPermissions = cameraStatus == .authorized && audioStatus == .authorized
         
         endPhase(.permissionCheck)
         
-        return result == .success && hasAllPermissions
+        return hasAllPermissions
     }
     
     // MARK: - Camera Setup Optimization

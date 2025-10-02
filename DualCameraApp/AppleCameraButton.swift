@@ -25,16 +25,18 @@ class AppleCameraButton: UIButton {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        
         if let imageView = self.imageView {
+            imageView.tintColor = .white
             bringSubviewToFront(imageView)
         }
         if let titleLabel = self.titleLabel {
+            titleLabel.textColor = .white
             bringSubviewToFront(titleLabel)
         }
     }
     
     private func setupAppleStyle() {
-        tintColor = .white
         backgroundColor = .clear
         imageView?.contentMode = .center
         
@@ -42,6 +44,7 @@ class AppleCameraButton: UIButton {
         let blurView = UIVisualEffectView(effect: blurEffect)
         blurView.isUserInteractionEnabled = false
         blurView.layer.cornerRadius = 20
+        blurView.layer.cornerCurve = .continuous
         blurView.clipsToBounds = true
         blurView.translatesAutoresizingMaskIntoConstraints = false
         blurView.tag = 9999
@@ -58,15 +61,18 @@ class AppleCameraButton: UIButton {
         ])
         
         layer.cornerRadius = 20
+        layer.cornerCurve = .continuous
         clipsToBounds = false
+        
+        tintColor = .white
+        setTitleColor(.white, for: .normal)
         
         if let imageView = self.imageView {
             imageView.tintColor = .white
-            bringSubviewToFront(imageView)
         }
         if let titleLabel = self.titleLabel {
             titleLabel.textColor = .white
-            bringSubviewToFront(titleLabel)
+            titleLabel.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         }
         
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium, scale: .medium)
@@ -109,12 +115,16 @@ class AppleRecordButton: UIButton {
     private func setupRecordButton() {
         backgroundColor = .white
         layer.cornerRadius = 35
+        layer.cornerCurve = .continuous
         clipsToBounds = false
         
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOffset = CGSize(width: 0, height: 3)
-        layer.shadowRadius = 10
-        layer.shadowOpacity = 0.3
+        layer.shadowOffset = CGSize(width: 0, height: 4)
+        layer.shadowRadius = 12
+        layer.shadowOpacity = 0.4
+        
+        layer.borderWidth = 3
+        layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         
         addTarget(self, action: #selector(touchDown), for: .touchDown)
         addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])

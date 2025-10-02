@@ -414,24 +414,13 @@ class PerformanceMonitor {
     }
     
     private func updateRealTimeMetrics() {
-        // Update CPU usage
-        let cpuUsage = getCurrentCPUUsage()
-        cpuUsageBuffer.append(cpuUsage)
-        if cpuUsageBuffer.count > maxCpuSamples {
-            cpuUsageBuffer.removeFirst()
-        }
-        addToHistory("cpuUsage", value: cpuUsage)
-        
-        // Update memory usage
         let memoryUsage = getCurrentMemoryUsage()
         addToHistory("memoryUsage", value: memoryUsage)
         
-        // Update GPU metrics if available
         if let device = metalDevice {
             updateGPUMetrics(device: device)
         }
         
-        // Check for performance issues
         checkPerformanceThresholds()
     }
     
@@ -473,25 +462,17 @@ class PerformanceMonitor {
     }
     
     private func checkPerformanceThresholds() {
-        // Check CPU usage
-        if let avgCpu = cpuUsageBuffer.last, avgCpu > 80 {
-            recordBottleneck("High CPU Usage")
-        }
-        
-        // Check memory usage
         let currentMemory = getCurrentMemoryUsage()
-        if currentMemory > 300 { // 300MB threshold
+        if currentMemory > 300 {
             recordBottleneck("High Memory Usage")
         }
         
-        // Check thermal state
         if thermalState == .serious || thermalState == .critical {
             recordBottleneck("Thermal Throttling")
         }
         
-        // Check frame rate stability
         let frameRateStability = getFrameRateStability()
-        if frameRateStability < 95 { // 95% stability threshold
+        if frameRateStability < 90 {
             recordBottleneck("Frame Rate Instability")
         }
     }
@@ -564,7 +545,7 @@ class PerformanceMonitor {
         // Analyze bottlenecks and provide recommendations
         let topBottlenecks = getTopBottlenecks()
         
-        for (bottleneck, count) in topBottlenecks {
+        for (bottleneck, _) in topBottlenecks {
             switch bottleneck {
             case "High CPU Usage":
                 recommendations.append("Consider reducing video quality or frame rate to lower CPU usage")

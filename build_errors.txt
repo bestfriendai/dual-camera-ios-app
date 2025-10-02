@@ -1,5 +1,8 @@
 Command line invocation:
-    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project DualCameraApp.xcodeproj -scheme DualCameraApp clean build
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project DualCameraApp.xcodeproj -scheme DualCameraApp -sdk iphoneos -configuration Debug clean build
+
+Build settings from command line:
+    SDKROOT = iphoneos26.0
 
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
@@ -106,18 +109,12 @@ CreateBuildDescription
 
 ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -x c -c /dev/null
 
-ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --version --output-format xml1
-
-ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets
-
-ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
-
 ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
 
 ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
 
-Build description signature: bbcf6e01e21b84e9ffcb7d97fc15f0b1
-Build description path: /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/XCBuildData/bbcf6e01e21b84e9ffcb7d97fc15f0b1.xcbuilddata
+Build description signature: 8eff878e5ac30ef83dd7873509cec547
+Build description path: /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/XCBuildData/8eff878e5ac30ef83dd7873509cec547.xcbuilddata
 ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
     cd /Users/letsmakemillions/Desktop/APp/DualCameraApp.xcodeproj
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -o /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
@@ -150,10 +147,6 @@ WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/D
     cd /Users/letsmakemillions/Desktop/APp/DualCameraApp.xcodeproj
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp-50a9c0e0b3062a3c4681280e6d2d563b-VFS-iphoneos/all-product-headers.yaml
 
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap
-
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-project-headers.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-project-headers.hmap
@@ -162,25 +155,13 @@ WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/D
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.hmap
 
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyStaticMetadataFileList (in target 'DualCameraApp' from project 'DualCameraApp')
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyStaticMetadataFileList
-
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyMetadataFileList (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyMetadataFileList
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap
 
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-generated-files.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-generated-files.hmap
-
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftConstValuesFileList (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftConstValuesFileList
-
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.LinkFileList (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.LinkFileList
 
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-OutputFileMap.json (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
@@ -190,17 +171,37 @@ WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/D
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp_const_extract_protocols.json
 
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftConstValuesFileList (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftConstValuesFileList
+
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftFileList (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftFileList
+
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.LinkFileList (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.LinkFileList
+
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyStaticMetadataFileList (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyStaticMetadataFileList
 
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-target-headers.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-target-headers.hmap
 
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyMetadataFileList (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.DependencyMetadataFileList
+
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-non-framework-target-headers.hmap (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-DebugDylibInstallName-normal-arm64.txt (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-DebugDylibInstallName-normal-arm64.txt
 
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-DebugDylibPath-normal-arm64.txt (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
@@ -209,10 +210,6 @@ WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/D
 MkDir /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     /bin/mkdir -p /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app
-
-WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-DebugDylibInstallName-normal-arm64.txt (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    write-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-DebugDylibInstallName-normal-arm64.txt
 
 WriteAuxiliaryFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/Entitlements.plist (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
@@ -239,220 +236,147 @@ ProcessProductPackagingDER /Users/letsmakemillions/Library/Developer/Xcode/Deriv
     cd /Users/letsmakemillions/Desktop/APp
     /usr/bin/derq query -f xml -i /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.app.xcent -o /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp.app.xcent.der --raw
 
+ProcessInfoPlistFile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app/Info.plist /Users/letsmakemillions/Desktop/APp/Info.plist (in target 'DualCameraApp' from project 'DualCameraApp')
+    cd /Users/letsmakemillions/Desktop/APp
+    builtin-infoPlistUtility /Users/letsmakemillions/Desktop/APp/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -requiredArchitecture arm64 -o /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app/Info.plist
+
 Ld /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app/__preview.dylib normal (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios15.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -O0 -L/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -F/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -install_name @rpath/DualCameraApp.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp_dependency_info.dat -Xlinker -no_adhoc_codesign -o /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app/__preview.dylib
 
-GenerateAssetSymbols /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets --compile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_dependencies --output-partial-info-plist /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --minimum-deployment-target 15.0 --platform iphoneos --bundle-identifier com.dualcamera.app --generate-swift-asset-symbols /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols-Index.plist
-/* com.apple.actool.compilation-results */
-/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols-Index.plist
-/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.h
-/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.swift
-
-
-MkDir /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/thinned (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    /bin/mkdir -p /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/thinned
-
-MkDir /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/unthinned (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    /bin/mkdir -p /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/unthinned
-
-CompileStoryboard /Users/letsmakemillions/Desktop/APp/DualCameraApp/LaunchScreen.storyboard (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    /Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module DualCameraApp --output-partial-info-plist /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/LaunchScreen-SBPartialInfo.plist --auto-activate-custom-fonts --target-device iphone --minimum-deployment-target 15.0 --output-format human-readable-text /Users/letsmakemillions/Desktop/APp/DualCameraApp/LaunchScreen.storyboard --compilation-directory /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build
-
-CompileAssetCatalogVariant thinned /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets --compile /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --minimum-deployment-target 15.0 --platform iphoneos
-/* com.apple.actool.compilation-results */
-/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist_thinned
-
-
-LinkAssetCatalog /Users/letsmakemillions/Desktop/APp/DualCameraApp/Assets.xcassets (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    builtin-linkAssetCatalog --thinned /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/thinned --thinned-dependencies /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist_unthinned --output /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/DualCameraApp.app --plist-output /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/assetcatalog_generated_info.plist
-
 SwiftDriver DualCameraApp normal arm64 com.apple.xcode.tools.swift.compiler (in target 'DualCameraApp' from project 'DualCameraApp')
     cd /Users/letsmakemillions/Desktop/APp
     builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name DualCameraApp -Onone -enforce-exclusivity\=checked @/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -target arm64-apple-ios15.0 -g -module-cache-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -F /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -emit-localized-strings -emit-localized-strings-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64 -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -output-file-map /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp_const_extract_protocols.json -Xcc -iquote -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-generated-files.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-target-headers.hmap -Xcc -iquote -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-project-headers.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/include -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources-normal/arm64 -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/arm64 -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-Swift.h -working-directory /Users/letsmakemillions/Desktop/APp -experimental-emit-module-separately -disable-cmo
-
-SwiftCompile normal arm64 Compiling\ DualCameraManager.swift,\ VideoMerger.swift,\ GlassmorphismView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/DualCameraManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoMerger.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/GlassmorphismView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/DualCameraManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:146:9: error: expected 'func' keyword in instance method declaration
+        attemptGracefulDegradation(for: errorType)
+        ^
+        func 
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:164:9: error: expressions are not allowed at the top level
+        attemptGracefulDegradation(for: type)
+        ^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:165:5: error: extraneous '}' at top level
+    }
+    ^
     
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoMerger.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:377:1: error: extraneous '}' at top level
+}
+^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:168:9: error: expressions are not allowed at the top level
+        noiseReductionEnabled = settings.enableNoiseReduction
+        ^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:169:5: error: extraneous '}' at top level
+    }
+    ^
     
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/GlassmorphismView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:413:1: error: extraneous '}' at top level
+}
+^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:339:10: error: consecutive statements on a line must be separated by ';'
+        } catch {
+         ^
+         ;
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:339:11: error: expected expression
+        } catch {
+          ^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:343:9: error: statements are not allowed at the top level
+        return (usedSpace: 0, availableSpace: 0)
+        ^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:344:5: error: extraneous '}' at top level
+    }
+    ^
     
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:468:5: error: deinitializers may only be declared within a class, actor, or noncopyable type
+    deinit {
+    ^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:471:1: error: extraneous '}' at top level
+}
+^
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:146:9: error: Expected 'func' keyword in instance method declaration
+        attemptGracefulDegradation(for: errorType)
+        ^
+        func  (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:164:9: error: Expressions are not allowed at the top level
+        attemptGracefulDegradation(for: type)
+        ^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:165:5: error: Extraneous '}' at top level
+    }
+    ^
+     (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift:377:1: error: Extraneous '}' at top level
+}
+^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:168:9: error: Expressions are not allowed at the top level
+        noiseReductionEnabled = settings.enableNoiseReduction
+        ^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:169:5: error: Extraneous '}' at top level
+    }
+    ^
+     (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift:413:1: error: Extraneous '}' at top level
+}
+^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:339:10: error: Consecutive statements on a line must be separated by ';'
+        } catch {
+         ^
+         ; (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:339:11: error: Expected expression
+        } catch {
+          ^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:343:9: error: Statements are not allowed at the top level
+        return (usedSpace: 0, availableSpace: 0)
+        ^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:344:5: error: Extraneous '}' at top level
+    }
+    ^
+     (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:468:5: error: Deinitializers may only be declared within a class, actor, or noncopyable type
+    deinit {
+    ^ (in target 'DualCameraApp' from project 'DualCameraApp')
+/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift:471:1: error: Extraneous '}' at top level
+}
+^ (in target 'DualCameraApp' from project 'DualCameraApp')
 
-SwiftCompile normal arm64 Compiling\ VideoGalleryViewController.swift,\ FrameCompositor.swift,\ PerformanceMonitor.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoGalleryViewController.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/FrameCompositor.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/PerformanceMonitor.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoGalleryViewController.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/FrameCompositor.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/PerformanceMonitor.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ PermissionManager.swift,\ CameraPreviewView.swift,\ Extensions.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/PermissionManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraPreviewView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/Extensions.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/PermissionManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraPreviewView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/Extensions.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ ErrorHandlingManager.swift,\ HapticFeedbackManager.swift,\ AudioManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/HapticFeedbackManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/HapticFeedbackManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ TripleOutputControlView.swift,\ AudioControlsView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/TripleOutputControlView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioControlsView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/TripleOutputControlView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioControlsView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ VisualCountdownView.swift,\ VideoQuality.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VisualCountdownView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoQuality.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/VisualCountdownView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoQuality.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ StartupOptimizer.swift,\ ThermalManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/StartupOptimizer.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ThermalManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/StartupOptimizer.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/ThermalManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ ViewController.swift,\ AppDelegate.swift,\ SceneDelegate.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppDelegate.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/SceneDelegate.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppDelegate.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/SceneDelegate.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ ContentView.swift,\ AdvancedCameraControlsManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ContentView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AdvancedCameraControlsManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/ContentView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/AdvancedCameraControlsManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ MemoryManager.swift,\ StorageManager.swift,\ BatteryManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/MemoryManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/BatteryManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/MemoryManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/BatteryManager.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ LiquidGlassView.swift,\ LiquidGlassButton.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassButton.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassButton.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftEmitModule normal arm64 Emitting\ module\ for\ DualCameraApp (in target 'DualCameraApp' from project 'DualCameraApp')
-Failed frontend command:
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -emit-module -experimental-skip-non-inlinable-function-bodies-without-types /Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppDelegate.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/SceneDelegate.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/DualCameraManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoMerger.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/GlassmorphismView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoGalleryViewController.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/FrameCompositor.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/PerformanceMonitor.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/PermissionManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraPreviewView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/Extensions.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/HapticFeedbackManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/MemoryManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/BatteryManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VisualCountdownView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoQuality.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/StartupOptimizer.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ThermalManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/TripleOutputControlView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioControlsView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ContentView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AdvancedCameraControlsManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/SettingsManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraControlsView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ModernGlassButton.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassButton.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppleCameraButton.swift /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.swift -target arm64-apple-ios15.0 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version SwiftUI 7.0.84.1 7.0.84 -module-can-import-version UIKit 9088.1.113 9088.1.113 -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libTipKitMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#TipKitMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -I /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -F /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -module-cache-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/letsmakemillions/Desktop/APp -enable-anonymous-context-mangled-names -file-compilation-dir /Users/letsmakemillions/Desktop/APp -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-generated-files.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-own-target-headers.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-all-target-headers.hmap -Xcc -iquote -Xcc /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DualCameraApp-project-headers.hmap -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Products/Debug-iphoneos/include -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources-normal/arm64 -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/arm64 -Xcc -I/Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name DualCameraApp -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.0 -target-sdk-name iphoneos26.0 -clang-target arm64-apple-ios26.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -emit-module-doc-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.swiftdoc -emit-module-source-info-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.swiftsourceinfo -emit-objc-header-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-Swift.h -serialize-diagnostics-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-primary-emit-module.dia -emit-dependencies-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp-primary-emit-module.d -o /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.swiftmodule -emit-abi-descriptor-path /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/Objects-normal/arm64/DualCameraApp.abi.json
-
-EmitSwiftModule normal arm64 (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-/Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift:66:83: error: cannot find type 'AppleModernButton' in scope
-    static func createModernButton(title: String? = nil, icon: UIImage? = nil) -> AppleModernButton {
-                                                                                  ^~~~~~~~~~~~~~~~~
-/Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift:78:41: error: cannot find type 'AppleModernButton' in scope
-    static func createRecordButton() -> AppleModernButton {
-                                        ^~~~~~~~~~~~~~~~~
-
-SwiftCompile normal arm64 Compiling\ AppleCameraButton.swift,\ GeneratedAssetSymbols.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppleCameraButton.swift /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/AppleCameraButton.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Library/Developer/Xcode/DerivedData/DualCameraApp-gucyhpxuphtapebqazehvujdqobo/Build/Intermediates.noindex/DualCameraApp.build/Debug-iphoneos/DualCameraApp.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 Compiling\ DesignSystem.swift,\ ModernGlassButton.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/ModernGlassButton.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftCompile normal arm64 /Users/letsmakemillions/Desktop/APp/DualCameraApp/ModernGlassButton.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-    cd /Users/letsmakemillions/Desktop/APp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling VisualCountdownView.swift, VideoQuality.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
-SwiftCompile normal arm64 Compiling\ SettingsManager.swift,\ CameraControlsView.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/SettingsManager.swift /Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraControlsView.swift (in target 'DualCameraApp' from project 'DualCameraApp')
-
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/ViewController.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/AppDelegate.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/SceneDelegate.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/DualCameraManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoMerger.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/GlassmorphismView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoGalleryViewController.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/FrameCompositor.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/PerformanceMonitor.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/PermissionManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraPreviewView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/Extensions.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/ErrorHandlingManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/HapticFeedbackManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/MemoryManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/StorageManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/BatteryManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/VisualCountdownView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/VideoQuality.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/StartupOptimizer.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/ThermalManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/TripleOutputControlView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/AudioControlsView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/ContentView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/AdvancedCameraControlsManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/SettingsManager.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/CameraControlsView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/DesignSystem.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/ModernGlassButton.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassView.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/LiquidGlassButton.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/DualCameraApp/AppleCameraButton.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/ZoomControl.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/FlashControl.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/TimerControl.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
+warning: The Swift file "/Users/letsmakemillions/Desktop/APp/FocusExposureControl.swift" cannot be processed by a Copy Bundle Resources build phase (in target 'DualCameraApp' from project 'DualCameraApp')
 ** BUILD FAILED **
 
 
 The following build commands failed:
-	SwiftEmitModule normal arm64 Emitting\ module\ for\ DualCameraApp (in target 'DualCameraApp' from project 'DualCameraApp')
-	EmitSwiftModule normal arm64 (in target 'DualCameraApp' from project 'DualCameraApp')
-	Building project DualCameraApp with scheme DualCameraApp
-(3 failures)
+	SwiftDriver DualCameraApp normal arm64 com.apple.xcode.tools.swift.compiler (in target 'DualCameraApp' from project 'DualCameraApp')
+	Building project DualCameraApp with scheme DualCameraApp and configuration Debug
+(2 failures)

@@ -400,8 +400,12 @@ class BatteryManager {
     }
     
     func getBatteryStatistics() -> [String: Any] {
-        let avgPowerConsumption = powerConsumptionHistory.isEmpty ? 0 : 
-            powerConsumptionHistory.map { $0.1 }.reduce(0, +) / Double(powerConsumptionHistory.count)
+        let avgPowerConsumption: Double
+        if powerConsumptionHistory.isEmpty {
+            avgPowerConsumption = 0
+        } else {
+            avgPowerConsumption = powerConsumptionHistory.map { $0.1 }.reduce(0, +) / Double(powerConsumptionHistory.count)
+        }
         
         return [
             "batteryLevel": batteryLevel,

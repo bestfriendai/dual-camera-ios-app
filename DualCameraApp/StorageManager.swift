@@ -325,8 +325,8 @@ class StorageManager {
             
             if let totalSpace = attributes[.systemSize] as? Int64,
                let freeSpace = attributes[.systemFreeSize] as? Int64 {
-                let usedSpace = Double(totalSpace - freeSpace) / 1024.0 / 1024.0 // Convert to MB
-                let availableSpace = Double(freeSpace) / 1024.0 / 1024.0 // Convert to MB
+                let usedSpace = Double(totalSpace - freeSpace)
+                let availableSpace = Double(freeSpace)
                 
                 return (usedSpace: usedSpace, availableSpace: availableSpace)
             }
@@ -339,7 +339,7 @@ class StorageManager {
     
     func getAvailableStorageSpace() -> Double {
         let (_, availableSpace) = getStorageInfo()
-        return availableSpace
+        return availableSpace / 1024.0 / 1024.0
     }
     
     func getStorageStatistics() -> [String: Any] {

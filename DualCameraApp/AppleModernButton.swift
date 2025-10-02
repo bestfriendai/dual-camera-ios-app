@@ -49,8 +49,11 @@ class AppleModernButton: UIButton {
     }
     
     private func setupPrimaryStyle() {
-        backgroundColor = .white.withAlphaComponent(0.2)
+        backgroundColor = UIColor.white.withAlphaComponent(0.25)
         layer.cornerRadius = 20
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.4).cgColor
         tintColor = .white
         titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         setTitleColor(.white, for: .normal)
@@ -79,6 +82,7 @@ class AppleModernButton: UIButton {
         insertSubview(blurView, at: 0)
         blurView.translatesAutoresizingMaskIntoConstraints = false
         blurView.layer.cornerRadius = 20
+        blurView.layer.cornerCurve = .continuous
         NSLayoutConstraint.activate([
             blurView.topAnchor.constraint(equalTo: topAnchor),
             blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -87,6 +91,9 @@ class AppleModernButton: UIButton {
         ])
         
         layer.cornerRadius = 20
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         clipsToBounds = true
         tintColor = .white
         

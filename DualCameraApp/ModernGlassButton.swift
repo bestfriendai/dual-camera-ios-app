@@ -37,8 +37,10 @@ class ModernGlassButton: UIButton {
     }
     
     private func setupGlassEffect() {
+        backgroundColor = .clear
+        
         // Ultra-thin material blur
-        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
         blurEffectView.effect = blurEffect
         blurEffectView.layer.cornerRadius = 12
         blurEffectView.layer.cornerCurve = .continuous
@@ -59,28 +61,25 @@ class ModernGlassButton: UIButton {
         contentContainer.translatesAutoresizingMaskIntoConstraints = false
         vibrancyEffectView.contentView.addSubview(contentContainer)
         
-        // Move image view to vibrancy container
-        if let imageView = self.imageView {
-            imageView.removeFromSuperview()
-            contentContainer.addSubview(imageView)
-        }
-        
         // Border and glass tint
         layer.cornerRadius = 12
         layer.cornerCurve = .continuous
-        layer.borderWidth = 1
-        layer.borderColor = borderColor.cgColor
-        backgroundColor = glassColor
+        layer.borderWidth = 1.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
         
         // Glow layer
         glowLayer.backgroundColor = UIColor.clear.cgColor
-        glowLayer.shadowColor = glowColor.cgColor
+        glowLayer.shadowColor = UIColor.white.cgColor
         glowLayer.shadowOffset = .zero
-        glowLayer.shadowRadius = 8
+        glowLayer.shadowRadius = 10
         glowLayer.shadowOpacity = 0
         glowLayer.cornerRadius = 12
         glowLayer.cornerCurve = .continuous
         layer.insertSublayer(glowLayer, at: 0)
+        
+        // Set button tint colors
+        tintColor = .white
+        setTitleColor(.white, for: .normal)
         
         // Constraints
         NSLayoutConstraint.activate([
@@ -109,10 +108,18 @@ class ModernGlassButton: UIButton {
         super.layoutSubviews()
         glowLayer.frame = bounds
         
-        // Ensure imageView is in vibrancy container
-        if let imageView = self.imageView, imageView.superview != contentContainer {
-            imageView.removeFromSuperview()
-            contentContainer.addSubview(imageView)
+        // Ensure imageView is in vibrancy container with proper color
+        if let imageView = self.imageView {
+            imageView.tintColor = .white
+            if imageView.superview != contentContainer {
+                imageView.removeFromSuperview()
+                contentContainer.addSubview(imageView)
+            }
+        }
+        
+        // Ensure title label has proper color
+        if let titleLabel = self.titleLabel {
+            titleLabel.textColor = .white
         }
     }
     

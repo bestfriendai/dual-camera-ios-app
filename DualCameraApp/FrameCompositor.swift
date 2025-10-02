@@ -87,12 +87,34 @@ class FrameCompositor {
     }
     
     private func setupPixelBufferPool() {
-        // Create unique identifier for this pool
         poolIdentifier = "FrameCompositor_\(renderSize.width)x\(renderSize.height)_\(UUID().uuidString)"
         
-        // Use MemoryManager to create pool
-        pixelBufferPool = nil
-        // MemoryManager.shared.createPixelBufferPool(width: Int(renderSize.width), height: Int(renderSize.height), pixelFormat: kCVPixelFormatType_32BGRA, identifier: poolIdentifier)
+        let pixelBufferAttributes: [String: Any] = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: Int(renderSize.width),
+            kCVPixelBufferHeightKey as String: Int(renderSize.height),
+            kCVPixelBufferMetalCompatibilityKey as String: true,
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as CFDictionary
+        ]
+        
+        let poolAttributes: [String: Any] = [
+            kCVPixelBufferPoolMinimumBufferCountKey as String: 3,
+            kCVPixelBufferPoolMaximumBufferAgeKey as String: 2.0
+        ]
+        
+        var pool: CVPixelBufferPool?
+        let status = CVPixelBufferPoolCreate(
+            nil,
+            poolAttributes as CFDictionary,
+            pixelBufferAttributes as CFDictionary,
+            &pool
+        )
+        
+        if status == kCVReturnSuccess {
+            pixelBufferPool = pool
+        }
     }
     
     private func setupFrameRateStabilization() {
@@ -110,37 +132,37 @@ class FrameCompositor {
         
         let startTime = CACurrentMediaTime()
         
-        // Frame rate stabilization - check if we should drop this frame
         if shouldDropFrame() {
-            PerformanceMonitor.shared.recordFrame()
             return nil
         }
         
-        // Performance monitoring
         checkPerformanceAdaptation()
         
-        // Create Metal textures for GPU processing
-        guard let frontTexture = createMetalTexture(from: frontBuffer),
-              let backTexture = createMetalTexture(from: backBuffer) else {
-            // Fallback to CPU processing
-            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
+        let frontImage = CIImage(cvPixelBuffer: frontBuffer)
+        let backImage = CIImage(cvPixelBuffer: backBuffer)
+        
+        let processedFrontImage = applyAdaptiveQuality(to: frontImage)
+        let processedBackImage = applyAdaptiveQuality(to: backImage)
+        
+        let composedImage: CIImage
+        switch layout {
+        case .sideBySide:
+            composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
+        case .pictureInPicture:
+            composedImage = composeSideBySide(front: processedFrontImage, back: processedBackImage)
+        case .frontPrimary:
+            composedImage = composePrimary(primary: processedFrontImage, secondary: processedBackImage)
+        case .backPrimary:
+            composedImage = composePrimary(primary: processedBackImage, secondary: processedFrontImage)
         }
         
-        // Compose with Metal for better performance
-        guard let composedTexture = compositeWithMetal(front: frontTexture, back: backTexture) else {
-            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
+        guard let result = renderToPixelBuffer(composedImage) else {
+            return nil
         }
         
-        // Convert back to pixel buffer
-        guard let result = convertTextureToPixelBuffer(composedTexture) else {
-            return compositeWithCPU(frontBuffer: frontBuffer, backBuffer: backBuffer, timestamp: timestamp)
-        }
-        
-        // Track performance
         let processingTime = CACurrentMediaTime() - startTime
         trackProcessingTime(processingTime)
         
-        // Record frame for performance monitoring
         PerformanceMonitor.shared.recordFrame()
         
         return result
@@ -197,7 +219,6 @@ class FrameCompositor {
         }
         let device = metalDevice
         
-        // Create render pipeline state if needed
         if renderPipelineState == nil {
             createRenderPipelineState(device: device)
         }
@@ -206,7 +227,6 @@ class FrameCompositor {
             return nil
         }
         
-        // Create output texture
         let outputTextureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
             width: Int(renderSize.width),
@@ -214,37 +234,29 @@ class FrameCompositor {
             mipmapped: false
         )
         outputTextureDescriptor.usage = [.renderTarget, .shaderRead]
+        outputTextureDescriptor.storageMode = .private
         
         guard let outputTexture = device.makeTexture(descriptor: outputTextureDescriptor) else {
             return nil
         }
         
-        // Create render pass descriptor
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = outputTexture
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
         renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         renderPassDescriptor.colorAttachments[0].storeAction = .store
         
-        // Create command encoder
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
             return nil
         }
         
-        // Set pipeline state
         renderEncoder.setRenderPipelineState(pipelineState)
-        
-        // Set textures
         renderEncoder.setFragmentTexture(front, index: 0)
         renderEncoder.setFragmentTexture(back, index: 1)
-        
-        // Draw
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
         renderEncoder.endEncoding()
         
-        // Commit command buffer
         commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
         
         return outputTexture
     }
@@ -343,9 +355,12 @@ class FrameCompositor {
     }
     
     private func convertTextureToPixelBuffer(_ texture: MTLTexture) -> CVPixelBuffer? {
-        // Get pixel buffer from pool - simplified without MemoryManager
+        guard let pool = pixelBufferPool else {
+            return nil
+        }
+        
         var pixelBuffer: CVPixelBuffer?
-        let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pixelBufferPool!, &pixelBuffer)
+        let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
         guard status == kCVReturnSuccess, let pixelBuffer = pixelBuffer else {
             return nil
         }

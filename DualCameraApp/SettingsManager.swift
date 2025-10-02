@@ -44,7 +44,7 @@ class SettingsManager {
     private func registerDefaultSettings() {
         let defaults: [String: Any] = [
             Keys.videoQuality: VideoQuality.hd1080.rawValue,
-            Keys.recordingLayout: RecordingLayout.sideBySide.rawValue,
+            Keys.recordingLayout: "sideBySide",
             Keys.enableTripleOutput: true,
             Keys.enableHapticFeedback: true,
             Keys.enableVisualCountdown: false,
@@ -77,13 +77,12 @@ class SettingsManager {
         }
     }
     
-    var recordingLayout: RecordingLayout {
+    var recordingLayout: String {
         get {
-            // For simplicity, default to side-by-side
-            return .sideBySide
+            return userDefaults.string(forKey: Keys.recordingLayout) ?? "sideBySide"
         }
         set {
-            // Store layout preference if needed in future
+            userDefaults.set(newValue, forKey: Keys.recordingLayout)
         }
     }
     

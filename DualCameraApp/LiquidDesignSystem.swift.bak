@@ -1,0 +1,390 @@
+//
+//  LiquidDesignSystem.swift
+//  DualCameraApp
+//
+//  Unified iOS 18 Liquid Glass Design System
+//
+
+import UIKit
+
+final class LiquidDesignSystem {
+    
+    static let shared = LiquidDesignSystem()
+    private init() {}
+    
+    enum DesignTokens {
+        enum Colors {
+            static let primary = UIColor.white
+            static let secondary = UIColor.white.withAlphaComponent(0.6)
+            static let background = UIColor.black
+            static let accent = UIColor.systemYellow
+            static let recording = UIColor.systemRed
+            static let liquidGlass = UIColor.white
+        }
+        
+        enum Spacing {
+            static let xs: CGFloat = 4
+            static let sm: CGFloat = 8
+            static let md: CGFloat = 12
+            static let lg: CGFloat = 16
+            static let xl: CGFloat = 24
+            static let xxl: CGFloat = 32
+        }
+        
+        enum CornerRadius {
+            static let small: CGFloat = 8
+            static let medium: CGFloat = 12
+            static let large: CGFloat = 20
+            static let xlarge: CGFloat = 24
+        }
+        
+        enum Typography {
+            static let title = UIFont.systemFont(ofSize: 17, weight: .semibold)
+            static let body = UIFont.systemFont(ofSize: 15, weight: .regular)
+            static let caption = UIFont.systemFont(ofSize: 13, weight: .regular)
+            static let monospaced = UIFont.monospacedSystemFont(ofSize: 15, weight: .medium)
+        }
+        
+        enum Shadow {
+            static let color = UIColor.black.cgColor
+            static let opacity: Float = 0.15
+            static let offset = CGSize(width: 0, height: 4)
+            static let radius: CGFloat = 16
+        }
+    }
+    
+    private static var sharedNoiseTexture: UIImage?
+    
+    static func noiseTexture() -> UIImage {
+        if let cached = sharedNoiseTexture {
+            return cached
+        }
+        
+        let size = CGSize(width: 200, height: 200)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        
+        let image = renderer.image { context in
+            for y in 0..<Int(size.height) {
+                for x in 0..<Int(size.width) {
+                    let value = CGFloat.random(in: 0.95...1.0)
+                    context.cgContext.setFillColor(UIColor(white: value, alpha: 1).cgColor)
+                    context.cgContext.fill(CGRect(x: x, y: y, width: 1, height: 1))
+                }
+            }
+        }
+        
+        sharedNoiseTexture = image
+        return image
+    }
+}
+
+final class LiquidGlassView: UIView {
+    
+    enum Style {
+        case camera
+        case controls
+        case settings
+        case overlay
+        
+        var cornerRadius: CGFloat {
+            switch self {
+            case .camera: return 24
+            case .controls: return 20
+            case .settings: return 16
+            case .overlay: return 12
+            }
+        }
+        
+        var blurStyle: UIBlurEffect.Style {
+            switch self {
+            case .camera: return .systemThinMaterial
+            case .controls: return .systemUltraThinMaterialDark
+            case .settings: return .systemMaterial
+            case .overlay: return .systemUltraThinMaterial
+            }
+        }
+        
+        var borderAlpha: CGFloat {
+            switch self {
+            case .camera: return 0.3
+            case .controls: return 0.35
+            case .settings: return 0.25
+            case .overlay: return 0.2
+            }
+        }
+    }
+    
+    let contentView = UIView()
+    private let gradientLayer = CAGradientLayer()
+    private let noiseLayer = CALayer()
+    private let blurEffectView = UIVisualEffectView()
+    private let vibrancyEffectView = UIVisualEffectView()
+    private var style: Style
+    
+    var liquidColor: UIColor = LiquidDesignSystem.DesignTokens.Colors.liquidGlass {
+        didSet { updateGradient() }
+    }
+    
+    init(style: Style = .camera) {
+        self.style = style
+        super.init(frame: .zero)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        self.style = .camera
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        backgroundColor = .clear
+        
+        gradientLayer.colors = [
+            liquidColor.withAlphaComponent(0.7).cgColor,
+            liquidColor.withAlphaComponent(0.4).cgColor,
+            liquidColor.withAlphaComponent(0.2).cgColor
+        ]
+        gradientLayer.locations = [0.0, 0.5, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.cornerRadius = style.cornerRadius
+        gradientLayer.cornerCurve = .continuous
+        layer.insertSublayer(gradientLayer, at: 0)
+        
+        noiseLayer.contents = LiquidDesignSystem.noiseTexture().cgImage
+        noiseLayer.opacity = 0.02
+        noiseLayer.compositingFilter = "overlayBlendMode"
+        noiseLayer.cornerRadius = style.cornerRadius
+        noiseLayer.cornerCurve = .continuous
+        layer.insertSublayer(noiseLayer, at: 1)
+        
+        let blurEffect = UIBlurEffect(style: style.blurStyle)
+        blurEffectView.effect = blurEffect
+        blurEffectView.layer.cornerRadius = style.cornerRadius
+        blurEffectView.layer.cornerCurve = .continuous
+        blurEffectView.clipsToBounds = true
+        blurEffectView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(blurEffectView)
+        
+        let vibrancyEffect = UIVibrancyEffect(blurEffect: blurEffect, style: .label)
+        vibrancyEffectView.effect = vibrancyEffect
+        vibrancyEffectView.translatesAutoresizingMaskIntoConstraints = false
+        blurEffectView.contentView.addSubview(vibrancyEffectView)
+        
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.white.withAlphaComponent(style.borderAlpha).cgColor
+        layer.cornerRadius = style.cornerRadius
+        layer.cornerCurve = .continuous
+        
+        layer.shadowColor = LiquidDesignSystem.DesignTokens.Shadow.color
+        layer.shadowOffset = LiquidDesignSystem.DesignTokens.Shadow.offset
+        layer.shadowRadius = LiquidDesignSystem.DesignTokens.Shadow.radius
+        layer.shadowOpacity = LiquidDesignSystem.DesignTokens.Shadow.opacity
+        layer.masksToBounds = false
+        
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.backgroundColor = .clear
+        vibrancyEffectView.contentView.addSubview(contentView)
+        
+        NSLayoutConstraint.activate([
+            blurEffectView.topAnchor.constraint(equalTo: topAnchor),
+            blurEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            blurEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            blurEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            
+            vibrancyEffectView.topAnchor.constraint(equalTo: blurEffectView.contentView.topAnchor),
+            vibrancyEffectView.leadingAnchor.constraint(equalTo: blurEffectView.contentView.leadingAnchor),
+            vibrancyEffectView.trailingAnchor.constraint(equalTo: blurEffectView.contentView.trailingAnchor),
+            vibrancyEffectView.bottomAnchor.constraint(equalTo: blurEffectView.contentView.bottomAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: vibrancyEffectView.contentView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: vibrancyEffectView.contentView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: vibrancyEffectView.contentView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: vibrancyEffectView.contentView.bottomAnchor)
+        ])
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+        noiseLayer.frame = bounds
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: style.cornerRadius).cgPath
+    }
+    
+    private func updateGradient() {
+        gradientLayer.colors = [
+            liquidColor.withAlphaComponent(0.7).cgColor,
+            liquidColor.withAlphaComponent(0.4).cgColor,
+            liquidColor.withAlphaComponent(0.2).cgColor
+        ]
+    }
+    
+    func pulse() {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
+            self.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+        } completion: { _ in
+            UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+                self.transform = .identity
+            }
+        }
+    }
+}
+
+final class LiquidGlassButton: UIButton {
+    
+    private let gradientLayer = CAGradientLayer()
+    private let noiseLayer = CALayer()
+    private let blurEffectView = UIVisualEffectView()
+    private let vibrancyEffectView = UIVisualEffectView()
+    private let glowLayer = CALayer()
+    private let contentContainer = UIView()
+    
+    var liquidColor: UIColor = LiquidDesignSystem.DesignTokens.Colors.liquidGlass {
+        didSet { updateGradient() }
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupButton()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupButton()
+    }
+    
+    private func setupButton() {
+        backgroundColor = .clear
+        
+        gradientLayer.colors = [
+            UIColor.white.withAlphaComponent(0.4).cgColor,
+            UIColor.white.withAlphaComponent(0.2).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
+        gradientLayer.cornerCurve = .continuous
+        layer.insertSublayer(gradientLayer, at: 0)
+        
+        noiseLayer.contents = LiquidDesignSystem.noiseTexture().cgImage
+        noiseLayer.opacity = 0.015
+        noiseLayer.compositingFilter = "overlayBlendMode"
+        noiseLayer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
+        noiseLayer.cornerCurve = .continuous
+        layer.insertSublayer(noiseLayer, at: 1)
+        
+        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+        blurEffectView.effect = blurEffect
+        blurEffectView.layer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
+        blurEffectView.layer.cornerCurve = .continuous
+        blurEffectView.clipsToBounds = true
+        blurEffectView.isUserInteractionEnabled = false
+        blurEffectView.translatesAutoresizingMaskIntoConstraints = false
+        insertSubview(blurEffectView, at: 0)
+        
+        let vibrancyEffect = UIVibrancyEffect(blurEffect: blurEffect, style: .label)
+        vibrancyEffectView.effect = vibrancyEffect
+        vibrancyEffectView.isUserInteractionEnabled = false
+        vibrancyEffectView.translatesAutoresizingMaskIntoConstraints = false
+        blurEffectView.contentView.addSubview(vibrancyEffectView)
+        
+        contentContainer.isUserInteractionEnabled = false
+        contentContainer.translatesAutoresizingMaskIntoConstraints = false
+        vibrancyEffectView.contentView.addSubview(contentContainer)
+        
+        layer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1.5
+        layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
+        
+        glowLayer.backgroundColor = UIColor.clear.cgColor
+        glowLayer.shadowColor = UIColor.white.cgColor
+        glowLayer.shadowOffset = .zero
+        glowLayer.shadowRadius = 12
+        glowLayer.shadowOpacity = 0
+        glowLayer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
+        glowLayer.cornerCurve = .continuous
+        layer.insertSublayer(glowLayer, at: 0)
+        
+        tintColor = .white
+        setTitleColor(.white, for: .normal)
+        titleLabel?.font = LiquidDesignSystem.DesignTokens.Typography.body
+        
+        NSLayoutConstraint.activate([
+            blurEffectView.topAnchor.constraint(equalTo: topAnchor),
+            blurEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            blurEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            blurEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            
+            vibrancyEffectView.topAnchor.constraint(equalTo: blurEffectView.contentView.topAnchor),
+            vibrancyEffectView.leadingAnchor.constraint(equalTo: blurEffectView.contentView.leadingAnchor),
+            vibrancyEffectView.trailingAnchor.constraint(equalTo: blurEffectView.contentView.trailingAnchor),
+            vibrancyEffectView.bottomAnchor.constraint(equalTo: blurEffectView.contentView.bottomAnchor),
+            
+            contentContainer.topAnchor.constraint(equalTo: vibrancyEffectView.contentView.topAnchor),
+            contentContainer.leadingAnchor.constraint(equalTo: vibrancyEffectView.contentView.leadingAnchor),
+            contentContainer.trailingAnchor.constraint(equalTo: vibrancyEffectView.contentView.trailingAnchor),
+            contentContainer.bottomAnchor.constraint(equalTo: vibrancyEffectView.contentView.bottomAnchor)
+        ])
+        
+        addTarget(self, action: #selector(touchDown), for: .touchDown)
+        addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+        noiseLayer.frame = bounds
+        glowLayer.frame = bounds
+        
+        if let imageView = self.imageView {
+            imageView.tintColor = .white
+            if imageView.superview != contentContainer {
+                imageView.removeFromSuperview()
+                contentContainer.addSubview(imageView)
+            }
+        }
+        
+        if let titleLabel = self.titleLabel {
+            titleLabel.textColor = .white
+        }
+    }
+    
+    @objc private func touchDown() {
+        UIView.animate(withDuration: 0.1, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5) {
+            self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
+            self.glowLayer.shadowOpacity = 0.5
+        }
+        
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+    
+    @objc private func touchUp() {
+        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+            self.transform = .identity
+            self.glowLayer.shadowOpacity = 0
+        }
+    }
+    
+    private func updateGradient() {
+        gradientLayer.colors = [
+            UIColor.white.withAlphaComponent(0.4).cgColor,
+            UIColor.white.withAlphaComponent(0.2).cgColor
+        ]
+        glowLayer.shadowColor = UIColor.white.cgColor
+    }
+    
+    func setGlowEnabled(_ enabled: Bool, animated: Bool = true) {
+        let opacity: Float = enabled ? 0.7 : 0
+        if animated {
+            let animation = CABasicAnimation(keyPath: "shadowOpacity")
+            animation.toValue = opacity
+            animation.duration = 0.3
+            glowLayer.add(animation, forKey: "shadowOpacity")
+        }
+        glowLayer.shadowOpacity = opacity
+    }
+}

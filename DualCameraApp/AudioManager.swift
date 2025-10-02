@@ -148,21 +148,18 @@ class AudioManager: NSObject {
     private func loadSavedSettings() {
         let settings = SettingsManager.shared
         
-        // Load audio source
-        if let audioSourceString = settings.audioSource as String? {
-            switch audioSourceString {
-            case "bluetooth":
-                selectedAudioSource = .bluetooth
-            case "headset":
-                selectedAudioSource = .headset
-            case "usb":
-                selectedAudioSource = .usb
-            default:
-                selectedAudioSource = .builtIn
-            }
+        let audioSourceString = settings.audioSource
+        switch audioSourceString {
+        case "bluetooth":
+            selectedAudioSource = .bluetooth
+        case "headset":
+            selectedAudioSource = .headset
+        case "usb":
+            selectedAudioSource = .usb
+        default:
+            selectedAudioSource = .builtIn
         }
         
-        // Load noise reduction settings
         noiseReductionEnabled = settings.enableNoiseReduction
     }
     

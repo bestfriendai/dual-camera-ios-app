@@ -129,34 +129,30 @@ class ErrorHandlingManager {
     func handleError(_ error: Error, in viewController: UIViewController? = nil, completion: (() -> Void)? = nil) {
         let errorType = determineErrorType(from: error)
         
-        // Log error for debugging
         logError(error, type: errorType)
         
-        // Provide haptic feedback for error
-        HapticFeedbackManager.shared.errorOccurred()
+        if SettingsManager.shared.enableHapticFeedback {
+            HapticFeedbackManager.shared.errorOccurred()
+        }
         
-        // Show user-friendly alert
         if let viewController = viewController {
             showErrorAlert(errorType: errorType, in: viewController, completion: completion)
         }
         
-        // Attempt graceful degradation
         attemptGracefulDegradation(for: errorType)
     }
     
     func handleCustomError(type: DualCameraErrorType, in viewController: UIViewController? = nil, completion: (() -> Void)? = nil) {
-        // Log error for debugging
         logCustomError(type)
         
-        // Provide haptic feedback for error
-        HapticFeedbackManager.shared.errorOccurred()
+        if SettingsManager.shared.enableHapticFeedback {
+            HapticFeedbackManager.shared.errorOccurred()
+        }
         
-        // Show user-friendly alert
         if let viewController = viewController {
             showErrorAlert(errorType: type, in: viewController, completion: completion)
         }
         
-        // Attempt graceful degradation
         attemptGracefulDegradation(for: type)
     }
     

@@ -1073,7 +1073,7 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
 
         // Initialize compositor if needed
         if frameCompositor == nil {
-            frameCompositor = FrameCompositor(layout: .sideBySide, quality: activeVideoQuality)
+            frameCompositor = FrameCompositor(layout: recordingLayout, quality: activeVideoQuality)
         }
 
         let presentationTime = CMSampleBufferGetPresentationTimeStamp(front)

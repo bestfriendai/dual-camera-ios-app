@@ -57,6 +57,7 @@ class CameraControlsView: UIView {
         setupConstraints()
         
         updateUIForSelectedCamera()
+        HapticFeedbackManager.shared.prepareHapticEngine()
     }
     
     private func setupMainContainer() {
@@ -294,6 +295,7 @@ class CameraControlsView: UIView {
     private func handleCameraSwitch(index: Int) {
         selectedCamera = index == 0 ? .front : .back
         updateUIForSelectedCamera()
+        HapticFeedbackManager.shared.cameraSwitch()
         animateSectionTransition()
     }
     
@@ -304,6 +306,7 @@ class CameraControlsView: UIView {
         let enabled = index == 1
         focusSlider.setEnabled(enabled, animated: true)
         
+        HapticFeedbackManager.shared.selection()
         onControlsChanged?()
     }
     
@@ -312,6 +315,7 @@ class CameraControlsView: UIView {
         advancedControlsManager?.setFocusPoint(point, for: selectedCamera)
         focusValueLabel.text = String(format: "%.2f", value)
         
+        HapticFeedbackManager.shared.focusAdjustment()
         onControlsChanged?()
     }
     
@@ -322,6 +326,7 @@ class CameraControlsView: UIView {
         let enabled = index == 1
         exposureSlider.setEnabled(enabled, animated: true)
         
+        HapticFeedbackManager.shared.selection()
         onControlsChanged?()
     }
     
@@ -329,6 +334,7 @@ class CameraControlsView: UIView {
         advancedControlsManager?.setExposureTargetBias(value, for: selectedCamera)
         exposureValueLabel.text = String(format: "%.2f EV", value)
         
+        HapticFeedbackManager.shared.focusAdjustment()
         onControlsChanged?()
     }
     
@@ -336,6 +342,7 @@ class CameraControlsView: UIView {
         advancedControlsManager?.setZoomFactorSmoothly(value, for: selectedCamera)
         zoomValueLabel.text = String(format: "%.1f×", value)
         
+        HapticFeedbackManager.shared.zoomAdjustment()
         onControlsChanged?()
     }
     
@@ -348,6 +355,7 @@ class CameraControlsView: UIView {
         advancedControlsManager?.setFocusPoint(CGPoint(x: 0.5, y: 0.5), for: selectedCamera)
         advancedControlsManager?.setFocusMode(.continuousAutoFocus, for: selectedCamera)
         
+        HapticFeedbackManager.shared.playHaptic(pattern: .lightTap, intensity: .medium, sharpness: .medium)
         animateButtonPress(focusResetButton)
         onControlsChanged?()
     }
@@ -361,6 +369,7 @@ class CameraControlsView: UIView {
         advancedControlsManager?.setExposureTargetBias(0.0, for: selectedCamera)
         advancedControlsManager?.setExposureMode(.continuousAutoExposure, for: selectedCamera)
         
+        HapticFeedbackManager.shared.playHaptic(pattern: .lightTap, intensity: .medium, sharpness: .medium)
         animateButtonPress(exposureResetButton)
         onControlsChanged?()
     }
@@ -370,6 +379,7 @@ class CameraControlsView: UIView {
         zoomValueLabel.text = "1.0×"
         advancedControlsManager?.resetZoom(for: selectedCamera)
         
+        HapticFeedbackManager.shared.playHaptic(pattern: .lightTap, intensity: .medium, sharpness: .medium)
         animateButtonPress(zoomResetButton)
         onControlsChanged?()
     }
