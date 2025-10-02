@@ -147,6 +147,9 @@ final class DualCameraManager: NSObject {
         frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         audioDevice = AVCaptureDevice.default(for: .audio)
+        
+        // Configure professional features for cameras
+        configureCameraProfessionalFeatures()
 
         print("DEBUG: Front camera: \(frontCamera?.localizedName ?? "nil")")
         print("DEBUG: Back camera: \(backCamera?.localizedName ?? "nil")")
@@ -317,6 +320,17 @@ final class DualCameraManager: NSObject {
         if frontConnection.isVideoOrientationSupported {
             frontConnection.videoOrientation = AVCaptureVideoOrientation.portrait
         }
+        
+        // Enable video stabilization for front camera (professional feature)
+        if frontConnection.isVideoStabilizationSupported {
+            if #available(iOS 13.0, *) {
+                frontConnection.preferredVideoStabilizationMode = .cinematicExtended
+                print("DEBUG: Front camera - Cinematic Extended stabilization enabled")
+            } else {
+                frontConnection.preferredVideoStabilizationMode = .cinematic
+                print("DEBUG: Front camera - Cinematic stabilization enabled")
+            }
+        }
 
         let backConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backOutput)
         guard session.canAddConnection(backConnection) else {
@@ -325,6 +339,17 @@ final class DualCameraManager: NSObject {
         session.addConnection(backConnection)
         if backConnection.isVideoOrientationSupported {
             backConnection.videoOrientation = AVCaptureVideoOrientation.portrait
+        }
+        
+        // Enable video stabilization for back camera
+        if backConnection.isVideoStabilizationSupported {
+            if #available(iOS 13.0, *) {
+                backConnection.preferredVideoStabilizationMode = .cinematicExtended
+                print("DEBUG: Back camera - Cinematic Extended stabilization enabled")
+            } else {
+                backConnection.preferredVideoStabilizationMode = .cinematic
+                print("DEBUG: Back camera - Cinematic stabilization enabled")
+            }
         }
 
         // Setup photo outputs
@@ -529,6 +554,104 @@ final class DualCameraManager: NSObject {
         // Mark deferred setup as complete
         self.isDeferredSetupComplete = true
         print("DEBUG: Deferred setup complete")
+    }
+    
+    // MARK: - Professional Camera Features
+    private func configureCameraProfessionalFeatures() {
+        // Configure Center Stage for front camera (iOS 14.5+)
+        if #available(iOS 14.5, *), let frontCamera = frontCamera {
+            do {
+                try frontCamera.lockForConfiguration()
+                
+                // Enable Center Stage (auto-framing feature)
+                if AVCaptureDevice.isCenterStageEnabled {
+                    if #available(iOS 15.4, *) {
+                        frontCamera.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+                        print("DEBUG: ✅ Face-driven autofocus enabled (Center Stage compatible)")
+                    } else {
+                        print("DEBUG: ✅ Center Stage available but requires iOS 15.4+ for full features")
+                    }
+                } else {
+                    print("DEBUG: ℹ️ Center Stage not available on this device")
+                }
+                
+                frontCamera.unlockForConfiguration()
+            } catch {
+                print("DEBUG: ⚠️ Error configuring Center Stage: \(error)")
+            }
+        }
+        
+        // Configure HDR Video for both cameras
+        configureHDRVideo(for: frontCamera, position: "Front")
+        configureHDRVideo(for: backCamera, position: "Back")
+        
+        // Configure optimal format for each camera
+        configureOptimalFormat(for: frontCamera, position: "Front")
+        configureOptimalFormat(for: backCamera, position: "Back")
+    }
+    
+    private func configureHDRVideo(for device: AVCaptureDevice?, position: String) {
+        guard let device = device else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Enable HDR video if supported
+            if device.activeFormat.isVideoHDRSupported {
+                device.automaticallyAdjustsVideoHDREnabled = true
+                print("DEBUG: ✅ HDR Video enabled for \(position) camera")
+            } else {
+                print("DEBUG: ℹ️ HDR Video not supported on \(position) camera")
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("DEBUG: ⚠️ Error configuring HDR for \(position) camera: \(error)")
+        }
+    }
+    
+    private func configureOptimalFormat(for device: AVCaptureDevice?, position: String) {
+        guard let device = device else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Find best format for the current quality setting
+            let desiredDimensions = activeVideoQuality.dimensions
+            var bestFormat: AVCaptureDevice.Format?
+            var bestScore = 0
+            
+            for format in device.formats {
+                let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+                
+                // Score based on resolution match and HDR support
+                var score = 0
+                if dimensions.width == desiredDimensions.width && 
+                   dimensions.height == desiredDimensions.height {
+                    score += 100
+                }
+                if format.isVideoHDRSupported {
+                    score += 50
+                }
+                if format.videoSupportedFrameRateRanges.contains(where: { $0.maxFrameRate >= 60 }) {
+                    score += 25
+                }
+                
+                if score > bestScore {
+                    bestScore = score
+                    bestFormat = format
+                }
+            }
+            
+            if let bestFormat = bestFormat {
+                device.activeFormat = bestFormat
+                print("DEBUG: ✅ Optimal format selected for \(position) camera (score: \(bestScore))")
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("DEBUG: ⚠️ Error configuring format for \(position) camera: \(error)")
+        }
     }
 
     // MARK: - Session Control
@@ -1050,15 +1173,34 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
         do {
             let writer = try AVAssetWriter(outputURL: combinedURL, fileType: .mp4)
 
-            // Video settings
+            // Use H.265/HEVC codec for better compression and quality
+            let codec: AVVideoCodecType
+            if #available(iOS 11.0, *) {
+                codec = .hevc  // H.265 - better compression, smaller files
+                print("DEBUG: ✅ Using H.265/HEVC codec for superior quality")
+            } else {
+                codec = .h264
+                print("DEBUG: Using H.264 codec (fallback)")
+            }
+            
+            // Enhanced video settings with higher bitrate for quality
+            var compressionProperties: [String: Any] = [
+                AVVideoAverageBitRateKey: 15_000_000,  // 15 Mbps for high quality
+                AVVideoMaxKeyFrameIntervalKey: 60,      // Keyframe every 2 seconds at 30fps
+                AVVideoAllowFrameReorderingKey: true    // Enable B-frames for better compression
+            ]
+            
+            // Add codec-specific profile
+            if codec == .h264 {
+                compressionProperties[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel
+            }
+            // HEVC doesn't require explicit profile level setting
+            
             let videoSettings: [String: Any] = [
-                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoCodecKey: codec,
                 AVVideoWidthKey: activeVideoQuality.renderSize.width,
                 AVVideoHeightKey: activeVideoQuality.renderSize.height,
-                AVVideoCompressionPropertiesKey: [
-                    AVVideoAverageBitRateKey: 10_000_000,
-                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
-                ]
+                AVVideoCompressionPropertiesKey: compressionProperties
             ]
 
             let videoWriterInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
