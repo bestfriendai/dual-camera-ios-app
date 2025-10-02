@@ -402,7 +402,7 @@ class FrameCompositor {
     private func applyAdaptiveQuality(to image: CIImage) -> CIImage {
         guard adaptiveQualityEnabled && currentQualityLevel < 1.0 else { return image }
         
-        let scaledSize = CGSize(
+        _ = CGSize(
             width: image.extent.width * CGFloat(currentQualityLevel),
             height: image.extent.height * CGFloat(currentQualityLevel)
         )

@@ -33,7 +33,8 @@ class ViewController: UIViewController {
     let statusLabel = UILabel()
     let recordingTimerLabel = UILabel()
     let timerBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
-    let flashButton = AppleCameraButton(type: .system)
+    let flashControl = FlashControl()
+    let timerControl = TimerControl()
     let swapCameraButton = AppleCameraButton(type: .system)
     let qualityButton = AppleCameraButton(type: .system)
     let galleryButton = AppleCameraButton(type: .system)
@@ -45,6 +46,16 @@ class ViewController: UIViewController {
     let gridOverlayView = UIView()
     let storageLabel = UILabel()
     let permissionStatusLabel = UILabel()
+    
+    let frontZoomControl = ZoomControl()
+    let backZoomControl = ZoomControl()
+    let frontFocusControl = FocusExposureControl()
+    let backFocusControl = FocusExposureControl()
+    
+    private var frontFocusHandler: TapToFocusGestureHandler?
+    private var backFocusHandler: TapToFocusGestureHandler?
+    private var timerCountdown: Int = 0
+    private var timerCountdownTimer: Timer?
     
     // MARK: - Enhanced Recording Controls
     let visualCountdownView = UIView()
@@ -255,11 +266,19 @@ class ViewController: UIViewController {
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusLabel)
         
-        // Flash button - Apple minimal
-        flashButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
-        flashButton.translatesAutoresizingMaskIntoConstraints = false
-        flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
-        view.addSubview(flashButton)
+        // Flash control - iOS 26 style
+        flashControl.translatesAutoresizingMaskIntoConstraints = false
+        flashControl.onModeChanged = { [weak self] mode in
+            self?.handleFlashModeChanged(mode)
+        }
+        view.addSubview(flashControl)
+        
+        // Timer control
+        timerControl.translatesAutoresizingMaskIntoConstraints = false
+        timerControl.onDurationChanged = { [weak self] duration in
+            self?.settingsManager.countdownDuration = duration.rawValue
+        }
+        view.addSubview(timerControl)
 
         // Swap camera button - modern glassmorphism
         swapCameraButton.setImage(UIImage(systemName: "arrow.triangle.2.circlepath"), for: .normal)
@@ -330,6 +349,26 @@ class ViewController: UIViewController {
         view.addSubview(gridOverlayView)
         setupGridLines()
         
+        // Zoom controls
+        frontZoomControl.translatesAutoresizingMaskIntoConstraints = false
+        frontZoomControl.onZoomChanged = { [weak self] zoom in
+            self?.setZoom(zoom, for: .front)
+        }
+        view.addSubview(frontZoomControl)
+        
+        backZoomControl.translatesAutoresizingMaskIntoConstraints = false
+        backZoomControl.onZoomChanged = { [weak self] zoom in
+            self?.setZoom(zoom, for: .back)
+        }
+        view.addSubview(backZoomControl)
+        
+        // Focus/Exposure controls
+        frontFocusControl.translatesAutoresizingMaskIntoConstraints = false
+        frontCameraPreview.addSubview(frontFocusControl)
+        
+        backFocusControl.translatesAutoresizingMaskIntoConstraints = false
+        backCameraPreview.addSubview(backFocusControl)
+        
         // Storage label
         storageLabel.textColor = .white.withAlphaComponent(0.7)
         storageLabel.font = UIFont.systemFont(ofSize: 11, weight: .medium)
@@ -390,10 +429,41 @@ class ViewController: UIViewController {
         }
     }
 
+    private func beginTimerCountdown() {
+        guard !isCountingDown else { return }
+        
+        timerCountdown = settingsManager.countdownDuration
+        isCountingDown = true
+        
+        timerBlurView.isHidden = false
+        recordingTimerLabel.textColor = .white
+        recordingTimerLabel.text = "\(timerCountdown)"
+        
+        timerCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            
+            self.timerCountdown -= 1
+            
+            if self.timerCountdown > 0 {
+                self.recordingTimerLabel.text = "\(self.timerCountdown)"
+                HapticFeedbackManager.shared.lightImpact()
+            } else {
+                timer.invalidate()
+                self.timerBlurView.isHidden = true
+                self.isCountingDown = false
+                self.dualCameraManager.startRecording()
+            }
+        }
+    }
+    
     private func cancelRecordingCountdown() {
         isCountingDown = false
         countdownTimer?.invalidate()
-        // visualCountdownView.stopCountdown()
+        timerCountdownTimer?.invalidate()
+        timerBlurView.isHidden = true
         statusLabel.text = "Ready to record"
     }
 
@@ -439,17 +509,23 @@ class ViewController: UIViewController {
             statusLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            // Flash button - left of record button
-            flashButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
-            flashButton.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -40),
-            flashButton.widthAnchor.constraint(equalToConstant: 40),
-            flashButton.heightAnchor.constraint(equalToConstant: 40),
+            // Flash control - left of record button
+            flashControl.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
+            flashControl.trailingAnchor.constraint(equalTo: recordButton.leadingAnchor, constant: -40),
+            flashControl.widthAnchor.constraint(equalToConstant: 40),
+            flashControl.heightAnchor.constraint(equalToConstant: 40),
 
             // Gallery button - right of record button
             galleryButton.centerYAnchor.constraint(equalTo: recordButton.centerYAnchor),
             galleryButton.leadingAnchor.constraint(equalTo: recordButton.trailingAnchor, constant: 40),
             galleryButton.widthAnchor.constraint(equalToConstant: 40),
             galleryButton.heightAnchor.constraint(equalToConstant: 40),
+            
+            // Timer control - top left, below quality
+            timerControl.topAnchor.constraint(equalTo: qualityButton.bottomAnchor, constant: 12),
+            timerControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            timerControl.widthAnchor.constraint(equalToConstant: 40),
+            timerControl.heightAnchor.constraint(equalToConstant: 40),
             
             // Swap camera button - top right corner
             swapCameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -498,7 +574,30 @@ class ViewController: UIViewController {
 
             // Activity indicator
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            
+            // Front zoom control
+            frontZoomControl.bottomAnchor.constraint(equalTo: frontCameraPreview.bottomAnchor, constant: -20),
+            frontZoomControl.centerXAnchor.constraint(equalTo: frontCameraPreview.centerXAnchor),
+            frontZoomControl.leadingAnchor.constraint(greaterThanOrEqualTo: frontCameraPreview.leadingAnchor, constant: 20),
+            frontZoomControl.trailingAnchor.constraint(lessThanOrEqualTo: frontCameraPreview.trailingAnchor, constant: -20),
+            
+            // Back zoom control
+            backZoomControl.bottomAnchor.constraint(equalTo: backCameraPreview.bottomAnchor, constant: -20),
+            backZoomControl.centerXAnchor.constraint(equalTo: backCameraPreview.centerXAnchor),
+            backZoomControl.leadingAnchor.constraint(greaterThanOrEqualTo: backCameraPreview.leadingAnchor, constant: 20),
+            backZoomControl.trailingAnchor.constraint(lessThanOrEqualTo: backCameraPreview.trailingAnchor, constant: -20),
+            
+            // Focus controls (full screen)
+            frontFocusControl.topAnchor.constraint(equalTo: frontCameraPreview.topAnchor),
+            frontFocusControl.leadingAnchor.constraint(equalTo: frontCameraPreview.leadingAnchor),
+            frontFocusControl.trailingAnchor.constraint(equalTo: frontCameraPreview.trailingAnchor),
+            frontFocusControl.bottomAnchor.constraint(equalTo: frontCameraPreview.bottomAnchor),
+            
+            backFocusControl.topAnchor.constraint(equalTo: backCameraPreview.topAnchor),
+            backFocusControl.leadingAnchor.constraint(equalTo: backCameraPreview.leadingAnchor),
+            backFocusControl.trailingAnchor.constraint(equalTo: backCameraPreview.trailingAnchor),
+            backFocusControl.bottomAnchor.constraint(equalTo: backCameraPreview.bottomAnchor)
         ])
     }
 
@@ -816,18 +915,16 @@ class ViewController: UIViewController {
             return
         }
 
-        if settingsManager.enableVisualCountdown {
+        if settingsManager.countdownDuration > 0 {
+            beginTimerCountdown()
+        } else if settingsManager.enableVisualCountdown {
             beginRecordingCountdown()
         } else {
             dualCameraManager.startRecording()
         }
     }
 
-    @objc private func flashButtonTapped() {
-        dualCameraManager.toggleFlash()
-        let imageName = dualCameraManager.isFlashOn ? "bolt.fill" : "bolt.slash.fill"
-        flashButton.setImage(UIImage(systemName: imageName), for: .normal)
-    }
+
 
     @objc private func swapCameraButtonTapped() {
         isFrontViewPrimary.toggle()
@@ -1091,9 +1188,10 @@ extension ViewController: DualCameraManagerDelegate {
     func didStartRecording() {
         print("VIEWCONTROLLER: didStartRecording called")
         isRecording = true
-        recordButton.tintColor = .white
-        recordButton.setImage(UIImage(systemName: "stop.circle.fill"), for: .normal)
-        recordingTimerLabel.isHidden = false
+        recordButton.setRecording(true, animated: true)
+        timerBlurView.isHidden = false
+        recordingTimerLabel.textColor = .systemRed
+        recordingTimerLabel.text = "0:00"
         recordingStartTime = Date()
 
         // Enhanced visual feedback on camera previews
@@ -1128,9 +1226,8 @@ extension ViewController: DualCameraManagerDelegate {
     func didStopRecording() {
         print("VIEWCONTROLLER: didStopRecording called")
         isRecording = false
-        recordButton.tintColor = .systemRed
-        recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
-        recordingTimerLabel.isHidden = true
+        recordButton.setRecording(false, animated: true)
+        timerBlurView.isHidden = true
         recordingTimer?.invalidate()
         recordingTimer = nil
 
@@ -1204,6 +1301,7 @@ extension ViewController: DualCameraManagerDelegate {
     func didFinishCameraSetup() {
         print("VIEWCONTROLLER: didFinishCameraSetup called")
         setupPreviewLayers()
+        setupCameraControls()
         activityIndicator.stopAnimating()
         timerBlurView.isHidden = true
         statusLabel.text = ""
@@ -1211,6 +1309,58 @@ extension ViewController: DualCameraManagerDelegate {
         frontCameraPreview.isActive = true
         backCameraPreview.isActive = true
         PerformanceMonitor.shared.endCameraSetup()
+    }
+    
+    private func setupCameraControls() {
+        frontFocusHandler = TapToFocusGestureHandler(
+            previewView: frontCameraPreview,
+            device: dualCameraManager.frontCamera,
+            focusControl: frontFocusControl
+        )
+        
+        backFocusHandler = TapToFocusGestureHandler(
+            previewView: backCameraPreview,
+            device: dualCameraManager.backCamera,
+            focusControl: backFocusControl
+        )
+        
+        if let frontCamera = dualCameraManager.frontCamera {
+            frontZoomControl.maxZoom = min(frontCamera.activeFormat.videoMaxZoomFactor, 10.0)
+        }
+        
+        if let backCamera = dualCameraManager.backCamera {
+            backZoomControl.maxZoom = min(backCamera.activeFormat.videoMaxZoomFactor, 10.0)
+        }
+    }
+    
+    private func setZoom(_ zoom: CGFloat, for position: AVCaptureDevice.Position) {
+        let device = position == .front ? dualCameraManager.frontCamera : dualCameraManager.backCamera
+        guard let device = device else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = zoom
+            device.unlockForConfiguration()
+        } catch {
+            print("Error setting zoom: \(error)")
+        }
+    }
+    
+    private func handleFlashModeChanged(_ mode: FlashControl.FlashMode) {
+        // Apply to both cameras if they support flash
+        [dualCameraManager.frontCamera, dualCameraManager.backCamera].compactMap { $0 }.forEach { device in
+            guard device.hasFlash else { return }
+            
+            do {
+                try device.lockForConfiguration()
+                if device.isFlashModeSupported(mode.avFlashMode) {
+                    device.flashMode = mode.avFlashMode
+                }
+                device.unlockForConfiguration()
+            } catch {
+                print("Error setting flash: \(error)")
+            }
+        }
     }
 }
 
