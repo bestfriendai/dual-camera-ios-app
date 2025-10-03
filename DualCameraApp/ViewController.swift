@@ -11,11 +11,11 @@ import AVFoundation
 class ViewController: UIViewController {
 
     // MARK: - Properties
-    let dualCameraManager = DualCameraManager()
-    let permissionManager = PermissionManager.shared
+    private let appController = CameraAppController()
 
-    var isCameraSetupComplete = false
-    var hasRequestedPermissions = false
+    private var controllerState = CameraAppController.State(phase: .idle, isRecording: false, statusMessage: nil)
+    private var isCameraSetupComplete = false
+    private var hasInitializedController = false
     var isRecording = false
     var recordingTimer: Timer?
     var recordingStartTime: Date?
@@ -23,6 +23,8 @@ class ViewController: UIViewController {
     var isPhotoMode = false
     var isGridVisible = false
     var isPresentingAlert = false
+
+    private var dualCameraManager: DualCameraManager { appController.cameraManager }
 
     // MARK: - UI Components - Camera Views
     // CRITICAL: Use lazy initialization to avoid blocking app launch
@@ -85,47 +87,102 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        print("VIEWCONTROLLER: viewDidLoad started")
+        print("✅ VIEWCONTROLLER: viewDidLoad started")
 
-        // CRITICAL FIX: Only do MINIMAL UI setup in viewDidLoad to avoid black screen
-        // Just set background color and show loading indicator
+        // CRITICAL: Show a proper UI immediately - not just black screen
         view.backgroundColor = .black
 
+        // Add a welcome message and loading indicator
+        let welcomeLabel = UILabel()
+        welcomeLabel.text = "Dual Camera"
+        welcomeLabel.font = UIFont.systemFont(ofSize: 32, weight: .bold)
+        welcomeLabel.textColor = .white
+        welcomeLabel.textAlignment = .center
+        welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(welcomeLabel)
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = "Initializing..."
+        subtitleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        subtitleLabel.textColor = .lightGray
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(subtitleLabel)
+
+        // Activity indicator below the text
         activityIndicator.color = .white
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(activityIndicator)
         activityIndicator.startAnimating()
 
         NSLayoutConstraint.activate([
+            welcomeLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            welcomeLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+
+            subtitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            subtitleLabel.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 12),
+
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            activityIndicator.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 24)
         ])
 
-        print("VIEWCONTROLLER: viewDidLoad completed - minimal UI ready")
+        // Bind controller callbacks (lightweight)
+        bindController()
+
+        print("✅ VIEWCONTROLLER: viewDidLoad completed - ready for fast launch")
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        print("VIEWCONTROLLER: viewDidAppear started")
+        print("✅ VIEWCONTROLLER: viewDidAppear started")
 
-        // OPTIMIZATION: Setup full UI after view appears to avoid blocking app launch
-        if !hasRequestedPermissions && !isCameraSetupComplete {
-            // First time appearing - setup everything
-            setupFullUI()
-
-            hasRequestedPermissions = true
-
-            // Use parallel permission requests for faster UX
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.requestCameraPermissionsOptimized()
-            }
-
-            // OPTIMIZATION: Defer non-critical setup until after permissions
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
-                self.startStorageMonitoring()
-                self.setupEnhancedControls()
-                self.setupPerformanceMonitoring()
+        guard !hasInitializedController else { return }
+        hasInitializedController = true
+        
+        // Phase 1: Start permissions immediately (non-blocking)
+        print("✅ Phase 1: Requesting permissions")
+        appController.start()
+        
+        // Phase 2: Setup essential UI structure (one async block)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            print("✅ Phase 2: Essential UI")
+            self.setupNotifications()
+            self.setupErrorHandling()
+            self.setupCameraViews()
+            
+            // Phase 3: Add controls
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                print("✅ Phase 3: Controls")
+                self.setupGradients()
+                self.setupControls()
+                
+                // Phase 4: Constraints (batched for performance)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    print("✅ Phase 4: Layout")
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    self.setupConstraints()
+                    CATransaction.commit()
+                    
+                    // Phase 5: Finalize
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        print("✅ Phase 5: Finalize")
+                        self.frontCameraPreview.completeSetup()
+                        self.backCameraPreview.completeSetup()
+                        self.showLoadingState()
+                        
+                        // Phase 6: Non-critical (background)
+                        DispatchQueue.global(qos: .utility).async {
+                            print("✅ Phase 6: Non-critical setup")
+                            self.startStorageMonitoring()
+                            self.setupEnhancedControls()
+                            self.setupPerformanceMonitoring()
+                        }
+                        
+                        print("✅ VIEWCONTROLLER: All phases complete")
+                    }
+                }
             }
         }
     }
@@ -168,6 +225,247 @@ class ViewController: UIViewController {
             self.backCameraPreview.hideLoading()
         }
     }
+
+    private func bindController() {
+        appController.onStateChange = { [weak self] state in
+            self?.handleStateChange(state)
+        }
+
+        appController.onPreviewLayersReady = { [weak self] frontLayer, backLayer in
+            self?.handlePreviewLayersReady(frontLayer: frontLayer, backLayer: backLayer)
+        }
+
+        appController.onRecordingStateChange = { [weak self] isRecording in
+            self?.handleRecordingStateChange(isRecording: isRecording)
+        }
+
+        appController.onPhotoCaptured = { [weak self] front, back in
+            self?.handlePhotoCaptured(frontImage: front, backImage: back)
+        }
+
+        appController.onError = { [weak self] error in
+            self?.handleControllerError(error)
+        }
+
+        appController.onVideoQualityChange = { [weak self] quality in
+            self?.qualityButton.setTitle(quality.rawValue, for: .normal)
+        }
+
+        appController.onSimulatorModeRequested = { [weak self] in
+            self?.setupSimulatorMode()
+        }
+
+        dualCameraManager.enableTripleOutput = true
+        dualCameraManager.tripleOutputMode = .allFiles
+    }
+
+    private func handleStateChange(_ state: CameraAppController.State) {
+        controllerState = state
+
+        if let message = state.statusMessage {
+            statusLabel.text = message
+            statusLabel.isHidden = false
+        }
+
+        switch state.phase {
+        case .idle:
+            break
+        case .requestingPermissions:
+            print("📱 VIEWCONTROLLER: Requesting permissions...")
+            statusLabel.text = "Requesting permissions..."
+            statusLabel.isHidden = false
+            showLoadingState()
+        case .settingUp:
+            print("📱 VIEWCONTROLLER: Setting up camera...")
+            statusLabel.text = "Loading camera..."
+            statusLabel.isHidden = false
+            showLoadingState()
+        case .ready:
+            print("✅ VIEWCONTROLLER: Camera ready!")
+            break
+        case .permissionsDenied(let deniedPermissions):
+            print("⚠️ VIEWCONTROLLER: Permissions denied: \(deniedPermissions)")
+            hideLoadingState()
+            presentPermissionsAlert(for: deniedPermissions)
+        case .error(let message):
+            print("❌ VIEWCONTROLLER: Error: \(message)")
+            hideLoadingState()
+            statusLabel.text = "⚠️ \(message)"
+            statusLabel.isHidden = false
+        }
+    }
+
+    private func handlePreviewLayersReady(frontLayer: AVCaptureVideoPreviewLayer?, backLayer: AVCaptureVideoPreviewLayer?) {
+        guard frontLayer != nil, backLayer != nil else {
+            statusLabel.text = "Camera setup failed"
+            statusLabel.isHidden = false
+            return
+        }
+
+        DispatchQueue.main.async {
+            print("VIEWCONTROLLER: Preview layers ready - attaching to views")
+            self.setupPreviewLayers()
+            self.hideLoadingState()
+            self.isCameraSetupComplete = true
+            self.frontCameraPreview.isActive = true
+            self.backCameraPreview.isActive = true
+            self.statusLabel.text = "Ready to record"
+            self.statusLabel.isHidden = false
+
+            if self.view.window != nil {
+                self.appController.startSessions()
+            }
+        }
+    }
+
+    private func handleRecordingStateChange(isRecording: Bool) {
+        DispatchQueue.main.async {
+            if isRecording {
+                print("VIEWCONTROLLER: Recording started")
+                self.isRecording = true
+                self.recordButton.setRecording(true, animated: true)
+                self.timerBlurView.isHidden = false
+                self.recordingTimerLabel.isHidden = false
+                self.recordingStartTime = Date()
+
+                self.frontCameraPreview.startRecordingAnimation()
+                self.backCameraPreview.startRecordingAnimation()
+
+                self.recordingTimer?.invalidate()
+                self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                    guard let self = self, let startTime = self.recordingStartTime else { return }
+                    let elapsed = Int(Date().timeIntervalSince(startTime))
+                    let minutes = elapsed / 60
+                    let seconds = elapsed % 60
+                    self.recordingTimerLabel.text = String(format: "%02d:%02d", minutes, seconds)
+                }
+
+                self.statusLabel.text = "Recording..."
+                self.statusLabel.isHidden = false
+
+                self.swapCameraButton.isEnabled = false
+                self.qualityButton.isEnabled = false
+                self.modeSegmentedControl.isEnabled = false
+                self.tripleOutputButton.isEnabled = false
+                self.audioSourceButton.isEnabled = false
+            } else {
+                print("VIEWCONTROLLER: Recording stopped")
+                self.isRecording = false
+                self.recordButton.setRecording(false, animated: true)
+                self.timerBlurView.isHidden = true
+                self.recordingTimerLabel.isHidden = true
+                self.recordingTimer?.invalidate()
+                self.recordingTimer = nil
+
+                self.frontCameraPreview.stopRecordingAnimation()
+                self.backCameraPreview.stopRecordingAnimation()
+
+                self.statusLabel.text = "Recording saved ✓"
+                self.statusLabel.isHidden = false
+                self.mergeVideosButton.isEnabled = true
+                self.mergeVideosButton.alpha = 1.0
+
+                self.swapCameraButton.isEnabled = true
+                self.qualityButton.isEnabled = true
+                self.modeSegmentedControl.isEnabled = true
+                self.tripleOutputButton.isEnabled = true
+                self.audioSourceButton.isEnabled = true
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.statusLabel.text = "Ready to record"
+                }
+            }
+        }
+    }
+
+    private func handlePhotoCaptured(frontImage: UIImage?, backImage: UIImage?) {
+        DispatchQueue.main.async {
+            self.statusLabel.text = "Photo captured ✓"
+
+            let flashView = UIView(frame: self.view.bounds)
+            flashView.backgroundColor = .white
+            flashView.alpha = 0.8
+            self.view.addSubview(flashView)
+
+            UIView.animate(withDuration: 0.1, animations: {
+                flashView.alpha = 0
+            }) { _ in
+                flashView.removeFromSuperview()
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.statusLabel.text = "Ready to capture"
+            }
+        }
+    }
+
+    private func handleControllerError(_ error: Error) {
+        DispatchQueue.main.async {
+            self.statusLabel.text = "⚠️ Error: \(error.localizedDescription)"
+            self.statusLabel.isHidden = false
+            self.frontCameraPreview.showError(message: "Error occurred")
+            self.backCameraPreview.showError(message: "Error occurred")
+
+            let alert = UIAlertController(
+                title: "Camera Error",
+                message: error.localizedDescription,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.presentAlertSafely(alert)
+        }
+    }
+
+    private func presentPermissionsAlert(for deniedPermissions: [PermissionType]) {
+        guard !deniedPermissions.isEmpty else { return }
+
+        let permissionNames = deniedPermissions.map { $0.title }.joined(separator: ", ")
+
+        // Create a more detailed message
+        var detailedMessage = "This app needs the following permissions to work:\n\n"
+        for permission in deniedPermissions {
+            detailedMessage += "• \(permission.title)\n"
+        }
+        detailedMessage += "\nPlease enable them in Settings to use the app."
+
+        DispatchQueue.main.async {
+            self.statusLabel.text = "⚠️ Permissions Required"
+            self.statusLabel.isHidden = false
+
+            // Show error state in preview views
+            if self.frontCameraPreview.superview != nil {
+                self.frontCameraPreview.showError(message: "Permission required")
+            }
+            if self.backCameraPreview.superview != nil {
+                self.backCameraPreview.showError(message: "Permission required")
+            }
+
+            guard !self.isPresentingAlert else { return }
+
+            let alert = UIAlertController(
+                title: "📷 Permissions Required",
+                message: detailedMessage,
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+                // When user returns from Settings, check permissions again
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.appController.retryPermissions()
+                }
+            })
+
+            alert.addAction(UIAlertAction(title: "Not Now", style: .cancel) { _ in
+                self.statusLabel.text = "App requires permissions to function"
+                self.statusLabel.isHidden = false
+            })
+
+            self.presentAlertSafely(alert)
+        }
+    }
     
     // Hide status bar for fullscreen camera experience
     override var prefersStatusBarHidden: Bool {
@@ -182,7 +480,7 @@ class ViewController: UIViewController {
         super.viewWillAppear(animated)
         print("VIEWCONTROLLER: viewWillAppear - cameraSetupComplete: \(isCameraSetupComplete)")
         if isCameraSetupComplete {
-            dualCameraManager.startSessions()
+            appController.startSessions()
         } else {
             print("VIEWCONTROLLER: Camera not setup yet, will start when setup completes")
         }
@@ -191,7 +489,7 @@ class ViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         if isCameraSetupComplete {
-            dualCameraManager.stopSessions()
+            appController.stopSessions()
         }
     }
     
@@ -433,7 +731,7 @@ class ViewController: UIViewController {
     
     private func loadUserSettings() {
         // Apply saved video quality
-        dualCameraManager.videoQuality = settingsManager.videoQuality
+        appController.setVideoQuality(settingsManager.videoQuality)
         qualityButton.setTitle(settingsManager.videoQuality.rawValue, for: .normal)
         
         // Apply other saved settings
@@ -486,7 +784,7 @@ class ViewController: UIViewController {
     private func startRecordingAfterCountdown() {
         guard isCountingDown else { return }
         isCountingDown = false
-        dualCameraManager.startRecording()
+        appController.startRecording()
     }
 
     private func setupConstraints() {
@@ -666,7 +964,7 @@ class ViewController: UIViewController {
     
     @objc private func handleForceStopRecording() {
         if isRecording {
-            dualCameraManager.stopRecording()
+            appController.stopRecording()
             statusLabel.text = "Recording stopped due to error"
         }
     }
@@ -719,7 +1017,7 @@ class ViewController: UIViewController {
         print("VIEWCONTROLLER: Memory warning received")
         
         // Reduce quality temporarily
-        dualCameraManager.reduceQualityForMemoryPressure()
+        appController.reduceQualityForMemoryPressure()
         
         // Clear any non-essential caches
         clearTemporaryCaches()
@@ -762,20 +1060,23 @@ class ViewController: UIViewController {
 
     @objc private func appWillResignActive() {
         if isRecording {
-            dualCameraManager.stopRecording()
+            appController.stopRecording()
         }
         if isCameraSetupComplete {
-            dualCameraManager.stopSessions()
+            appController.stopSessions()
         }
     }
 
     @objc private func appDidBecomeActive() {
         if isCameraSetupComplete {
             revalidatePermissionsAndStartSession()
+        } else if case .permissionsDenied = controllerState.phase {
+            appController.retryPermissions()
         }
     }
     
     private func revalidatePermissionsAndStartSession() {
+        let permissionManager = PermissionManager.shared
         let cameraStatus = permissionManager.cameraPermissionStatus()
         let micStatus = permissionManager.microphonePermissionStatus()
         let photoStatus = permissionManager.photoLibraryPermissionStatus()
@@ -836,84 +1137,11 @@ class ViewController: UIViewController {
             return
         }
         
-        dualCameraManager.startSessions()
+        appController.startSessions()
         statusLabel.text = "Ready to record"
     }
 
     // MARK: - Camera Setup
-
-    // OPTIMIZATION: Use parallel permission requests for faster UX
-    private func requestCameraPermissionsOptimized() {
-        print("VIEWCONTROLLER: Requesting permissions (optimized)")
-        DispatchQueue.main.async {
-            self.statusLabel.text = "Checking permissions..."
-        }
-
-        permissionManager.requestAllPermissionsParallel { [weak self] allGranted, deniedPermissions in
-            guard let self = self else { return }
-
-            print("VIEWCONTROLLER: Permissions result - allGranted: \(allGranted), denied: \(deniedPermissions)")
-
-            DispatchQueue.main.async {
-                if allGranted {
-                    print("VIEWCONTROLLER: All permissions granted, setting up cameras")
-                    self.statusLabel.text = "Loading camera..."
-                    // OPTIMIZATION: Setup cameras immediately on background queue
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        self.setupCamerasAfterPermissions()
-                    }
-                } else {
-                    print("VIEWCONTROLLER: Permissions denied: \(deniedPermissions)")
-                    self.hideLoadingState()
-                    self.statusLabel.text = "Permissions required"
-
-                    let permissionNames = deniedPermissions.map { $0.title }.joined(separator: ", ")
-                    let message = "This app requires the following permissions:\n\n\(permissionNames)\n\nPlease enable them in Settings."
-
-                    let alert = UIAlertController(
-                        title: "Permissions Required",
-                        message: message,
-                        preferredStyle: .alert
-                    )
-
-                    alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
-                        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(settingsURL)
-                        }
-                    })
-
-                    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-                    self.presentAlertSafely(alert)
-                    self.frontCameraPreview.showError(message: "Camera permission required")
-                    self.backCameraPreview.showError(message: "Camera permission required")
-                }
-            }
-        }
-    }
-
-    // Legacy method for compatibility
-    private func requestCameraPermissions() {
-        requestCameraPermissionsOptimized()
-    }
-
-    private func setupCamerasAfterPermissions() {
-        print("VIEWCONTROLLER: Setting up cameras after permissions")
-        dualCameraManager.delegate = self
-        dualCameraManager.enableTripleOutput = true
-        dualCameraManager.tripleOutputMode = .allFiles
-
-        #if targetEnvironment(simulator)
-        print("VIEWCONTROLLER: Running in simulator mode")
-        DispatchQueue.main.async {
-            self.setupSimulatorMode()
-            self.hideLoadingState()
-        }
-        #else
-        print("VIEWCONTROLLER: Calling dualCameraManager.setupCameras()")
-        self.dualCameraManager.setupCameras()
-        #endif
-    }
 
     private func setupPreviewLayers() {
         print("VIEWCONTROLLER: Setting up preview layers")
@@ -960,6 +1188,8 @@ class ViewController: UIViewController {
         // Simulator mode - show placeholder content
         frontCameraPreview.showError(message: "Simulator Mode\nFront Camera")
         backCameraPreview.showError(message: "Simulator Mode\nBack Camera")
+        frontCameraPreview.hideLoading()
+        backCameraPreview.hideLoading()
 
         activityIndicator.stopAnimating()
         statusLabel.text = "Simulator Mode - Demo Ready"
@@ -1000,14 +1230,14 @@ class ViewController: UIViewController {
         }
         
         if isPhotoMode {
-            dualCameraManager.capturePhoto()
+            appController.capturePhoto()
             animateCaptureFlash()
             return
         }
 
         if isRecording {
             print("VIEWCONTROLLER: Stopping recording...")
-            dualCameraManager.stopRecording()
+            appController.stopRecording()
             return
         }
 
@@ -1020,17 +1250,17 @@ class ViewController: UIViewController {
         if settingsManager.enableVisualCountdown {
             beginRecordingCountdown()
         } else {
-            dualCameraManager.startRecording()
+            appController.startRecording()
         }
     }
 
     @objc private func flashButtonTapped() {
-        dualCameraManager.toggleFlash()
-        let imageName = dualCameraManager.isFlashOn ? "bolt.fill" : "bolt.slash.fill"
+        appController.toggleFlash()
+        let imageName = appController.isFlashOn ? "bolt.fill" : "bolt.slash.fill"
         let flashImg = UIImage(systemName: imageName)?.withRenderingMode(.alwaysTemplate)
         flashButton.setImage(flashImg, for: .normal)
-        flashButton.tintColor = dualCameraManager.isFlashOn ? .systemYellow : .white
-        flashButton.imageView?.tintColor = dualCameraManager.isFlashOn ? .systemYellow : .white
+        flashButton.tintColor = appController.isFlashOn ? .systemYellow : .white
+        flashButton.imageView?.tintColor = appController.isFlashOn ? .systemYellow : .white
     }
 
     @objc private func swapCameraButtonTapped() {
@@ -1062,7 +1292,7 @@ class ViewController: UIViewController {
 
         for quality in VideoQuality.allCases {
             alert.addAction(UIAlertAction(title: quality.rawValue, style: .default) { [weak self] _ in
-                self?.dualCameraManager.videoQuality = quality
+                self?.appController.setVideoQuality(quality)
                 self?.qualityButton.setTitle(quality.rawValue, for: .normal)
             })
         }
@@ -1330,131 +1560,3 @@ class ViewController: UIViewController {
         present(alert, animated: true)
     }
 }
-
-// MARK: - DualCameraManagerDelegate
-extension ViewController: DualCameraManagerDelegate {
-    func didStartRecording() {
-        print("VIEWCONTROLLER: didStartRecording called")
-        isRecording = true
-        
-        // CRITICAL FIX: Update the AppleRecordButton visual state
-        recordButton.setRecording(true, animated: true)
-        
-        // Show timer blur view
-        timerBlurView.isHidden = false
-        recordingTimerLabel.isHidden = false
-        recordingStartTime = Date()
-
-        // Enhanced visual feedback on camera previews
-        frontCameraPreview.startRecordingAnimation()
-        backCameraPreview.startRecordingAnimation()
-
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let startTime = self.recordingStartTime else { return }
-            let elapsed = Int(Date().timeIntervalSince(startTime))
-            let minutes = elapsed / 60
-            let seconds = elapsed % 60
-            self.recordingTimerLabel.text = String(format: "%02d:%02d", minutes, seconds)
-        }
-
-        statusLabel.text = "Recording..."
-
-        // Disable certain controls during recording
-        swapCameraButton.isEnabled = false
-        qualityButton.isEnabled = false
-        modeSegmentedControl.isEnabled = false
-        tripleOutputButton.isEnabled = false
-        audioSourceButton.isEnabled = false
-    }
-
-    func didStopRecording() {
-        print("VIEWCONTROLLER: didStopRecording called")
-        isRecording = false
-        
-        // CRITICAL FIX: Update the AppleRecordButton visual state
-        recordButton.setRecording(false, animated: true)
-        
-        // Hide timer blur view
-        timerBlurView.isHidden = true
-        recordingTimerLabel.isHidden = true
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-
-        // Stop visual feedback
-        frontCameraPreview.stopRecordingAnimation()
-        backCameraPreview.stopRecordingAnimation()
-
-        statusLabel.text = "Recording saved ✓"
-        mergeVideosButton.isEnabled = true
-        mergeVideosButton.alpha = 1.0
-
-        // Re-enable controls
-        swapCameraButton.isEnabled = true
-        qualityButton.isEnabled = true
-        modeSegmentedControl.isEnabled = true
-        tripleOutputButton.isEnabled = true
-        audioSourceButton.isEnabled = true
-
-        // Show success feedback
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            self.statusLabel.text = "Ready to record"
-        }
-    }
-
-    func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?) {
-        statusLabel.text = "Photo captured ✓"
-
-        // Flash effect
-        let flashView = UIView(frame: view.bounds)
-        flashView.backgroundColor = .white
-        flashView.alpha = 0.8
-        view.addSubview(flashView)
-
-        UIView.animate(withDuration: 0.1, animations: {
-            flashView.alpha = 0
-        }) { _ in
-            flashView.removeFromSuperview()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            self.statusLabel.text = "Ready to capture"
-        }
-    }
-
-    func didFailWithError(_ error: Error) {
-        statusLabel.text = "⚠️ Error: \(error.localizedDescription)"
-
-        // Show error on preview views
-        frontCameraPreview.showError(message: "Error occurred")
-        backCameraPreview.showError(message: "Error occurred")
-
-        // Show detailed alert
-        let alert = UIAlertController(
-            title: "Camera Error",
-            message: error.localizedDescription,
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        presentAlertSafely(alert)
-    }
-
-    func didUpdateVideoQuality(to quality: VideoQuality) {
-        qualityButton.setTitle(quality.rawValue, for: .normal)
-    }
-    
-    func didFinishCameraSetup() {
-        // CRITICAL: This is called BEFORE session starts (see DualCameraManager.setupCameras)
-        // Preview layers are assigned here, then session starts after a brief delay
-        DispatchQueue.main.async {
-            print("VIEWCONTROLLER: didFinishCameraSetup called - assigning preview layers")
-            self.setupPreviewLayers()
-            self.hideLoadingState()
-            self.isCameraSetupComplete = true
-            self.frontCameraPreview.isActive = true
-            self.backCameraPreview.isActive = true
-            print("VIEWCONTROLLER: ✅ Camera setup complete, preview layers assigned")
-        }
-    }
-}
-
-

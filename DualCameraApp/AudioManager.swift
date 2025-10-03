@@ -109,31 +109,35 @@ class AudioManager: NSObject {
         audioEngine = AVAudioEngine()
         
         guard let audioEngine = audioEngine else { return }
-        
+
         // Get input node
         inputNode = audioEngine.inputNode
-        
+
         // Create mixer for audio processing
-        mixer = AVAudioMixerNode()
-        audioEngine.attach(mixer!)
-        
-        // Connect input to mixer
-        let inputFormat = inputNode?.outputFormat(forBus: 0)
-        if let inputFormat = inputFormat {
-            audioEngine.connect(inputNode!, to: mixer!, format: inputFormat)
+        let newMixer = AVAudioMixerNode()
+        mixer = newMixer
+        audioEngine.attach(newMixer)
+
+        // Connect input to mixer - safely unwrap inputNode
+        guard let inputNode = inputNode else {
+            print("AudioManager: Failed to get input node")
+            return
         }
-        
+
+        let inputFormat = inputNode.outputFormat(forBus: 0)
+        audioEngine.connect(inputNode, to: newMixer, format: inputFormat)
+
         // Connect mixer to main mixer
-        let mixerFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false)
-        if let mixerFormat = mixerFormat {
-            audioEngine.connect(mixer!, to: audioEngine.mainMixerNode, format: mixerFormat)
+        guard let mixerFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false) else {
+            print("AudioManager: Failed to create mixer format")
+            return
         }
-        
+
+        audioEngine.connect(newMixer, to: audioEngine.mainMixerNode, format: mixerFormat)
+
         // Install tap on mixer for monitoring
-        if let mixerFormat = mixerFormat {
-            mixer?.installTap(onBus: 0, bufferSize: 1024, format: mixerFormat) { [weak self] (buffer, time) in
-                self?.processAudioBuffer(buffer)
-            }
+        mixer?.installTap(onBus: 0, bufferSize: 1024, format: mixerFormat) { [weak self] (buffer, time) in
+            self?.processAudioBuffer(buffer)
         }
         
         // Start the engine

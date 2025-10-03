@@ -1,3 +1,4 @@
+// Dual Camera App
 import Foundation
 import os.signpost
 import UIKit

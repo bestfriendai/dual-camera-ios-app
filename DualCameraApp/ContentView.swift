@@ -1,3 +1,4 @@
+// Dual Camera App
 import SwiftUI
 import AVFoundation
 
@@ -896,20 +897,36 @@ class CameraManagerWrapper: NSObject, ObservableObject, DualCameraManagerDelegat
     }
 
     func didStartRecording() {
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            // Update UI state if needed
+        }
     }
 
     func didStopRecording() {
-        hasRecordings = true
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            self.hasRecordings = true
+        }
     }
 
     func didFailWithError(_ error: Error) {
-        print("Error: \(error)")
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            print("Error: \(error)")
+            // Could show error alert here
+        }
     }
 
     func didUpdateVideoQuality(to quality: VideoQuality) {
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            // Update UI state if needed
+        }
     }
-    
+
     func didFinishCameraSetup() {
+        // Delegate method - ensure thread safety
         DispatchQueue.main.async {
             self.frontPreviewLayer = self.dualCameraManager.frontPreviewLayer
             self.backPreviewLayer = self.dualCameraManager.backPreviewLayer
@@ -917,6 +934,10 @@ class CameraManagerWrapper: NSObject, ObservableObject, DualCameraManagerDelegat
     }
 
     func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?) {
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            // Handle captured photos if needed
+        }
     }
 
     func updatePreviewLayers() {

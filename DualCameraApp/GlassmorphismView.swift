@@ -1,3 +1,4 @@
+// Dual Camera App
 import UIKit
 
 /// Modern glassmorphism view with frosted glass effect, blur, and depth

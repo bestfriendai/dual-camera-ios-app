@@ -1,3 +1,4 @@
+// Dual Camera App
 import CoreImage
 import Metal
 import AVFoundation

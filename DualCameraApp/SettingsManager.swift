@@ -226,7 +226,10 @@ class SettingsManager {
     // MARK: - Settings Management
     
     func resetToDefaults() {
-        let domain = Bundle.main.bundleIdentifier!
+        guard let domain = Bundle.main.bundleIdentifier else {
+            print("SettingsManager: Unable to get bundle identifier")
+            return
+        }
         userDefaults.removePersistentDomain(forName: domain)
         registerDefaultSettings()
     }

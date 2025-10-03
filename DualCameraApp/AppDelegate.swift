@@ -1,3 +1,4 @@
+// Dual Camera App
 import UIKit
 
 @main
@@ -5,14 +6,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        print("✅ AppDelegate: didFinishLaunchingWithOptions started")
+        
         // Begin performance monitoring
         PerformanceMonitor.shared.beginAppLaunch()
+        print("✅ AppDelegate: Performance monitoring started")
 
         // Override point for customization after application launch.
         // Only create window for iOS 12 fallback (iOS 13+ uses SceneDelegate)
         if #available(iOS 13.0, *) {
-            // Scene delegate handles window creation
+            print("✅ AppDelegate: iOS 13+ detected, using SceneDelegate")
         } else {
+            print("✅ AppDelegate: iOS 12 fallback, creating window")
             window = UIWindow(frame: UIScreen.main.bounds)
             window?.rootViewController = ViewController()
             window?.makeKeyAndVisible()
@@ -20,9 +25,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // Defer non-critical initialization
         DispatchQueue.main.async {
+            print("✅ AppDelegate: Setting up non-critical services")
             self.setupNonCriticalServices()
         }
 
+        print("✅ AppDelegate: didFinishLaunchingWithOptions completed")
         return true
     }
 

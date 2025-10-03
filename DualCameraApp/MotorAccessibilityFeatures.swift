@@ -251,16 +251,18 @@ class MotorAccessibilityFeatures {
         action: Selector
     ) -> UIGestureRecognizer {
         let gesture: UIGestureRecognizer
-        
+
         switch type {
         case .tap:
             gesture = UITapGestureRecognizer(target: target, action: action)
         case .doubleTap:
-            gesture = UITapGestureRecognizer(target: target, action: action)
-            (gesture as! UITapGestureRecognizer).numberOfTapsRequired = 2
+            let tapGesture = UITapGestureRecognizer(target: target, action: action)
+            tapGesture.numberOfTapsRequired = 2
+            gesture = tapGesture
         case .longPress:
-            gesture = UILongPressGestureRecognizer(target: target, action: action)
-            (gesture as! UILongPressGestureRecognizer).minimumPressDuration = motorAccessibilityConfiguration.customGestureDelay
+            let longPressGesture = UILongPressGestureRecognizer(target: target, action: action)
+            longPressGesture.minimumPressDuration = motorAccessibilityConfiguration.customGestureDelay
+            gesture = longPressGesture
         case .swipe:
             gesture = UISwipeGestureRecognizer(target: target, action: action)
         case .pinch:

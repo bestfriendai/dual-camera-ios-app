@@ -1,3 +1,4 @@
+// Dual Camera App
 import UIKit
 import AVFoundation
 import AVKit
@@ -143,7 +144,10 @@ extension VideoGalleryViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "VideoCell", for: indexPath) as! VideoCell
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "VideoCell", for: indexPath) as? VideoCell else {
+            print("VideoGalleryViewController: Failed to dequeue VideoCell")
+            return UICollectionViewCell()
+        }
         cell.configure(with: videoURLs[indexPath.item])
         return cell
     }

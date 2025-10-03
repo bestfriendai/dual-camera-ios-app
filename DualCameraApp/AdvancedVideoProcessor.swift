@@ -117,12 +117,15 @@ class AdvancedVideoProcessor {
         guard let outputBuffer = memoryPool.getPixelBuffer(width: Int(size.width), height: Int(size.height)) else {
             return nil
         }
-        
+
+        // Use Display P3 color space if available, fallback to sRGB
+        let colorSpace = CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpaceCreateDeviceRGB()
+
         ciContext.render(image,
                         to: outputBuffer,
                         bounds: CGRect(origin: .zero, size: size),
-                        colorSpace: CGColorSpace(name: CGColorSpace.displayP3)!)
-        
+                        colorSpace: colorSpace)
+
         return outputBuffer
     }
     

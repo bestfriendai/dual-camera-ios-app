@@ -7,43 +7,34 @@
 
 import UIKit
 
-/// Minimal recording interface with clean, distraction-free experience
 class MinimalRecordingInterface: UIView {
+    
+    enum RecordingPhase {
+        case idle
+        case countingDown(remaining: Int)
+        case recording
+        case paused
+    }
     
     // MARK: - Properties
     
-    private var isVisible = false
-    private var isRecording = false
-    private var isPaused = false
+    private(set) var phase: RecordingPhase = .idle {
+        didSet { updateUIForPhase() }
+    }
+    
     private var recordingDuration: TimeInterval = 0
     
     // UI Components
-    private let backgroundView = UIView()
+    private let backgroundView = LiquidGlassView()
     private let recordingIndicator = UIView()
     private let recordingTimeLabel = UILabel()
-    private let recordButton = UIButton(type: .system)
-    private let pauseButton = UIButton(type: .system)
-    private let stopButton = UIButton(type: .system)
-    private let exitButton = UIButton(type: .system)
-    private let controlsContainer = UIView()
-    
-    // Material views
-    private let backgroundMaterial = EnhancedGlassmorphismView(
-        material: .ultraThin,
-        vibrancy: .primary,
-        adaptiveBlur: true,
-        depthEffect: false
-    )
-    
-    private let controlsMaterial = EnhancedGlassmorphismView(
-        material: .systemThickMaterial,
-        vibrancy: .primary,
-        adaptiveBlur: true,
-        depthEffect: true
-    )
+    private let recordButton = ModernLiquidGlassButton()
+    private let pauseButton = ModernLiquidGlassButton()
+    private let stopButton = ModernLiquidGlassButton()
+    private let exitButton = ModernLiquidGlassButton()
+    private let controlsStack = UIStackView()
     
     // Animation properties
-    private var recordingTimer: Timer?
     private var pulseAnimation: CABasicAnimation?
     
     // Callbacks
@@ -68,10 +59,12 @@ class MinimalRecordingInterface: UIView {
     
     private func setupView() {
         backgroundColor = .clear
-        isHidden = true
         alpha = 0
         
-        setupBackground()
+        backgroundView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+        addSubview(backgroundView)
+        
         setupRecordingIndicator()
         setupRecordingTimeLabel()
         setupButtons()
@@ -79,29 +72,14 @@ class MinimalRecordingInterface: UIView {
         setupConstraints()
     }
     
-    private func setupBackground() {
-        backgroundView.translatesAutoresizingMaskIntoConstraints = false
-        backgroundView.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-        addSubview(backgroundView)
-        
-        backgroundMaterial.translatesAutoresizingMaskIntoConstraints = false
-        backgroundMaterial.contentView.addSubview(backgroundView)
-        addSubview(backgroundMaterial)
-    }
-    
     private func setupRecordingIndicator() {
-        recordingIndicator.backgroundColor = EnhancedColorSystem.DynamicColor.recordingActive.color
+        recordingIndicator.backgroundColor = LiquidDesignSystem.DesignTokens.Colors.recording
         recordingIndicator.layer.cornerRadius = 6
         recordingIndicator.translatesAutoresizingMaskIntoConstraints = false
         recordingIndicator.alpha = 0
         
         addSubview(recordingIndicator)
         
-        // Setup pulse animation
-        setupPulseAnimation()
-    }
-    
-    private func setupPulseAnimation() {
         pulseAnimation = CABasicAnimation(keyPath: "transform.scale")
         pulseAnimation?.fromValue = 1.0
         pulseAnimation?.toValue = 1.3
@@ -112,414 +90,200 @@ class MinimalRecordingInterface: UIView {
     }
     
     private func setupRecordingTimeLabel() {
-        recordingTimeLabel.font = DesignSystem.Typography.title3.font
-        recordingTimeLabel.textColor = EnhancedColorSystem.DynamicColor.onBackground.color
+        recordingTimeLabel.font = LiquidDesignSystem.DesignTokens.Typography.title
+        recordingTimeLabel.textColor = .white
         recordingTimeLabel.textAlignment = .center
         recordingTimeLabel.text = "00:00"
         recordingTimeLabel.translatesAutoresizingMaskIntoConstraints = false
         recordingTimeLabel.alpha = 0
+        recordingTimeLabel.adjustsFontForContentSizeCategory = true
+        recordingTimeLabel.isAccessibilityElement = true
+        recordingTimeLabel.accessibilityTraits = .updatesFrequently
         
         addSubview(recordingTimeLabel)
     }
     
     private func setupButtons() {
-        // Record button
         recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
-        recordButton.tintColor = EnhancedColorSystem.DynamicColor.recordingActive.color
-        recordButton.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        recordButton.layer.cornerRadius = 32
-        recordButton.layer.cornerCurve = .continuous
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         recordButton.addTarget(self, action: #selector(recordButtonTapped), for: .touchUpInside)
+        recordButton.accessibilityLabel = "Record"
         
-        // Pause button
         pauseButton.setImage(UIImage(systemName: "pause.circle.fill"), for: .normal)
-        pauseButton.tintColor = EnhancedColorSystem.DynamicColor.warning.color
-        pauseButton.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        pauseButton.layer.cornerRadius = 32
-        pauseButton.layer.cornerCurve = .continuous
         pauseButton.translatesAutoresizingMaskIntoConstraints = false
         pauseButton.addTarget(self, action: #selector(pauseButtonTapped), for: .touchUpInside)
-        pauseButton.isHidden = true
+        pauseButton.alpha = 0
+        pauseButton.accessibilityLabel = "Pause recording"
         
-        // Stop button
         stopButton.setImage(UIImage(systemName: "stop.circle.fill"), for: .normal)
-        stopButton.tintColor = EnhancedColorSystem.DynamicColor.error.color
-        stopButton.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        stopButton.layer.cornerRadius = 32
-        stopButton.layer.cornerCurve = .continuous
         stopButton.translatesAutoresizingMaskIntoConstraints = false
         stopButton.addTarget(self, action: #selector(stopButtonTapped), for: .touchUpInside)
-        stopButton.isHidden = true
+        stopButton.alpha = 0
+        stopButton.accessibilityLabel = "Stop recording"
         
-        // Exit button
         exitButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        exitButton.tintColor = EnhancedColorSystem.DynamicColor.onBackground.color
-        exitButton.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-        exitButton.layer.cornerRadius = 20
-        exitButton.layer.cornerCurve = .continuous
         exitButton.translatesAutoresizingMaskIntoConstraints = false
         exitButton.addTarget(self, action: #selector(exitButtonTapped), for: .touchUpInside)
-        
-        // Add buttons to controls container
-        controlsContainer.addSubview(recordButton)
-        controlsContainer.addSubview(pauseButton)
-        controlsContainer.addSubview(stopButton)
-        controlsContainer.addSubview(exitButton)
+        exitButton.accessibilityLabel = "Exit minimal mode"
     }
     
     private func setupControlsContainer() {
-        controlsMaterial.translatesAutoresizingMaskIntoConstraints = false
-        controlsMaterial.layer.cornerRadius = 40
-        controlsMaterial.layer.cornerCurve = .continuous
-        controlsMaterial.contentView.addSubview(controlsContainer)
-        addSubview(controlsMaterial)
+        controlsStack.axis = .horizontal
+        controlsStack.spacing = LiquidDesignSystem.DesignTokens.Spacing.lg
+        controlsStack.distribution = .equalSpacing
+        controlsStack.alignment = .center
+        controlsStack.translatesAutoresizingMaskIntoConstraints = false
         
-        controlsContainer.translatesAutoresizingMaskIntoConstraints = false
+        controlsStack.addArrangedSubview(recordButton)
+        controlsStack.addArrangedSubview(pauseButton)
+        controlsStack.addArrangedSubview(stopButton)
+        
+        addSubview(controlsStack)
+        addSubview(exitButton)
     }
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Background material
-            backgroundMaterial.topAnchor.constraint(equalTo: topAnchor),
-            backgroundMaterial.leadingAnchor.constraint(equalTo: leadingAnchor),
-            backgroundMaterial.trailingAnchor.constraint(equalTo: trailingAnchor),
-            backgroundMaterial.bottomAnchor.constraint(equalTo: bottomAnchor),
+            backgroundView.topAnchor.constraint(equalTo: topAnchor),
+            backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
             
-            // Background view
-            backgroundView.topAnchor.constraint(equalTo: backgroundMaterial.contentView.topAnchor),
-            backgroundView.leadingAnchor.constraint(equalTo: backgroundMaterial.contentView.leadingAnchor),
-            backgroundView.trailingAnchor.constraint(equalTo: backgroundMaterial.contentView.trailingAnchor),
-            backgroundView.bottomAnchor.constraint(equalTo: backgroundMaterial.contentView.bottomAnchor),
-            
-            // Recording indicator
-            recordingIndicator.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: DesignSystem.Spacing.xl.value),
+            recordingIndicator.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: LiquidDesignSystem.DesignTokens.Spacing.xl),
             recordingIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
             recordingIndicator.widthAnchor.constraint(equalToConstant: 12),
             recordingIndicator.heightAnchor.constraint(equalToConstant: 12),
             
-            // Recording time label
-            recordingTimeLabel.topAnchor.constraint(equalTo: recordingIndicator.bottomAnchor, constant: DesignSystem.Spacing.sm.value),
+            recordingTimeLabel.topAnchor.constraint(equalTo: recordingIndicator.bottomAnchor, constant: LiquidDesignSystem.DesignTokens.Spacing.sm),
             recordingTimeLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             
-            // Controls material
-            controlsMaterial.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -DesignSystem.Spacing.xl.value),
-            controlsMaterial.centerXAnchor.constraint(equalTo: centerXAnchor),
-            controlsMaterial.widthAnchor.constraint(equalToConstant: 200),
-            controlsMaterial.heightAnchor.constraint(equalToConstant: 80),
+            controlsStack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -LiquidDesignSystem.DesignTokens.Spacing.xl),
+            controlsStack.centerXAnchor.constraint(equalTo: centerXAnchor),
             
-            // Controls container
-            controlsContainer.topAnchor.constraint(equalTo: controlsMaterial.contentView.topAnchor),
-            controlsContainer.leadingAnchor.constraint(equalTo: controlsMaterial.contentView.leadingAnchor),
-            controlsContainer.trailingAnchor.constraint(equalTo: controlsMaterial.contentView.trailingAnchor),
-            controlsContainer.bottomAnchor.constraint(equalTo: controlsMaterial.contentView.bottomAnchor),
-            
-            // Record button
-            recordButton.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
-            recordButton.centerYAnchor.constraint(equalTo: controlsContainer.centerYAnchor),
             recordButton.widthAnchor.constraint(equalToConstant: 64),
             recordButton.heightAnchor.constraint(equalToConstant: 64),
             
-            // Pause button
-            pauseButton.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
-            pauseButton.centerYAnchor.constraint(equalTo: controlsContainer.centerYAnchor),
             pauseButton.widthAnchor.constraint(equalToConstant: 64),
             pauseButton.heightAnchor.constraint(equalToConstant: 64),
             
-            // Stop button
-            stopButton.centerXAnchor.constraint(equalTo: controlsContainer.centerXAnchor),
-            stopButton.centerYAnchor.constraint(equalTo: controlsContainer.centerYAnchor),
             stopButton.widthAnchor.constraint(equalToConstant: 64),
             stopButton.heightAnchor.constraint(equalToConstant: 64),
             
-            // Exit button
-            exitButton.topAnchor.constraint(equalTo: controlsContainer.topAnchor, constant: DesignSystem.Spacing.sm.value),
-            exitButton.trailingAnchor.constraint(equalTo: controlsContainer.trailingAnchor, constant: -DesignSystem.Spacing.sm.value),
-            exitButton.widthAnchor.constraint(equalToConstant: 40),
-            exitButton.heightAnchor.constraint(equalToConstant: 40)
+            exitButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: LiquidDesignSystem.DesignTokens.Spacing.lg),
+            exitButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LiquidDesignSystem.DesignTokens.Spacing.lg),
+            exitButton.widthAnchor.constraint(equalToConstant: 44),
+            exitButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
     
     // MARK: - Public Methods
     
-    /// Shows the minimal recording interface
     func show(animated: Bool = true) {
-        guard !isVisible else { return }
-        
-        isVisible = true
-        
-        let showAnimation = {
-            self.alpha = 1
-        }
+        isHidden = false
         
         if animated {
-            UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseOut]) {
-                showAnimation()
+            UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5) {
+                self.alpha = 1
             }
         } else {
-            showAnimation()
+            alpha = 1
         }
     }
     
-    /// Hides the minimal recording interface
     func hide(animated: Bool = true) {
-        guard isVisible else { return }
-        
-        isVisible = false
-        
-        let hideAnimation = {
-            self.alpha = 0
-        }
-        
         if animated {
             UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseIn]) {
-                hideAnimation()
+                self.alpha = 0
             } completion: { _ in
                 self.isHidden = true
+                self.phase = .idle
             }
         } else {
-            hideAnimation()
+            alpha = 0
             isHidden = true
+            phase = .idle
         }
     }
     
-    /// Updates the interface for recording state
-    func updateForRecordingState(_ isRecording: Bool) {
-        self.isRecording = isRecording
-        
-        if isRecording {
-            startRecordingUI()
-        } else {
-            stopRecordingUI()
-        }
+    func setPhase(_ newPhase: RecordingPhase) {
+        phase = newPhase
     }
     
-    /// Updates the interface for paused state
-    func updateForPausedState(_ isPaused: Bool) {
-        self.isPaused = isPaused
-        
-        if isPaused {
-            pauseRecordingUI()
-        } else {
-            resumeRecordingUI()
-        }
-    }
-    
-    /// Updates the recording duration display
-    func updateRecordingDuration(_ duration: TimeInterval) {
+    func updateDuration(_ duration: TimeInterval) {
         recordingDuration = duration
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         recordingTimeLabel.text = String(format: "%02d:%02d", minutes, seconds)
+        recordingTimeLabel.accessibilityValue = "\(minutes) minutes, \(seconds) seconds"
     }
     
     // MARK: - UI State Updates
     
-    private func startRecordingUI() {
-        // Show recording indicator with animation
-        UIView.animate(withDuration: 0.3) {
-            self.recordingIndicator.alpha = 1
-            self.recordingTimeLabel.alpha = 1
+    private func updateUIForPhase() {
+        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [.allowUserInteraction]) {
+            switch self.phase {
+            case .idle:
+                self.recordingIndicator.alpha = 0
+                self.recordingTimeLabel.alpha = 0
+                self.recordButton.alpha = 1
+                self.pauseButton.alpha = 0
+                self.stopButton.alpha = 0
+                self.recordingIndicator.layer.removeAnimation(forKey: "pulse")
+                
+            case .countingDown(let remaining):
+                self.recordingTimeLabel.text = "\(remaining)"
+                self.recordingTimeLabel.alpha = 1
+                self.recordButton.alpha = 0
+                
+            case .recording:
+                self.recordingIndicator.alpha = 1
+                self.recordingTimeLabel.alpha = 1
+                self.recordButton.alpha = 0
+                self.pauseButton.alpha = 1
+                self.stopButton.alpha = 1
+                
+                if let animation = self.pulseAnimation {
+                    self.recordingIndicator.layer.add(animation, forKey: "pulse")
+                }
+                
+            case .paused:
+                self.recordingIndicator.backgroundColor = LiquidDesignSystem.DesignTokens.Colors.accent
+                self.recordingIndicator.layer.removeAnimation(forKey: "pulse")
+                self.pauseButton.alpha = 0
+                self.recordButton.alpha = 1
+                self.recordButton.setImage(UIImage(systemName: "play.circle.fill"), for: .normal)
+            }
         }
         
-        // Add pulse animation to recording indicator
-        if let pulseAnimation = pulseAnimation {
-            recordingIndicator.layer.add(pulseAnimation, forKey: "pulse")
+        switch phase {
+        case .recording:
+            HapticFeedbackManager.shared.recordingStart()
+        case .paused, .idle:
+            HapticFeedbackManager.shared.mediumImpact()
+        case .countingDown:
+            HapticFeedbackManager.shared.lightImpact()
         }
-        
-        // Update buttons
-        recordButton.isHidden = true
-        pauseButton.isHidden = false
-        stopButton.isHidden = false
-        
-        // Start recording timer
-        startRecordingTimer()
-        
-        // Update background material
-        backgroundMaterial.updateMaterialStyle(.ultraThin)
-        
-        // Haptic feedback
-        HapticFeedbackManager.shared.recordingStart()
-    }
-    
-    private func stopRecordingUI() {
-        // Hide recording indicator with animation
-        UIView.animate(withDuration: 0.3) {
-            self.recordingIndicator.alpha = 0
-            self.recordingTimeLabel.alpha = 0
-        }
-        
-        // Remove pulse animation
-        recordingIndicator.layer.removeAnimation(forKey: "pulse")
-        
-        // Update buttons
-        recordButton.isHidden = false
-        pauseButton.isHidden = true
-        stopButton.isHidden = true
-        
-        // Stop recording timer
-        stopRecordingTimer()
-        
-        // Reset recording duration
-        recordingDuration = 0
-        updateRecordingDuration(0)
-        
-        // Update background material
-        backgroundMaterial.updateMaterialStyle(.ultraThin)
-        
-        // Haptic feedback
-        HapticFeedbackManager.shared.recordingStop()
-    }
-    
-    private func pauseRecordingUI() {
-        // Update recording indicator
-        recordingIndicator.backgroundColor = EnhancedColorSystem.DynamicColor.warning.color
-        
-        // Update buttons
-        pauseButton.isHidden = true
-        recordButton.isHidden = false
-        recordButton.setImage(UIImage(systemName: "play.circle.fill"), for: .normal)
-        recordButton.tintColor = EnhancedColorSystem.DynamicColor.success.color
-        
-        // Stop recording timer
-        stopRecordingTimer()
-        
-        // Haptic feedback
-        HapticFeedbackManager.shared.mediumImpact()
-    }
-    
-    private func resumeRecordingUI() {
-        // Update recording indicator
-        recordingIndicator.backgroundColor = EnhancedColorSystem.DynamicColor.recordingActive.color
-        
-        // Update buttons
-        recordButton.isHidden = true
-        pauseButton.isHidden = false
-        recordButton.setImage(UIImage(systemName: "record.circle.fill"), for: .normal)
-        recordButton.tintColor = EnhancedColorSystem.DynamicColor.recordingActive.color
-        
-        // Start recording timer
-        startRecordingTimer()
-        
-        // Haptic feedback
-        HapticFeedbackManager.shared.mediumImpact()
-    }
-    
-    // MARK: - Recording Timer
-    
-    private func startRecordingTimer() {
-        stopRecordingTimer()
-        
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.recordingDuration += 0.1
-            self.updateRecordingDuration(self.recordingDuration)
-        }
-    }
-    
-    private func stopRecordingTimer() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
     }
     
     // MARK: - Button Actions
     
     @objc private func recordButtonTapped() {
-        if isRecording {
-            if isPaused {
-                // Resume recording
-                onRecordButtonTapped?()
-            } else {
-                // Pause recording
-                onPauseButtonTapped?()
-            }
-        } else {
-            // Start recording
-            onRecordButtonTapped?()
-        }
-        
-        // Haptic feedback
         HapticFeedbackManager.shared.mediumImpact()
+        onRecordButtonTapped?()
     }
     
     @objc private func pauseButtonTapped() {
-        onPauseButtonTapped?()
-        
-        // Haptic feedback
         HapticFeedbackManager.shared.mediumImpact()
+        onPauseButtonTapped?()
     }
     
     @objc private func stopButtonTapped() {
-        onStopButtonTapped?()
-        
-        // Haptic feedback
         HapticFeedbackManager.shared.heavyImpact()
+        onStopButtonTapped?()
     }
     
     @objc private func exitButtonTapped() {
+        HapticFeedbackManager.shared.lightImpact()
         onExitButtonTapped?()
-        
-        // Haptic feedback
-        HapticFeedbackManager.shared.lightImpact()
-    }
-    
-    // MARK: - Touch Handling
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesBegan(touches, with: event)
-        
-        // Provide subtle haptic feedback on touch
-        HapticFeedbackManager.shared.lightImpact()
-    }
-    
-    // MARK: - Accessibility
-    
-    override var isAccessibilityElement: Bool {
-        get { return true }
-        set { }
-    }
-    
-    override var accessibilityLabel: String? {
-        get {
-            if isRecording {
-                return isPaused ? "Recording paused" : "Recording in progress"
-            } else {
-                return "Minimal recording interface"
-            }
-        }
-        set { }
-    }
-    
-    override var accessibilityValue: String? {
-        get {
-            let minutes = Int(recordingDuration) / 60
-            let seconds = Int(recordingDuration) % 60
-            return String(format: "%02d:%02d", minutes, seconds)
-        }
-        set { }
-    }
-    
-    override var accessibilityTraits: UIAccessibilityTraits {
-        get {
-            if isRecording {
-                return .updatesFrequently
-            } else {
-                return .button
-            }
-        }
-        set { }
-    }
-    
-    override func accessibilityActivate() -> Bool {
-        if isRecording {
-            if isPaused {
-                recordButtonTapped()
-            } else {
-                pauseButtonTapped()
-            }
-        } else {
-            recordButtonTapped()
-        }
-        return true
     }
 }

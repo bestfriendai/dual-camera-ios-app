@@ -1,3 +1,4 @@
+// Dual Camera App
 import UIKit
 import AVFoundation
 

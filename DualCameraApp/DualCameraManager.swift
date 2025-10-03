@@ -1,3 +1,4 @@
+// Dual Camera App
 import AVFoundation
 import UIKit
 import Photos
@@ -809,9 +810,10 @@ final class DualCameraManager: NSObject {
 
             // Setup triple output (combined video) if needed
             if self.enableTripleOutput && self.tripleOutputMode != .frontBackOnly {
-                self.combinedVideoURL = documentsPath.appendingPathComponent("combined_\(timestamp).mp4")
+                let combinedURL = documentsPath.appendingPathComponent("combined_\(timestamp).mp4")
+                self.combinedVideoURL = combinedURL
                 self.setupAssetWriter()
-                print("DEBUG: Setup triple output recording to \(self.combinedVideoURL!)")
+                print("DEBUG: Setup triple output recording to \(combinedURL.path)")
             }
             
             self.isRecording = true
