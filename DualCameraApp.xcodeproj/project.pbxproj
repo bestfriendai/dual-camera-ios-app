@@ -365,7 +365,7 @@ A1000005294A0000000000001 /* ViewController.swift in Sources */,
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_FILE = DualCameraApp/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to record dual camera videos";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with videos";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -396,7 +396,7 @@ A1000005294A0000000000001 /* ViewController.swift in Sources */,
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_FILE = DualCameraApp/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to record dual camera videos";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with videos";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
