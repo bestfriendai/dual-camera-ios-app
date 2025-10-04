@@ -52,6 +52,8 @@
 		THERMAL001294A0000000001 /* ThermalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = THERMAL002294A0000000001 /* ThermalManager.swift */; };
 		BATTERY001294A0000000001 /* BatteryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BATTERY002294A0000000001 /* BatteryManager.swift */; };
 		MEMORY001294A0000000001 /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = MEMORY002294A0000000001 /* MemoryManager.swift */; };
+		AUDIO001294A0000000001 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUDIO002294A0000000001 /* AudioManager.swift */; };
+		SETTINGS001294A0000000001 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETTINGS002294A0000000001 /* SettingsManager.swift */; };
 		D00843A198F44AD3B431885B /* ZoomControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694A6F0CCD9D4CCB8B9587E3 /* ZoomControl.swift */; };
 		5FD97FBB404B4648901A318D /* FlashControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8347214FC6BD487E82DAE242 /* FlashControl.swift */; };
 		BC9E238569FF4E90B0138DE9 /* TimerControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8150DA5DB44C3BB83BB8E0 /* TimerControl.swift */; };
@@ -166,6 +168,8 @@
 		THERMAL002294A0000000001 /* ThermalManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualCameraApp/ThermalManager.swift; sourceTree = "<group>"; };
 		BATTERY002294A0000000001 /* BatteryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualCameraApp/BatteryManager.swift; sourceTree = "<group>"; };
 		MEMORY002294A0000000001 /* MemoryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualCameraApp/MemoryManager.swift; sourceTree = "<group>"; };
+		AUDIO002294A0000000001 /* AudioManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualCameraApp/AudioManager.swift; sourceTree = "<group>"; };
+		SETTINGS002294A0000000001 /* SettingsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualCameraApp/SettingsManager.swift; sourceTree = "<group>"; };
 
 		D6ED4FB422F00F4730B2A36C /* AudioControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioControlsView.swift; sourceTree = "<group>"; };
 		DC749B48E761859DBE734A3A /* AdvancedCameraControlsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdvancedCameraControlsManager.swift; sourceTree = "<group>"; };
@@ -419,6 +423,8 @@
 				THERMAL001294A0000000001 /* ThermalManager.swift in Sources */,
 				BATTERY001294A0000000001 /* BatteryManager.swift in Sources */,
 				MEMORY001294A0000000001 /* MemoryManager.swift in Sources */,
+				AUDIO001294A0000000001 /* AudioManager.swift in Sources */,
+				SETTINGS001294A0000000001 /* SettingsManager.swift in Sources */,
 				72B04DC27F0DF4791A0C3886 /* VisualCountdownView.swift in Sources */,
 				46C068978873CC24B8F61D12 /* VideoQuality.swift in Sources */,
 				5869F7337293BE33BC8554BE /* StartupOptimizer.swift in Sources */,

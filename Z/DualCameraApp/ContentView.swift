@@ -241,8 +241,10 @@ struct ContentView: View {
         cameraManager.startRecording()
         isRecording = true
         recordingTime = 0
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { @MainActor _ in
-            recordingTime += 1
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            Task { @MainActor in
+                recordingTime += 1
+            }
         }
     }
 
@@ -255,12 +257,12 @@ struct ContentView: View {
 
     private func requestPermissions() {
         let permissionManager = PermissionManager.shared
-        permissionManager.requestAllPermissions { @MainActor allGranted, deniedPermissions in
-            self.permissionsGranted = allGranted
-            if !allGranted {
-                self.showPermissionAlert = true
-            } else {
-                Task { @MainActor in
+        permissionManager.requestAllPermissions { allGranted, deniedPermissions in
+            Task { @MainActor in
+                self.permissionsGranted = allGranted
+                if !allGranted {
+                    self.showPermissionAlert = true
+                } else {
                     self.cameraManager.setup()
                 }
             }
@@ -1100,11 +1102,7 @@ class GalleryManager {
                     url: url,
                     source: .dualCamera,
                     metadata: VideoMetadata(
-                        title: url.lastPathComponent,
-                        description: nil,
-                        tags: [],
-                        location: nil,
-                        cameraSettings: nil
+                        title: url.lastPathComponent
                     ),
                     thumbnail: nil,
                     createdAt: createdAt,

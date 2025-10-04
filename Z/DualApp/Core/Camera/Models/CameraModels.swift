@@ -129,7 +129,7 @@ enum CameraPosition: String, CaseIterable, Sendable, Codable {
 
 // MARK: - Focus Mode
 
-enum FocusMode: String, CaseIterable, Sendable, Codable {
+enum CameraFocusMode: String, CaseIterable, Sendable, Codable {
     case locked = "Locked"
     case autoFocus = "Auto Focus"
     case continuousAutoFocus = "Continuous Auto Focus"

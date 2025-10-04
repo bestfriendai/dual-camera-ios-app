@@ -9,8 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-// Import UserSettings from SettingsManager
-typealias UserSettings = SettingsManager.UserSettings
+// UserSettings is defined in SettingsManager.swift as a standalone struct
 
 @MainActor
 class SettingsViewModel: ObservableObject {

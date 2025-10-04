@@ -626,13 +626,16 @@ enum VideoFilterOption: String, CaseIterable, Sendable {
 enum VideoSource: String, Sendable {
     case documents = "Documents"
     case photoLibrary = "Photo Library"
-    
+    case dualCamera = "Dual Camera"
+
     var icon: String {
         switch self {
         case .documents:
             return "folder"
         case .photoLibrary:
             return "photo"
+        case .dualCamera:
+            return "camera"
         }
     }
 }

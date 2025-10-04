@@ -79,8 +79,8 @@ class AdvancedCameraControlsManager {
 
             await MainActor.run {
                 // Load focus settings
-                frontFocusMode = userSettings.cameraSettings.autoFocusEnabled ? .continuousAutoFocus : .locked
-                backFocusMode = userSettings.cameraSettings.autoFocusEnabled ? .continuousAutoFocus : .locked
+                frontFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
+                backFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
 
                 // Load zoom settings
                 frontZoomFactor = 1.0
