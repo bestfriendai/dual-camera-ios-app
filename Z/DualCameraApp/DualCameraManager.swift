@@ -137,7 +137,7 @@ final class DualCameraManager: NSObject {
     var tripleOutputMode: TripleOutputMode = .allFiles
     
     // Audio management
-    private let audioManager = AudioManager()
+    private let audioManager = AudioManager.shared
 
     private enum DualCameraError: LocalizedError {
         case multiCamNotSupported

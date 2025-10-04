@@ -14,6 +14,10 @@ import Combine
 
 @MainActor
 actor AudioManager: Sendable {
+    // MARK: - Singleton
+
+    static let shared = AudioManager()
+
     // MARK: - State Properties
     
     private(set) var currentState: AudioState = .inactive
