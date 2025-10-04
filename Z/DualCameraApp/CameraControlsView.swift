@@ -1,0 +1,801 @@
+// Dual Camera App
+import AVFoundation
+import UIKit
+
+class CameraControlsView: UIView {
+    
+    private let mainContainer = LiquidGlassView()
+    private let headerView = UIView()
+    private let titleLabel = UILabel()
+    private let cameraSegmentedControl = ModernSegmentedControl()
+    
+    private let scrollView = UIScrollView()
+    private let controlsStackView = UIStackView()
+    
+    private let focusSection = ControlSection()
+    private let exposureSection = ControlSection()
+    private let zoomSection = ControlSection()
+    
+    private let focusSlider = ModernSlider()
+    private let exposureSlider = ModernSlider()
+    private let zoomSlider = ModernSlider()
+    
+    private let focusModeControl = ModernSegmentedControl()
+    private let exposureModeControl = ModernSegmentedControl()
+    
+    private let focusResetButton = ModernGlassButton()
+    private let exposureResetButton = ModernGlassButton()
+    private let zoomResetButton = ModernGlassButton()
+    
+    private let focusValueLabel = UILabel()
+    private let exposureValueLabel = UILabel()
+    private let zoomValueLabel = UILabel()
+    
+    private var selectedCamera: AVCaptureDevice.Position = .back
+    private weak var advancedControlsManager: AdvancedCameraControlsManager?
+    
+    var onControlsChanged: (() -> Void)?
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        backgroundColor = .clear
+        
+        setupMainContainer()
+        setupHeader()
+        setupScrollView()
+        setupFocusSection()
+        setupExposureSection()
+        setupZoomSection()
+        setupConstraints()
+        
+        updateUIForSelectedCamera()
+    }
+    
+    private func setupMainContainer() {
+        mainContainer.liquidGlassColor = UIColor.systemBlue.withAlphaComponent(0.3)
+        mainContainer.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(mainContainer)
+    }
+    
+    private func setupHeader() {
+        headerView.translatesAutoresizingMaskIntoConstraints = false
+        mainContainer.contentView.addSubview(headerView)
+        
+        titleLabel.text = "Camera Controls"
+        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        titleLabel.textColor = .white
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(titleLabel)
+        
+        cameraSegmentedControl.setItems(["Front", "Back"])
+        cameraSegmentedControl.selectedIndex = 1
+        cameraSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        cameraSegmentedControl.onSelectionChanged = { [weak self] index in
+            self?.handleCameraSwitch(index: index)
+        }
+        headerView.addSubview(cameraSegmentedControl)
+    }
+    
+    private func setupScrollView() {
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        mainContainer.contentView.addSubview(scrollView)
+        
+        controlsStackView.axis = .vertical
+        controlsStackView.spacing = 20
+        controlsStackView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(controlsStackView)
+    }
+    
+    private func setupFocusSection() {
+        focusSection.titleLabel.text = "Focus"
+        focusSection.translatesAutoresizingMaskIntoConstraints = false
+        
+        focusModeControl.setItems(["Auto", "Manual"])
+        focusModeControl.selectedIndex = 0
+        focusModeControl.translatesAutoresizingMaskIntoConstraints = false
+        focusModeControl.onSelectionChanged = { [weak self] index in
+            self?.handleFocusModeChange(index: index)
+        }
+        
+        focusSlider.minimumValue = 0.0
+        focusSlider.maximumValue = 1.0
+        focusSlider.value = 0.5
+        focusSlider.isEnabled = false
+        focusSlider.translatesAutoresizingMaskIntoConstraints = false
+        focusSlider.onValueChanged = { [weak self] value in
+            self?.handleFocusValueChange(value: value)
+        }
+        
+        focusValueLabel.text = "0.50"
+        focusValueLabel.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .medium)
+        focusValueLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        focusValueLabel.textAlignment = .right
+        focusValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        focusResetButton.setTitle("Reset", for: .normal)
+        focusResetButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        focusResetButton.translatesAutoresizingMaskIntoConstraints = false
+        focusResetButton.addTarget(self, action: #selector(resetFocusTapped), for: .touchUpInside)
+        
+        focusSection.contentView.addSubview(focusModeControl)
+        focusSection.contentView.addSubview(focusSlider)
+        focusSection.contentView.addSubview(focusValueLabel)
+        focusSection.contentView.addSubview(focusResetButton)
+        
+        controlsStackView.addArrangedSubview(focusSection)
+    }
+    
+    private func setupExposureSection() {
+        exposureSection.titleLabel.text = "Exposure"
+        exposureSection.translatesAutoresizingMaskIntoConstraints = false
+        
+        exposureModeControl.setItems(["Auto", "Manual"])
+        exposureModeControl.selectedIndex = 0
+        exposureModeControl.translatesAutoresizingMaskIntoConstraints = false
+        exposureModeControl.onSelectionChanged = { [weak self] index in
+            self?.handleExposureModeChange(index: index)
+        }
+        
+        exposureSlider.minimumValue = -2.0
+        exposureSlider.maximumValue = 2.0
+        exposureSlider.value = 0.0
+        exposureSlider.isEnabled = false
+        exposureSlider.translatesAutoresizingMaskIntoConstraints = false
+        exposureSlider.onValueChanged = { [weak self] value in
+            self?.handleExposureValueChange(value: value)
+        }
+        
+        exposureValueLabel.text = "0.00 EV"
+        exposureValueLabel.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .medium)
+        exposureValueLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        exposureValueLabel.textAlignment = .right
+        exposureValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        exposureResetButton.setTitle("Reset", for: .normal)
+        exposureResetButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        exposureResetButton.translatesAutoresizingMaskIntoConstraints = false
+        exposureResetButton.addTarget(self, action: #selector(resetExposureTapped), for: .touchUpInside)
+        
+        exposureSection.contentView.addSubview(exposureModeControl)
+        exposureSection.contentView.addSubview(exposureSlider)
+        exposureSection.contentView.addSubview(exposureValueLabel)
+        exposureSection.contentView.addSubview(exposureResetButton)
+        
+        controlsStackView.addArrangedSubview(exposureSection)
+    }
+    
+    private func setupZoomSection() {
+        zoomSection.titleLabel.text = "Zoom"
+        zoomSection.translatesAutoresizingMaskIntoConstraints = false
+        
+        zoomSlider.minimumValue = 1.0
+        zoomSlider.maximumValue = 5.0
+        zoomSlider.value = 1.0
+        zoomSlider.translatesAutoresizingMaskIntoConstraints = false
+        zoomSlider.onValueChanged = { [weak self] value in
+            self?.handleZoomValueChange(value: value)
+        }
+        
+        zoomValueLabel.text = "1.0×"
+        zoomValueLabel.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .medium)
+        zoomValueLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        zoomValueLabel.textAlignment = .right
+        zoomValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        zoomResetButton.setTitle("Reset", for: .normal)
+        zoomResetButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        zoomResetButton.translatesAutoresizingMaskIntoConstraints = false
+        zoomResetButton.addTarget(self, action: #selector(resetZoomTapped), for: .touchUpInside)
+        
+        zoomSection.contentView.addSubview(zoomSlider)
+        zoomSection.contentView.addSubview(zoomValueLabel)
+        zoomSection.contentView.addSubview(zoomResetButton)
+        
+        controlsStackView.addArrangedSubview(zoomSection)
+    }
+    
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            mainContainer.topAnchor.constraint(equalTo: topAnchor),
+            mainContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
+            mainContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
+            mainContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
+            
+            headerView.topAnchor.constraint(equalTo: mainContainer.contentView.topAnchor, constant: 16),
+            headerView.leadingAnchor.constraint(equalTo: mainContainer.contentView.leadingAnchor, constant: 20),
+            headerView.trailingAnchor.constraint(equalTo: mainContainer.contentView.trailingAnchor, constant: -20),
+            
+            titleLabel.topAnchor.constraint(equalTo: headerView.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
+            
+            cameraSegmentedControl.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
+            cameraSegmentedControl.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
+            cameraSegmentedControl.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
+            cameraSegmentedControl.heightAnchor.constraint(equalToConstant: 36),
+            cameraSegmentedControl.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
+            
+            scrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 16),
+            scrollView.leadingAnchor.constraint(equalTo: mainContainer.contentView.leadingAnchor, constant: 20),
+            scrollView.trailingAnchor.constraint(equalTo: mainContainer.contentView.trailingAnchor, constant: -20),
+            scrollView.bottomAnchor.constraint(equalTo: mainContainer.contentView.bottomAnchor, constant: -16),
+            
+            controlsStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            controlsStackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            controlsStackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            controlsStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            controlsStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            focusModeControl.topAnchor.constraint(equalTo: focusSection.contentView.topAnchor),
+            focusModeControl.leadingAnchor.constraint(equalTo: focusSection.contentView.leadingAnchor),
+            focusModeControl.trailingAnchor.constraint(equalTo: focusSection.contentView.trailingAnchor),
+            focusModeControl.heightAnchor.constraint(equalToConstant: 32),
+            
+            focusSlider.topAnchor.constraint(equalTo: focusModeControl.bottomAnchor, constant: 12),
+            focusSlider.leadingAnchor.constraint(equalTo: focusSection.contentView.leadingAnchor),
+            focusSlider.trailingAnchor.constraint(equalTo: focusValueLabel.leadingAnchor, constant: -12),
+            
+            focusValueLabel.centerYAnchor.constraint(equalTo: focusSlider.centerYAnchor),
+            focusValueLabel.trailingAnchor.constraint(equalTo: focusSection.contentView.trailingAnchor),
+            focusValueLabel.widthAnchor.constraint(equalToConstant: 50),
+            
+            focusResetButton.topAnchor.constraint(equalTo: focusSlider.bottomAnchor, constant: 12),
+            focusResetButton.trailingAnchor.constraint(equalTo: focusSection.contentView.trailingAnchor),
+            focusResetButton.heightAnchor.constraint(equalToConstant: 32),
+            focusResetButton.widthAnchor.constraint(equalToConstant: 80),
+            focusResetButton.bottomAnchor.constraint(equalTo: focusSection.contentView.bottomAnchor),
+            
+            exposureModeControl.topAnchor.constraint(equalTo: exposureSection.contentView.topAnchor),
+            exposureModeControl.leadingAnchor.constraint(equalTo: exposureSection.contentView.leadingAnchor),
+            exposureModeControl.trailingAnchor.constraint(equalTo: exposureSection.contentView.trailingAnchor),
+            exposureModeControl.heightAnchor.constraint(equalToConstant: 32),
+            
+            exposureSlider.topAnchor.constraint(equalTo: exposureModeControl.bottomAnchor, constant: 12),
+            exposureSlider.leadingAnchor.constraint(equalTo: exposureSection.contentView.leadingAnchor),
+            exposureSlider.trailingAnchor.constraint(equalTo: exposureValueLabel.leadingAnchor, constant: -12),
+            
+            exposureValueLabel.centerYAnchor.constraint(equalTo: exposureSlider.centerYAnchor),
+            exposureValueLabel.trailingAnchor.constraint(equalTo: exposureSection.contentView.trailingAnchor),
+            exposureValueLabel.widthAnchor.constraint(equalToConstant: 65),
+            
+            exposureResetButton.topAnchor.constraint(equalTo: exposureSlider.bottomAnchor, constant: 12),
+            exposureResetButton.trailingAnchor.constraint(equalTo: exposureSection.contentView.trailingAnchor),
+            exposureResetButton.heightAnchor.constraint(equalToConstant: 32),
+            exposureResetButton.widthAnchor.constraint(equalToConstant: 80),
+            exposureResetButton.bottomAnchor.constraint(equalTo: exposureSection.contentView.bottomAnchor),
+            
+            zoomSlider.topAnchor.constraint(equalTo: zoomSection.contentView.topAnchor),
+            zoomSlider.leadingAnchor.constraint(equalTo: zoomSection.contentView.leadingAnchor),
+            zoomSlider.trailingAnchor.constraint(equalTo: zoomValueLabel.leadingAnchor, constant: -12),
+            
+            zoomValueLabel.centerYAnchor.constraint(equalTo: zoomSlider.centerYAnchor),
+            zoomValueLabel.trailingAnchor.constraint(equalTo: zoomSection.contentView.trailingAnchor),
+            zoomValueLabel.widthAnchor.constraint(equalToConstant: 50),
+            
+            zoomResetButton.topAnchor.constraint(equalTo: zoomSlider.bottomAnchor, constant: 12),
+            zoomResetButton.trailingAnchor.constraint(equalTo: zoomSection.contentView.trailingAnchor),
+            zoomResetButton.heightAnchor.constraint(equalToConstant: 32),
+            zoomResetButton.widthAnchor.constraint(equalToConstant: 80),
+            zoomResetButton.bottomAnchor.constraint(equalTo: zoomSection.contentView.bottomAnchor)
+        ])
+    }
+    
+    private func handleCameraSwitch(index: Int) {
+        selectedCamera = index == 0 ? .front : .back
+        updateUIForSelectedCamera()
+        animateSectionTransition()
+    }
+    
+    private func handleFocusModeChange(index: Int) {
+        let mode: AVCaptureDevice.FocusMode = index == 0 ? .continuousAutoFocus : .locked
+        advancedControlsManager?.setFocusMode(mode, for: selectedCamera)
+        
+        let enabled = index == 1
+        focusSlider.setEnabled(enabled, animated: true)
+        
+        onControlsChanged?()
+    }
+    
+    private func handleFocusValueChange(value: Float) {
+        let point = CGPoint(x: CGFloat(value), y: 0.5)
+        advancedControlsManager?.setFocusPoint(point, for: selectedCamera)
+        focusValueLabel.text = String(format: "%.2f", value)
+        
+        onControlsChanged?()
+    }
+    
+    private func handleExposureModeChange(index: Int) {
+        let mode: AVCaptureDevice.ExposureMode = index == 0 ? .continuousAutoExposure : .locked
+        advancedControlsManager?.setExposureMode(mode, for: selectedCamera)
+        
+        let enabled = index == 1
+        exposureSlider.setEnabled(enabled, animated: true)
+        
+        onControlsChanged?()
+    }
+    
+    private func handleExposureValueChange(value: Float) {
+        advancedControlsManager?.setExposureTargetBias(value, for: selectedCamera)
+        exposureValueLabel.text = String(format: "%.2f EV", value)
+        
+        onControlsChanged?()
+    }
+    
+    private func handleZoomValueChange(value: Float) {
+        advancedControlsManager?.setZoomFactorSmoothly(value, for: selectedCamera)
+        zoomValueLabel.text = String(format: "%.1f×", value)
+        
+        onControlsChanged?()
+    }
+    
+    @objc private func resetFocusTapped() {
+        focusSlider.setValue(0.5, animated: true)
+        focusModeControl.setSelectedIndex(0, animated: true)
+        focusSlider.setEnabled(false, animated: true)
+        focusValueLabel.text = "0.50"
+        
+        advancedControlsManager?.setFocusPoint(CGPoint(x: 0.5, y: 0.5), for: selectedCamera)
+        advancedControlsManager?.setFocusMode(.continuousAutoFocus, for: selectedCamera)
+        
+        animateButtonPress(focusResetButton)
+        onControlsChanged?()
+    }
+    
+    @objc private func resetExposureTapped() {
+        exposureSlider.setValue(0.0, animated: true)
+        exposureModeControl.setSelectedIndex(0, animated: true)
+        exposureSlider.setEnabled(false, animated: true)
+        exposureValueLabel.text = "0.00 EV"
+        
+        advancedControlsManager?.setExposureTargetBias(0.0, for: selectedCamera)
+        advancedControlsManager?.setExposureMode(.continuousAutoExposure, for: selectedCamera)
+        
+        animateButtonPress(exposureResetButton)
+        onControlsChanged?()
+    }
+    
+    @objc private func resetZoomTapped() {
+        zoomSlider.setValue(1.0, animated: true)
+        zoomValueLabel.text = "1.0×"
+        advancedControlsManager?.resetZoom(for: selectedCamera)
+        
+        animateButtonPress(zoomResetButton)
+        onControlsChanged?()
+    }
+    
+    private func updateUIForSelectedCamera() {
+        guard let manager = advancedControlsManager else {
+            zoomSlider.maximumValue = 5.0
+            zoomSlider.setValue(1.0, animated: false)
+            focusSlider.setValue(0.5, animated: false)
+            exposureSlider.setValue(0.0, animated: false)
+            updateValueLabels()
+            return
+        }
+        
+        let maxZoom = selectedCamera == .front ? manager.maxFrontZoomFactor : manager.maxBackZoomFactor
+        zoomSlider.maximumValue = maxZoom
+        
+        let currentZoom = selectedCamera == .front ? manager.currentFrontZoomFactor : manager.currentBackZoomFactor
+        zoomSlider.setValue(currentZoom, animated: true)
+        
+        let currentFocusPoint = selectedCamera == .front ? manager.currentFrontFocusPoint : manager.currentBackFocusPoint
+        focusSlider.setValue(Float(currentFocusPoint.x), animated: true)
+        
+        let currentExposureBias = selectedCamera == .front ? manager.currentFrontExposureBias : manager.currentBackExposureBias
+        exposureSlider.setValue(currentExposureBias, animated: true)
+        
+        updateValueLabels()
+    }
+    
+    private func updateValueLabels() {
+        focusValueLabel.text = String(format: "%.2f", focusSlider.value)
+        exposureValueLabel.text = String(format: "%.2f EV", exposureSlider.value)
+        zoomValueLabel.text = String(format: "%.1f×", zoomSlider.value)
+    }
+    
+    private func animateSectionTransition() {
+        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
+            self.focusSection.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            self.exposureSection.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            self.zoomSection.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+        } completion: { _ in
+            UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+                self.focusSection.transform = .identity
+                self.exposureSection.transform = .identity
+                self.zoomSection.transform = .identity
+            }
+        }
+    }
+    
+    private func animateButtonPress(_ button: UIButton) {
+        UIView.animate(withDuration: 0.1) {
+            button.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        } completion: { _ in
+            UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5) {
+                button.transform = .identity
+            }
+        }
+    }
+    
+    func setAdvancedControlsManager(_ manager: AdvancedCameraControlsManager) {
+        advancedControlsManager = manager
+        updateUIForSelectedCamera()
+    }
+    
+    func setSelectedCamera(_ position: AVCaptureDevice.Position) {
+        selectedCamera = position
+        cameraSegmentedControl.selectedIndex = position == .front ? 0 : 1
+        updateUIForSelectedCamera()
+    }
+    
+    func setEnabled(_ enabled: Bool) {
+        cameraSegmentedControl.isUserInteractionEnabled = enabled
+        focusModeControl.isUserInteractionEnabled = enabled
+        exposureModeControl.isUserInteractionEnabled = enabled
+        
+        zoomSlider.isUserInteractionEnabled = enabled
+        focusResetButton.isEnabled = enabled
+        exposureResetButton.isEnabled = enabled
+        zoomResetButton.isEnabled = enabled
+        
+        focusSlider.isUserInteractionEnabled = enabled && focusModeControl.selectedIndex == 1
+        exposureSlider.isUserInteractionEnabled = enabled && exposureModeControl.selectedIndex == 1
+        
+        UIView.animate(withDuration: 0.3) {
+            self.alpha = enabled ? 1.0 : 0.6
+        }
+    }
+    
+    func focusAtPoint(_ point: CGPoint, for position: AVCaptureDevice.Position) {
+        if position == selectedCamera {
+            focusSlider.setValue(Float(point.x), animated: true)
+            focusValueLabel.text = String(format: "%.2f", Float(point.x))
+            advancedControlsManager?.focusAtPoint(point, for: position)
+            updateUIForSelectedCamera()
+        }
+    }
+}
+
+class ControlSection: UIView {
+    let titleLabel = UILabel()
+    let contentView = UIView()
+    private let dividerView = UIView()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        titleLabel.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.textColor = .white
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleLabel)
+        
+        dividerView.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        dividerView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(dividerView)
+        
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(contentView)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
+            
+            dividerView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            dividerView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            dividerView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            dividerView.heightAnchor.constraint(equalToConstant: 1),
+            
+            contentView.topAnchor.constraint(equalTo: dividerView.bottomAnchor, constant: 12),
+            contentView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+}
+
+class ModernSegmentedControl: UIControl {
+    private var buttons: [UIButton] = []
+    private let selectorView = UIView()
+    private let backgroundView = UIView()
+    
+    var selectedIndex: Int = 0 {
+        didSet {
+            updateSelection(animated: false)
+        }
+    }
+    
+    var onSelectionChanged: ((Int) -> Void)?
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        backgroundView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        backgroundView.layer.cornerRadius = 8
+        backgroundView.layer.cornerCurve = .continuous
+        backgroundView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(backgroundView)
+        
+        selectorView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.8)
+        selectorView.layer.cornerRadius = 6
+        selectorView.layer.cornerCurve = .continuous
+        selectorView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(selectorView)
+        
+        NSLayoutConstraint.activate([
+            backgroundView.topAnchor.constraint(equalTo: topAnchor),
+            backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+    
+    func setItems(_ items: [String]) {
+        buttons.forEach { $0.removeFromSuperview() }
+        buttons.removeAll()
+        
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .fillEqually
+        stackView.spacing = 0
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: backgroundView.topAnchor, constant: 2),
+            stackView.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor, constant: 2),
+            stackView.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor, constant: -2),
+            stackView.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor, constant: -2)
+        ])
+        
+        for (index, item) in items.enumerated() {
+            let button = UIButton(type: .system)
+            button.setTitle(item, for: .normal)
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+            button.setTitleColor(.white, for: .normal)
+            button.tag = index
+            button.addTarget(self, action: #selector(buttonTapped(_:)), for: .touchUpInside)
+            buttons.append(button)
+            stackView.addArrangedSubview(button)
+        }
+        
+        updateSelection(animated: false)
+    }
+    
+    @objc private func buttonTapped(_ sender: UIButton) {
+        selectedIndex = sender.tag
+        updateSelection(animated: true)
+        onSelectionChanged?(selectedIndex)
+    }
+    
+    func setSelectedIndex(_ index: Int, animated: Bool) {
+        selectedIndex = index
+        updateSelection(animated: animated)
+    }
+    
+    private func updateSelection(animated: Bool) {
+        guard !buttons.isEmpty, selectedIndex < buttons.count else { return }
+        
+        let button = buttons[selectedIndex]
+        
+        let updateBlock = {
+            self.selectorView.frame = button.frame
+            
+            for (index, btn) in self.buttons.enumerated() {
+                btn.setTitleColor(index == self.selectedIndex ? .white : UIColor.white.withAlphaComponent(0.6), for: .normal)
+            }
+        }
+        
+        if animated {
+            UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5) {
+                updateBlock()
+            }
+        } else {
+            updateBlock()
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateSelection(animated: false)
+    }
+}
+
+class ModernSlider: UIControl {
+    private let trackView = UIView()
+    private let progressView = UIView()
+    private let thumbView = UIView()
+    private let thumbGlowView = UIView()
+    
+    var minimumValue: Float = 0.0
+    var maximumValue: Float = 1.0
+    var value: Float = 0.5 {
+        didSet {
+            updateThumbPosition()
+        }
+    }
+    
+    var onValueChanged: ((Float) -> Void)?
+    
+    private var isSliding = false
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        trackView.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        trackView.layer.cornerRadius = 2
+        trackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(trackView)
+        
+        progressView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.8)
+        progressView.layer.cornerRadius = 2
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        trackView.addSubview(progressView)
+        
+        thumbGlowView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
+        thumbGlowView.layer.cornerRadius = 14
+        thumbGlowView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(thumbGlowView)
+        
+        thumbView.backgroundColor = .white
+        thumbView.layer.cornerRadius = 10
+        thumbView.layer.shadowColor = UIColor.black.cgColor
+        thumbView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        thumbView.layer.shadowRadius = 4
+        thumbView.layer.shadowOpacity = 0.3
+        thumbView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(thumbView)
+        
+        NSLayoutConstraint.activate([
+            trackView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            trackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            trackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            trackView.heightAnchor.constraint(equalToConstant: 4),
+            
+            progressView.leadingAnchor.constraint(equalTo: trackView.leadingAnchor),
+            progressView.topAnchor.constraint(equalTo: trackView.topAnchor),
+            progressView.bottomAnchor.constraint(equalTo: trackView.bottomAnchor),
+            
+            thumbView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            thumbView.widthAnchor.constraint(equalToConstant: 20),
+            thumbView.heightAnchor.constraint(equalToConstant: 20),
+            
+            thumbGlowView.centerXAnchor.constraint(equalTo: thumbView.centerXAnchor),
+            thumbGlowView.centerYAnchor.constraint(equalTo: thumbView.centerYAnchor),
+            thumbGlowView.widthAnchor.constraint(equalToConstant: 28),
+            thumbGlowView.heightAnchor.constraint(equalToConstant: 28),
+            
+            heightAnchor.constraint(equalToConstant: 32)
+        ])
+        
+        updateThumbPosition()
+        
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        addGestureRecognizer(panGesture)
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+        addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        let location = gesture.location(in: self)
+        updateValue(forLocation: location)
+        
+        switch gesture.state {
+        case .began:
+            isSliding = true
+            animateThumb(scale: 1.2)
+        case .ended, .cancelled:
+            isSliding = false
+            animateThumb(scale: 1.0)
+        default:
+            break
+        }
+    }
+    
+    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+        let location = gesture.location(in: self)
+        updateValue(forLocation: location)
+        animateThumb(scale: 1.2)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.animateThumb(scale: 1.0)
+        }
+    }
+    
+    private func updateValue(forLocation location: CGPoint) {
+        let percentage = Float(max(0, min(1, location.x / bounds.width)))
+        value = minimumValue + (maximumValue - minimumValue) * percentage
+        onValueChanged?(value)
+    }
+    
+    private func updateThumbPosition() {
+        let percentage = CGFloat((value - minimumValue) / (maximumValue - minimumValue))
+        let thumbX = bounds.width * percentage
+        
+        thumbView.center = CGPoint(x: thumbX, y: bounds.height / 2)
+        thumbGlowView.center = CGPoint(x: thumbX, y: bounds.height / 2)
+        
+        progressView.frame = CGRect(x: 0, y: 0, width: thumbX, height: trackView.bounds.height)
+    }
+    
+    private func animateThumb(scale: CGFloat) {
+        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5) {
+            self.thumbView.transform = CGAffineTransform(scaleX: scale, y: scale)
+            self.thumbGlowView.alpha = scale > 1.0 ? 1.0 : 0.3
+        }
+    }
+    
+    func setValue(_ newValue: Float, animated: Bool) {
+        value = newValue
+        
+        if animated {
+            UIView.animate(withDuration: 0.25) {
+                self.updateThumbPosition()
+            }
+        } else {
+            updateThumbPosition()
+        }
+    }
+    
+    func setEnabled(_ enabled: Bool, animated: Bool) {
+        isUserInteractionEnabled = enabled
+        
+        let alpha: CGFloat = enabled ? 1.0 : 0.4
+        
+        if animated {
+            UIView.animate(withDuration: 0.3) {
+                self.trackView.alpha = alpha
+                self.progressView.alpha = alpha
+                self.thumbView.alpha = alpha
+                self.thumbGlowView.alpha = enabled ? 0.3 : 0.0
+            }
+        } else {
+            trackView.alpha = alpha
+            progressView.alpha = alpha
+            thumbView.alpha = alpha
+            thumbGlowView.alpha = enabled ? 0.3 : 0.0
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateThumbPosition()
+    }
+}

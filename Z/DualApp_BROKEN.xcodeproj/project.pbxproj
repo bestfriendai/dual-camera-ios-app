@@ -1,0 +1,545 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BUILD56558 /* BatteryAwareProcessingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FILEREF56558 /* BatteryAwareProcessingManager.swift */; };
+		BUILD20397 /* DynamicIslandManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FILEREF20397 /* DynamicIslandManager.swift */; };
+		BUILD49081 /* PerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FILEREF49081 /* PerformanceMonitor.swift */; };
+		BUILD70517 /* FrameCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FILEREF70517 /* FrameCompositor.swift */; };		A1000015294A0000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000016294A0000000000001 /* Assets.xcassets */; };		D00843A198F44AD3B431885B /* ZoomControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694A6F0CCD9D4CCB8B9587E3 /* ZoomControl.swift */; };
+		5FD97FBB404B4648901A318D /* FlashControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8347214FC6BD487E82DAE242 /* FlashControl.swift */; };
+		BC9E238569FF4E90B0138DE9 /* TimerControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8150DA5DB44C3BB83BB8E0 /* TimerControl.swift */; };
+		F7949C076EB649D1A6DF55B6 /* FocusExposureControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C275007A956F47A6BD33838B /* FocusExposureControl.swift */; };		0B93A4D478284373AD1EC11C /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AC67FFAA63D40138BEA3282 /* AVFoundation.framework */; };
+		3575F77CAEA74E4AA37FC6B9 /* CoreImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07688E4DD7AB4E34B3619442 /* CoreImage.framework */; };
+		836378DF66B64F158612BE8B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC33D6F232204A8AA899F73F /* Metal.framework */; };
+		4358D034FCB446E696816B71 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3FFDFB2745842DCAB7C0F46 /* MetalKit.framework */; };
+		F4678E9BF13346BA82D27F40 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD8804D02C0B404E962E1964 /* Photos.framework */; };
+		86C28ABAC8384CE1AD2CCCDF /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 213A4DC1BADA47A292A5ABED /* PhotosUI.framework */; };
+		844816256CB443F4B839BDF3 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0510F015E12B470293DDA5D9 /* Combine.framework */; };
+		A2C2D2B9A4C74288B1A90B64 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E90F1BF2AEF94AAA88471BC4 /* SwiftUI.framework */; };		2FE4AB4C0E024E2B973B569D /* CoreImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1471AE129E6423D8763DE65 /* CoreImage.framework */; };
+		16B18FDCAA614D6BB2065773 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A9C573050E94A5FB94B51EF /* Metal.framework */; };
+		F8F5C926AAFB4BA5AABD19F5 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D5C1B393226A481BAB905E77 /* MetalKit.framework */; };
+		206BF3D15BC142A491B71CAC /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58141E9118DA40CEA8D0501B /* Photos.framework */; };
+		86A1DBDA2A8E4DB19D4C7140 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40E30F24AE25442AA3FFB51C /* PhotosUI.framework */; };
+		0F494713370D45B49FC9D3A6 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2602D92BE3EC48EFB280CA40 /* Combine.framework */; };
+		4CED63C7456447F09DA2D1AF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DBCAC8B7AA842EDBAFFAABD /* SwiftUI.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		FILEREF56558 /* BatteryAwareProcessingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryAwareProcessingManager.swift; sourceTree = "<group>"; };
+		FILEREF20397 /* DynamicIslandManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicIslandManager.swift; sourceTree = "<group>"; };
+		FILEREF49081 /* PerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMonitor.swift; sourceTree = "<group>"; };
+		FILEREF70517 /* FrameCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCompositor.swift; sourceTree = "<group>"; };
+		721FFB9BA604412398C0C152 /* PermissionTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionTypes.swift; sourceTree = "<group>"; };
+		B5F93BB01D8D41C288571290 /* CameraSessionConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSessionConfigurator.swift; sourceTree = "<group>"; };
+		ADD8F977BA41428A86B81C78 /* RecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCoordinator.swift; sourceTree = "<group>"; };
+		F55018A325EF404C906F5A75 /* RecordingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingRepository.swift; sourceTree = "<group>"; };
+		131D614AD4856D74CCA7198A /* SettingsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		16F1F01EEFBBBF531E240525 /* HapticFeedbackManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HapticFeedbackManager.swift; sourceTree = "<group>"; };
+		17252F9D08595F836950FE58 /* VideoQuality.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoQuality.swift; sourceTree = "<group>"; };
+		20692F49C74B0B53711886BD /* VisualCountdownView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VisualCountdownView.swift; sourceTree = "<group>"; };
+		6137DCC063E83726503F4551 /* StartupOptimizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StartupOptimizer.swift; sourceTree = "<group>"; };
+		619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
+		8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErrorHandlingManager.swift; sourceTree = "<group>"; };
+		A1000001294A0000000000000 /* DualApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DualApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000002294A0000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A1000004294A0000000000001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A1000006294A0000000000001 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		A1000008294A0000000000001 /* DualCameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualCameraManager.swift; sourceTree = "<group>"; };
+		A1000010294A0000000000001 /* VideoMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMerger.swift; sourceTree = "<group>"; };
+		A1000014294A0000000000001 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A1000016294A0000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000017294A0000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000031294A0000000000001 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		A1000033294A0000000000001 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		A4CA58005DF586397D2CC54E /* CameraControlsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraControlsView.swift; sourceTree = "<group>"; };
+		A757744EFD73B001BD2210D8 /* BatteryManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryManager.swift; sourceTree = "<group>"; };
+		C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		C209188E3C80E94D70AF972F /* ThermalManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThermalManager.swift; sourceTree = "<group>"; };
+		FF37E2854B01B45FCB5BFC45 /* Extensions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		694A6F0CCD9D4CCB8B9587E3 /* ZoomControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/ZoomControl.swift; sourceTree = "<group>"; };
+		8347214FC6BD487E82DAE242 /* FlashControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/FlashControl.swift; sourceTree = "<group>"; };
+		5E8150DA5DB44C3BB83BB8E0 /* TimerControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/TimerControl.swift; sourceTree = "<group>"; };
+		C275007A956F47A6BD33838B /* FocusExposureControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/FocusExposureControl.swift; sourceTree = "<group>"; };
+		008A2489D7B0476CA931BFD9 /* ZoomControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomControl.swift; sourceTree = "<group>"; };
+		1299606678694A26A1443EEF /* FlashControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashControl.swift; sourceTree = "<group>"; };
+		2A8517BA60E84AAEAE83D5B0 /* TimerControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerControl.swift; sourceTree = "<group>"; };
+		A2404A2D5EA74FE4B6EE12BF /* FocusExposureControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusExposureControl.swift; sourceTree = "<group>"; };
+		59B730F97C7B4A9EB772D62E /* PermissionTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionTypes.swift; sourceTree = "<group>"; };
+		09B1BC283031480CBA36CD27 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Settings/Actors/SettingsManager.swift; sourceTree = "<group>"; };
+		FE94012E26EB415ABD65CD5D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Settings/Views/SettingsView.swift; sourceTree = "<group>"; };
+		D38FA1D769A84AA1B54C0C59 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Settings/Views/SettingsViewModel.swift; sourceTree = "<group>"; };
+		BEE1380428F841148E8BE762 /* SettingsSectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Settings/Views/SettingsSectionViews.swift; sourceTree = "<group>"; };
+		20AF83349B78424AB0C4D386 /* SettingsValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Settings/Services/SettingsValidator.swift; sourceTree = "<group>"; };
+		72717D1821C142A8A37CA5C3 /* ErrorHandlingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/ErrorHandling/Actors/ErrorHandlingManager.swift; sourceTree = "<group>"; };
+		94A361B82B324164B5FF40F0 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/ErrorHandling/Views/ErrorView.swift; sourceTree = "<group>"; };
+		1E9E3E60A49E4F36B5BBF306 /* CameraModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Models/CameraModels.swift; sourceTree = "<group>"; };
+		17B9DAEBBB1D4A65930AAA5E /* CameraConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Models/CameraConfiguration.swift; sourceTree = "<group>"; };
+		22F738F161284B51B05CACBD /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Models/RecordingState.swift; sourceTree = "<group>"; };
+		79FD6D3B59F04902A9C63EDD /* DualCameraSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Actors/DualCameraSession.swift; sourceTree = "<group>"; };
+		F9ED6C10B0DD48CB915E98F7 /* VideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Actors/VideoRecorder.swift; sourceTree = "<group>"; };
+		BC6C832BC39C49009C5D62E2 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Actors/CameraManager.swift; sourceTree = "<group>"; };
+		778690511CF6472BA0E58562 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Views/CameraPreviewView.swift; sourceTree = "<group>"; };
+		5F50C01884A04F8DA7593129 /* DualCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Views/DualCameraView.swift; sourceTree = "<group>"; };
+		7E19DED35F4F4EA6A207933F /* CameraControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Views/CameraControlsView.swift; sourceTree = "<group>"; };
+		8AC3CE13ED11463BAB805C27 /* MetalRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/MetalRenderer.swift; sourceTree = "<group>"; };
+		770CC46E00794E348C092CC9 /* FrameSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/FrameSyncCoordinator.swift; sourceTree = "<group>"; };
+		75FB66C017334981A18988B5 /* ErrorRecoveryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/ErrorRecoveryManager.swift; sourceTree = "<group>"; };
+		DD4AE70EFF494004931A7929 /* RecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/RecordingCoordinator.swift; sourceTree = "<group>"; };
+		3D0B9F821D9F4422A646BA8C /* HardwareSynchronizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/HardwareSynchronizer.swift; sourceTree = "<group>"; };
+		3EB29C2052DE4002A10FDAE4 /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/CameraCaptureService.swift; sourceTree = "<group>"; };
+		F072C5F68D5C49BE8FDD6698 /* AdaptiveQualityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Camera/Services/AdaptiveQualityManager.swift; sourceTree = "<group>"; };
+		4EF65DF5B66948D59C2DA8B5 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Permissions/Actors/PermissionManager.swift; sourceTree = "<group>"; };
+		0D113856B0C34C2A80980D85 /* SystemCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Actors/SystemCoordinator.swift; sourceTree = "<group>"; };
+		596F9ADB770742D4B5DFA866 /* DiagnosticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Diagnostics/Actors/DiagnosticsManager.swift; sourceTree = "<group>"; };
+		48682C3F2C3645A397CCE520 /* AppIntentsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Core/Intents/iOS26/AppIntentsManager.swift; sourceTree = "<group>"; };
+		DC0D9F34AE87461AB1009266 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/App/AppState.swift; sourceTree = "<group>"; };
+		B191E9DDA77C467FA2D2E82C /* DualAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/App/DualAppApp.swift; sourceTree = "<group>"; };
+		CC46218A56724A499496841D /* VideoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/VideoProcessing/Actors/VideoProcessor.swift; sourceTree = "<group>"; };
+		87B6A0243B5B4A4787F5CC55 /* VideoGalleryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/VideoProcessing/Actors/VideoGalleryManager.swift; sourceTree = "<group>"; };
+		11D8E9A7C93C418CB5D49066 /* VideoRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/VideoProcessing/Actors/VideoRecordingManager.swift; sourceTree = "<group>"; };
+		DFAC56FE3F18459897C6A77A /* VideoStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/VideoProcessing/Actors/VideoStorageManager.swift; sourceTree = "<group>"; };
+		0AB25E789A6D4FB3895CCE77 /* VideoPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/VideoProcessing/Services/VideoPlayerManager.swift; sourceTree = "<group>"; };
+		5D97820FE1214EA0977F79AD /* GlassEffects.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = DualApp/VideoProcessing/GlassEffects.metal; sourceTree = "<group>"; };
+		F3112A35B44C472EBA62282F /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Features/Gallery/Views/VideoPlayerView.swift; sourceTree = "<group>"; };
+		5F8CC3DF64244EE1A7E99092 /* VideoGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualApp/Features/Gallery/Views/VideoGalleryView.swift; sourceTree = "<group>"; };
+		7AC67FFAA63D40138BEA3282 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		07688E4DD7AB4E34B3619442 /* CoreImage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreImage.framework; path = System/Library/Frameworks/CoreImage.framework; sourceTree = SDKROOT; };
+		BC33D6F232204A8AA899F73F /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		D3FFDFB2745842DCAB7C0F46 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		DD8804D02C0B404E962E1964 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+		213A4DC1BADA47A292A5ABED /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
+		0510F015E12B470293DDA5D9 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
+		E90F1BF2AEF94AAA88471BC4 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		3D2A965DE47D4092BB8A78EB /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Settings/Actors/SettingsManager.swift; sourceTree = "<group>"; };
+		7D12FBF396804F12BFB4CE9E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Settings/Views/SettingsView.swift; sourceTree = "<group>"; };
+		20B40E92478044DEBCBB5851 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Settings/Views/SettingsViewModel.swift; sourceTree = "<group>"; };
+		42B983839930493C8FBFCC26 /* SettingsSectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Settings/Views/SettingsSectionViews.swift; sourceTree = "<group>"; };
+		16B19823BF8744C5A9AD6118 /* SettingsValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Settings/Services/SettingsValidator.swift; sourceTree = "<group>"; };
+		0EEE0AD2D69C47D7A07B154E /* ErrorHandlingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ErrorHandling/Actors/ErrorHandlingManager.swift; sourceTree = "<group>"; };
+		0027E37762B843CB98E7E681 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ErrorHandling/Views/ErrorView.swift; sourceTree = "<group>"; };
+		FC5DF6DF77CD49FD99BEAB5F /* CameraModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Models/CameraModels.swift; sourceTree = "<group>"; };
+		F27AC6F79E494ADB8761A619 /* CameraConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Models/CameraConfiguration.swift; sourceTree = "<group>"; };
+		7555B1DA03904C0283646A94 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Models/RecordingState.swift; sourceTree = "<group>"; };
+		EBA4ABB937FB44ECAD6528DA /* DualCameraSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Actors/DualCameraSession.swift; sourceTree = "<group>"; };
+		5A60EC0F916946AE9726C68C /* VideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Actors/VideoRecorder.swift; sourceTree = "<group>"; };
+		6B837602466942599D6AA391 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Actors/CameraManager.swift; sourceTree = "<group>"; };
+		D5B2CC2FE0D54E6E868AD71D /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Views/CameraPreviewView.swift; sourceTree = "<group>"; };
+		CE4F0749173C4108AB8237B7 /* DualCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Views/DualCameraView.swift; sourceTree = "<group>"; };
+		2AF80A04F7404E259DBBB17D /* CameraControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Views/CameraControlsView.swift; sourceTree = "<group>"; };
+		5C2DB8F27D4E4EBFB9170546 /* MetalRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/MetalRenderer.swift; sourceTree = "<group>"; };
+		3DFE8746459F4A159917D3C6 /* FrameSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/FrameSyncCoordinator.swift; sourceTree = "<group>"; };
+		69D12DFB23AA4B199A405B4F /* ErrorRecoveryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/ErrorRecoveryManager.swift; sourceTree = "<group>"; };
+		01ADFDA2B952465590A73325 /* RecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/RecordingCoordinator.swift; sourceTree = "<group>"; };
+		76C5978689B7410892274FFD /* DualCameraPerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/DualCameraPerformanceMonitor.swift; sourceTree = "<group>"; };
+		16A24EAB2950414B8C40A517 /* HardwareSynchronizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/HardwareSynchronizer.swift; sourceTree = "<group>"; };
+		C78BD8BC9F964959956D70E6 /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/CameraCaptureService.swift; sourceTree = "<group>"; };
+		D525123DD60C47A5944A6373 /* AdaptiveQualityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Camera/Services/AdaptiveQualityManager.swift; sourceTree = "<group>"; };
+		A8007F554A19489CBDD8B147 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Permissions/Actors/PermissionManager.swift; sourceTree = "<group>"; };
+		91F2B6FC1721450ABBB654AD /* AudioModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Models/AudioModels.swift; sourceTree = "<group>"; };
+		66918A1C7D474F919D28D7A6 /* AudioError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Models/AudioError.swift; sourceTree = "<group>"; };
+		445E40CED0014F03B3D76BDF /* AudioStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioStorageManager.swift; sourceTree = "<group>"; };
+		2D80B8520A144F9D96C1C521 /* AudioFocusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioFocusManager.swift; sourceTree = "<group>"; };
+		49254D30B1484B9FA2E90661 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioManager.swift; sourceTree = "<group>"; };
+		4808390423084EA19D12F466 /* AudioVideoSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioVideoSyncCoordinator.swift; sourceTree = "<group>"; };
+		60A3C7B0000D416AB2E39EC5 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioRecorder.swift; sourceTree = "<group>"; };
+		269A2EA8838F4FE3AB742E63 /* AudioProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Actors/AudioProcessor.swift; sourceTree = "<group>"; };
+		5689E5CDEA85492D81FF176C /* AudioLevelMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Views/AudioLevelMonitorView.swift; sourceTree = "<group>"; };
+		3207AFB3E6AC4BEA82F78E12 /* AudioControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Views/AudioControlsView.swift; sourceTree = "<group>"; };
+		1C7E48FC77434D48904BD32D /* AudioExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Audio/Services/AudioExportManager.swift; sourceTree = "<group>"; };
+		1A78E32A165443DB9384B860 /* SystemCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Actors/SystemCoordinator.swift; sourceTree = "<group>"; };
+		8F5457854F4946E7A7026D12 /* DiagnosticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Diagnostics/Actors/DiagnosticsManager.swift; sourceTree = "<group>"; };
+		ED7B08A2B9A64FDFA621E576 /* AppIntentsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Intents/iOS26/AppIntentsManager.swift; sourceTree = "<group>"; };
+		7D3FE1CD6E834B02BC10FE28 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppState.swift; sourceTree = "<group>"; };
+		CE8B03CBC73B44DDAF7A9BA6 /* DualAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/DualAppApp.swift; sourceTree = "<group>"; };
+		72A258D081F6428DBC929A50 /* VideoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessing/Actors/VideoProcessor.swift; sourceTree = "<group>"; };
+		D533BA1698FF47AB8C40ADD5 /* VideoGalleryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessing/Actors/VideoGalleryManager.swift; sourceTree = "<group>"; };
+		48F410EEC0AB479690EA28BE /* VideoRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessing/Actors/VideoRecordingManager.swift; sourceTree = "<group>"; };
+		A1B16FC2EEE649869E8FDA31 /* VideoStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessing/Actors/VideoStorageManager.swift; sourceTree = "<group>"; };
+		501F3915366A4B9AA34BA874 /* VideoPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessing/Services/VideoPlayerManager.swift; sourceTree = "<group>"; };
+		1CBA5AEF6FA4470E9A0A7C1A /* GlassEffects.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = VideoProcessing/GlassEffects.metal; sourceTree = "<group>"; };
+		9718CB18D89A4F128D90A389 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Gallery/Views/VideoPlayerView.swift; sourceTree = "<group>"; };
+		CBB783E82EE34E6D9A8228FE /* VideoGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Gallery/Views/VideoGalleryView.swift; sourceTree = "<group>"; };
+		102DE99F2B9A45BA832E6009 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		A1471AE129E6423D8763DE65 /* CoreImage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreImage.framework; path = System/Library/Frameworks/CoreImage.framework; sourceTree = SDKROOT; };
+		7A9C573050E94A5FB94B51EF /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		D5C1B393226A481BAB905E77 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		58141E9118DA40CEA8D0501B /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+		40E30F24AE25442AA3FFB51C /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
+		2602D92BE3EC48EFB280CA40 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
+		0DBCAC8B7AA842EDBAFFAABD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1000000294A0000000000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (				607DE81247774D6997B88C9E /* AVFoundation.framework in Frameworks */,
+				2FE4AB4C0E024E2B973B569D /* CoreImage.framework in Frameworks */,
+				16B18FDCAA614D6BB2065773 /* Metal.framework in Frameworks */,
+				F8F5C926AAFB4BA5AABD19F5 /* MetalKit.framework in Frameworks */,
+				206BF3D15BC142A491B71CAC /* Photos.framework in Frameworks */,
+				86A1DBDA2A8E4DB19D4C7140 /* PhotosUI.framework in Frameworks */,
+				0F494713370D45B49FC9D3A6 /* Combine.framework in Frameworks */,
+				4CED63C7456447F09DA2D1AF /* SwiftUI.framework in Frameworks */,
+				0B93A4D478284373AD1EC11C /* AVFoundation.framework in Frameworks */,
+				3575F77CAEA74E4AA37FC6B9 /* CoreImage.framework in Frameworks */,
+				836378DF66B64F158612BE8B /* Metal.framework in Frameworks */,
+				4358D034FCB446E696816B71 /* MetalKit.framework in Frameworks */,
+				F4678E9BF13346BA82D27F40 /* Photos.framework in Frameworks */,
+				86C28ABAC8384CE1AD2CCCDF /* PhotosUI.framework in Frameworks */,
+				844816256CB443F4B839BDF3 /* Combine.framework in Frameworks */,
+				A2C2D2B9A4C74288B1A90B64 /* SwiftUI.framework in Frameworks */,
+
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A0999999294A0000000000000 = {
+			isa = PBXGroup;
+			children = (
+				A1000018294A0000000000001 /* DualApp */,
+				A1000019294A0000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1000018294A0000000000001 /* DualApp */ = {
+			isa = PBXGroup;
+			children = (
+				A1000002294A0000000000001 /* AppDelegate.swift */,
+				A1000004294A0000000000001 /* SceneDelegate.swift */,
+				A1000006294A0000000000001 /* ViewController.swift */,
+				A1000008294A0000000000001 /* DualCameraManager.swift */,
+				A1000010294A0000000000001 /* VideoMerger.swift */,
+				A1000031294A0000000000001 /* PermissionManager.swift */,
+				A1000033294A0000000000001 /* CameraPreviewView.swift */,
+				A068AB848E554A87B284B6C9 /* CameraAppController.swift */,
+				A1000016294A0000000000001 /* Assets.xcassets */,
+				A1000014294A0000000000001 /* LaunchScreen.storyboard */,
+				A1000017294A0000000000001 /* Info.plist */,
+				FF37E2854B01B45FCB5BFC45 /* Extensions.swift */,
+				8BF11CFBE3ADAEE1B83C98C3 /* ErrorHandlingManager.swift */,
+				16F1F01EEFBBBF531E240525 /* HapticFeedbackManager.swift */,
+				619B7795ACEC68A7967E9FF1 /* MemoryManager.swift */,
+				C048BBD132BD16DE6F6D6B57 /* StorageManager.swift */,
+				A757744EFD73B001BD2210D8 /* BatteryManager.swift */,
+				20692F49C74B0B53711886BD /* VisualCountdownView.swift */,
+				17252F9D08595F836950FE58 /* VideoQuality.swift */,
+				6137DCC063E83726503F4551 /* StartupOptimizer.swift */,
+				C209188E3C80E94D70AF972F /* ThermalManager.swift */,
+				131D614AD4856D74CCA7198A /* SettingsManager.swift */,
+				A4CA58005DF586397D2CC54E /* CameraControlsView.swift */,
+							B5F93BB01D8D41C288571290 /* CameraSessionConfigurator.swift */,
+				ADD8F977BA41428A86B81C78 /* RecordingCoordinator.swift */,
+				F55018A325EF404C906F5A75 /* RecordingRepository.swift */,
+				17DFFAED91724C61BF85791B /* PermissionCoordinator.swift */,
+							7E08440B600D44D090A13C28 /* CameraAppController.swift */,
+				721FFB9BA604412398C0C152 /* PermissionTypes.swift */,
+				AA100006294A0000000000001 /* ModernPermissionCoordinator.swift */,
+			);
+			path = DualApp;
+			sourceTree = "<group>";
+		};
+		A1000019294A0000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001294A0000000000000 /* DualApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000020294A0000000000000 /* DualApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000021294A0000000000000 /* Build configuration list for PBXNativeTarget "DualApp" */;
+			buildPhases = (
+				A1000022294A0000000000000 /* Sources */,
+				A1000000294A0000000000000 /* Frameworks */,
+				A1000023294A0000000000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DualApp;
+			productName = DualApp;
+			productReference = A1000001294A0000000000000 /* DualApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A0999998294A0000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					A1000020294A0000000000000 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A0999997294A0000000000000 /* Build configuration list for PBXProject "DualApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A0999999294A0000000000000;
+			productRefGroup = A1000019294A0000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000020294A0000000000000 /* DualApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1000023294A0000000000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000013294A0000000000001 /* LaunchScreen.storyboard in Resources */,
+				A1000015294A0000000000001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000022294A0000000000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (				F788A0FAE39C49C2AD99B5C3 /* PermissionCoordinator.swift in Sources */,
+							9CAF1630F0AA489B94F600FA /* CameraAppController.swift in Sources */,				AA100005294A0000000000001 /* ModernPermissionCoordinator.swift in Sources */,			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A0999993294A0000000000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DualApp/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to record dual camera videos";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with videos";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dualcamera.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.2;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A0999994294A0000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DualApp/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to record dual camera videos";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with videos";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dualcamera.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.2;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A0999995294A0000000000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Y4NZ65U5X7;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A0999996294A0000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Y4NZ65U5X7;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A0999997294A0000000000000 /* Build configuration list for PBXProject "DualApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A0999996294A0000000000000 /* Debug */,
+				A0999995294A0000000000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000021294A0000000000000 /* Build configuration list for PBXNativeTarget "DualApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A0999994294A0000000000000 /* Debug */,
+				A0999993294A0000000000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A0999998294A0000000000000 /* Project object */;
+}

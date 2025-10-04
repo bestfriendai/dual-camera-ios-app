@@ -45,6 +45,8 @@ struct ContentView: View {
     @State private var permissionsGranted = false
     @State private var showPermissionAlert = false
     @State private var showFlashPulse = false
+    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         ZStack {
@@ -135,7 +137,7 @@ struct ContentView: View {
                 showFlashPulse: $showFlashPulse,
                 onFlashToggle: {
                     cameraManager.toggleFlash()
-                    withAnimation(.spring(response: 0.3)) {
+                    withAnimation(reduceMotion ? .none : .spring(response: 0.3)) {
                         showFlashPulse.toggle()
                     }
                 },
@@ -150,7 +152,7 @@ struct ContentView: View {
                 isFlashOn: false,
                 showFlashPulse: .constant(false),
                 onSwap: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.7)) {
                         isFrontPrimary.toggle()
                     }
                 },
@@ -170,7 +172,7 @@ struct ContentView: View {
                     isActive: cameraManager.isFlashOn,
                     action: {
                         cameraManager.toggleFlash()
-                        withAnimation(.spring(response: 0.3)) {
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.3)) {
                             showFlashPulse.toggle()
                         }
                     }
@@ -182,7 +184,7 @@ struct ContentView: View {
                     action: {
                         if isPhotoMode {
                             cameraManager.capturePhoto()
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+                            withAnimation(reduceMotion ? .none : .spring(response: 0.2, dampingFraction: 0.5)) {
                                 showFlashPulse.toggle()
                             }
                         } else {
@@ -200,7 +202,7 @@ struct ContentView: View {
                     size: 56,
                     isActive: false,
                     action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.7)) {
                             isFrontPrimary.toggle()
                         }
                     }
@@ -353,6 +355,8 @@ struct LiquidGlassCircularButton: View {
     let size: CGFloat
     let isActive: Bool
     let action: () -> Void
+    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Button(action: action) {
@@ -394,7 +398,7 @@ struct LiquidGlassCircularButton: View {
         }
         .buttonStyle(LiquidGlassPressStyle())
         .scaleEffect(isActive ? 1.05 : 1.0)
-        .animation(.spring(response: 0.3), value: isActive)
+        .animation(reduceMotion ? .none : .spring(response: 0.3), value: isActive)
     }
 }
 
@@ -402,11 +406,13 @@ struct MainRecordButton: View {
     let isRecording: Bool
     let isPhotoMode: Bool
     let action: () -> Void
+    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Button(action: action) {
             ZStack {
-                if isRecording {
+                if isRecording && !reduceMotion {
                     Circle()
                         .stroke(Color.red.opacity(0.5), lineWidth: 4)
                         .frame(width: 90, height: 90)
@@ -464,6 +470,7 @@ struct MainRecordButton: View {
         }
         .buttonStyle(LiquidGlassPressStyle())
         .scaleEffect(isRecording ? 0.95 : 1.0)
+        .animation(reduceMotion ? .none : .easeInOut, value: isRecording)
     }
 }
 
@@ -603,6 +610,8 @@ struct CameraPreviewCard: View {
 
 struct RecordingTimerView: View {
     let recordingTime: Int
+    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         HStack(spacing: 6) {
@@ -610,8 +619,8 @@ struct RecordingTimerView: View {
                 .fill(Color.red)
                 .frame(width: 8, height: 8)
                 .opacity(0.8)
-                .scaleEffect(1.2)
-                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: recordingTime)
+                .scaleEffect(reduceMotion ? 1.0 : 1.2)
+                .animation(reduceMotion ? .none : .easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: recordingTime)
 
             Text(String(format: "%02d:%02d", recordingTime / 60, recordingTime % 60))
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -745,11 +754,13 @@ struct MergeProgressView: View {
 }
 
 struct LiquidGlassPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .opacity(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+            .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
@@ -851,12 +862,13 @@ class FocusableCameraView: UIView {
     }
 }
 
-class CameraManagerWrapper: NSObject, ObservableObject, DualCameraManagerDelegate {
+@Observable
+class CameraManagerWrapper: NSObject, DualCameraManagerDelegate {
     private let dualCameraManager = DualCameraManager()
-    @Published var frontPreviewLayer: AVCaptureVideoPreviewLayer?
-    @Published var backPreviewLayer: AVCaptureVideoPreviewLayer?
-    @Published var isFlashOn = false
-    @Published var hasRecordings = false
+    var frontPreviewLayer: AVCaptureVideoPreviewLayer?
+    var backPreviewLayer: AVCaptureVideoPreviewLayer?
+    var isFlashOn = false
+    var hasRecordings = false
 
     override init() {
         super.init()
@@ -937,6 +949,14 @@ class CameraManagerWrapper: NSObject, ObservableObject, DualCameraManagerDelegat
         // Delegate method - ensure thread safety
         DispatchQueue.main.async {
             // Handle captured photos if needed
+        }
+    }
+
+    func didUpdateSetupProgress(_ message: String, progress: Float) {
+        // Delegate method - ensure thread safety
+        DispatchQueue.main.async {
+            // Update setup progress if needed
+            print("Setup progress: \(message) (\(Int(progress * 100))%)")
         }
     }
 
@@ -1093,9 +1113,10 @@ struct VideoThumbnailView: View {
     }
 }
 
-class GalleryManager: ObservableObject {
-    @Published var videos: [VideoItem] = []
-    @Published var selectedVideo: VideoItem?
+@Observable
+class GalleryManager {
+    var videos: [VideoItem] = []
+    var selectedVideo: VideoItem?
 
     init() {
         loadVideos()

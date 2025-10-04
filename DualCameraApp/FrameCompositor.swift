@@ -3,49 +3,55 @@ import CoreImage
 import Metal
 import AVFoundation
 import UIKit
+import Swift
 
-enum RecordingLayout: String {
+enum RecordingLayout: String, Sendable {
     case sideBySide
     case pictureInPicture
     case frontPrimary
     case backPrimary
     
-    enum PIPPosition {
+    enum PIPPosition: Sendable {
         case topLeft, topRight, bottomLeft, bottomRight
     }
     
-    enum PIPSize: CGFloat {
+    enum PIPSize: CGFloat, Sendable {
         case small = 0.25
         case medium = 0.33
         case large = 0.40
     }
 }
 
-class FrameCompositor {
+@available(iOS 15.0, *)
+actor FrameCompositor {
     private let ciContext: CIContext
     private let metalDevice: MTLDevice
     private var renderSize: CGSize
     private var layout: RecordingLayout
     
-    // Performance optimization properties
+    // Performance optimization properties - now actor-isolated
     private var lastPerformanceCheck: CFTimeInterval = 0
-    private var frameProcessingTimes: [CFTimeInterval] = []
-    private let maxProcessingTimeSamples = 60 // Increased for better accuracy
+    private var frameProcessingTimes: InlineArray<60, CFTimeInterval> = InlineArray(repeating: 0.0)
+    private var frameProcessingTimesCount: Int = 0
+    private let maxProcessingTimeSamples = 60
     private var adaptiveQualityEnabled = true
-    private var currentQualityLevel: Float = 1.0 // 1.0 = full quality, 0.5 = half quality
+    private var currentQualityLevel: Float = 1.0
     
-    // Enhanced pixel buffer pool management
+    // Enhanced pixel buffer pool management - now actor-isolated
     private var pixelBufferPool: CVPixelBufferPool?
     private var poolIdentifier: String = ""
     private var metalCommandQueue: MTLCommandQueue?
     
-    // GPU optimization
+    // GPU optimization - now actor-isolated
     private var renderPipelineState: MTLRenderPipelineState?
     private var textureCache: CVMetalTextureCache?
     
-    // Frame rate stabilization
+    // Frame rate stabilization - now actor-isolated
     private var targetFrameRate: Double = 30.0
-    private var frameDropThreshold: CFTimeInterval = 0.05 // 50ms
+    private var frameDropThreshold: CFTimeInterval = 0.05
+    
+    // Cache tracking - now actor-isolated
+    private var cacheSize: Int64 = 0
     
     init(layout: RecordingLayout, quality: VideoQuality) {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -76,6 +82,12 @@ class FrameCompositor {
         
         // Setup frame rate stabilization
         setupFrameRateStabilization()
+        
+        // Register with MemoryTracker if available
+        // Commented out due to Swift 6.2 compilation issues
+        // if #available(iOS 17.0, *) {
+        //     ModernMemoryManager.shared.registerCacheOwner(self)
+        // }
     }
     
     private func setupMetalTextureCache() {
@@ -106,16 +118,16 @@ class FrameCompositor {
         ]
         
         var pool: CVPixelBufferPool?
-        let status = CVPixelBufferPoolCreate(
-            nil,
-            poolAttributes as CFDictionary,
-            pixelBufferAttributes as CFDictionary,
-            &pool
-        )
+        let status = CVPixelBufferPoolCreate(kCFAllocatorDefault,
+                                             poolAttributes as CFDictionary,
+                                             pixelBufferAttributes as CFDictionary,
+                                             &pool)
         
         if status == kCVReturnSuccess {
             pixelBufferPool = pool
         }
+        
+        updateCacheSize()
     }
     
     private func setupFrameRateStabilization() {
@@ -129,22 +141,22 @@ class FrameCompositor {
     
     func composite(frontBuffer: CVPixelBuffer,
                    backBuffer: CVPixelBuffer,
-                   timestamp: CMTime) -> CVPixelBuffer? {
+                   timestamp: CMTime) async -> CVPixelBuffer? {
         
         let startTime = CACurrentMediaTime()
         
-        if shouldDropFrame() {
+        if await shouldDropFrame() {
             print("DEBUG: ⚠️ Dropping frame due to performance")
             return nil
         }
         
-        checkPerformanceAdaptation()
+        await checkPerformanceAdaptation()
         
         let frontImage = CIImage(cvPixelBuffer: frontBuffer)
         let backImage = CIImage(cvPixelBuffer: backBuffer)
         
-        let processedFrontImage = applyAdaptiveQuality(to: frontImage)
-        let processedBackImage = applyAdaptiveQuality(to: backImage)
+        let processedFrontImage = await applyAdaptiveQuality(to: frontImage)
+        let processedBackImage = await applyAdaptiveQuality(to: backImage)
         
         let composedImage: CIImage
         switch layout {
@@ -165,24 +177,26 @@ class FrameCompositor {
         }
         
         let processingTime = CACurrentMediaTime() - startTime
-        trackProcessingTime(processingTime)
+        await trackProcessingTime(processingTime)
         
         PerformanceMonitor.shared.recordFrame()
         
         return result
     }
     
-    private func shouldDropFrame() -> Bool {
+    private func shouldDropFrame() async -> Bool {
         // Check if we're falling behind on frame rate
         let targetFrameTime = 1.0 / targetFrameRate
         let currentTime = CACurrentMediaTime()
         
-        if let lastTime = frameProcessingTimes.last {
-            let timeSinceLastFrame = currentTime - lastTime
-            // If we're running too slow, drop this frame to catch up
-            if timeSinceLastFrame > targetFrameTime + frameDropThreshold {
-                return true
-            }
+        // Only check if we have valid samples
+        guard frameProcessingTimesCount > 0 else { return false }
+        
+        let lastTime = frameProcessingTimes[frameProcessingTimesCount - 1]
+        let timeSinceLastFrame = currentTime - lastTime
+        // If we're running too slow, drop this frame to catch up
+        if timeSinceLastFrame > targetFrameTime + frameDropThreshold {
+            return true
         }
         
         return false
@@ -394,7 +408,7 @@ class FrameCompositor {
     }
     
     private func compositeWithCPU(frontBuffer: CVPixelBuffer, backBuffer: CVPixelBuffer, timestamp: CMTime) -> CVPixelBuffer? {
-        // Fallback to CPU processing
+        // Span could be used for direct pixel manipulation if CIImage processing is too slow
         let frontImage = CIImage(cvPixelBuffer: frontBuffer)
         let backImage = CIImage(cvPixelBuffer: backBuffer)
         
@@ -418,7 +432,7 @@ class FrameCompositor {
         return renderToPixelBuffer(composedImage)
     }
     
-    private func applyAdaptiveQuality(to image: CIImage) -> CIImage {
+    private func applyAdaptiveQuality(to image: CIImage) async -> CIImage {
         guard adaptiveQualityEnabled && currentQualityLevel < 1.0 else { return image }
         
         _ = CGSize(
@@ -430,16 +444,20 @@ class FrameCompositor {
                                                      y: CGFloat(currentQualityLevel)))
     }
     
-    private func checkPerformanceAdaptation() {
+    private func checkPerformanceAdaptation() async {
         let currentTime = CACurrentMediaTime()
         
         // Check performance every 2 seconds
         if currentTime - lastPerformanceCheck > 2.0 {
             lastPerformanceCheck = currentTime
             
-            guard !frameProcessingTimes.isEmpty else { return }
+            guard frameProcessingTimesCount > 0 else { return }
             
-            let averageProcessingTime = frameProcessingTimes.reduce(0, +) / CFTimeInterval(frameProcessingTimes.count)
+            var sum: CFTimeInterval = 0
+            for i in 0..<frameProcessingTimesCount {
+                sum += frameProcessingTimes[i]
+            }
+            let averageProcessingTime = sum / CFTimeInterval(frameProcessingTimesCount)
             let targetProcessingTime = 1.0 / 30.0 // Target 30 FPS
             
             // Adapt quality based on performance
@@ -454,16 +472,19 @@ class FrameCompositor {
             }
             
             // Clear old samples
-            frameProcessingTimes.removeAll()
+            frameProcessingTimesCount = 0
         }
     }
     
-    private func trackProcessingTime(_ processingTime: CFTimeInterval) {
-        frameProcessingTimes.append(processingTime)
-        
-        // Keep only recent samples
-        if frameProcessingTimes.count > maxProcessingTimeSamples {
-            frameProcessingTimes.removeFirst()
+    private func trackProcessingTime(_ processingTime: CFTimeInterval) async {
+        if frameProcessingTimesCount < 60 {
+            frameProcessingTimes[frameProcessingTimesCount] = processingTime
+            frameProcessingTimesCount += 1
+        } else {
+            for i in 0..<59 {
+                frameProcessingTimes[i] = frameProcessingTimes[i + 1]
+            }
+            frameProcessingTimes[59] = processingTime
         }
     }
     
@@ -622,6 +643,88 @@ class FrameCompositor {
         return buffer
     }
     
+    @available(iOS 26.0, *)
+    func renderToPixelBufferWithSpan(_ image: CIImage) async -> CVPixelBuffer? {
+        var pixelBuffer: CVPixelBuffer?
+        
+        if let pool = pixelBufferPool {
+            let status = CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
+            if status != kCVReturnSuccess {
+                print("DEBUG: ⚠️ Failed to get pixel buffer from pool: \(status)")
+                pixelBuffer = nil
+            }
+        }
+        
+        if pixelBuffer == nil {
+            let attrs = [
+                kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue as Any,
+                kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary
+            ] as CFDictionary
+            
+            let status = CVPixelBufferCreate(kCFAllocatorDefault,
+                                            Int(renderSize.width),
+                                            Int(renderSize.height),
+                                            kCVPixelFormatType_32BGRA,
+                                            attrs,
+                                            &pixelBuffer)
+            
+            guard status == kCVReturnSuccess, pixelBuffer != nil else {
+                print("DEBUG: ⚠️ Failed to create pixel buffer: \(status)")
+                return nil
+            }
+        }
+        
+        guard let buffer = pixelBuffer else { return nil }
+        
+        guard CVPixelBufferLockBaseAddress(buffer, []) == kCVReturnSuccess else { 
+            print("DEBUG: ⚠️ Failed to lock pixel buffer")
+            return nil 
+        }
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        
+        guard let baseAddress = CVPixelBufferGetBaseAddress(buffer) else { 
+            print("DEBUG: ⚠️ Failed to get base address")
+            return nil 
+        }
+        
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
+        let height = CVPixelBufferGetHeight(buffer)
+        let totalBytes = bytesPerRow * height
+        
+        let bufferPointer = UnsafeMutableRawBufferPointer(start: baseAddress, count: totalBytes)
+        let pixelSpan = Span(bufferPointer.bindMemory(to: UInt8.self))
+        
+        ciContext.render(image,
+                        to: buffer,
+                        bounds: CGRect(origin: .zero, size: renderSize),
+                        colorSpace: CGColorSpaceCreateDeviceRGB())
+        
+        for i in stride(from: 3, to: totalBytes, by: 4) {
+            pixelSpan[i] = 255
+        }
+        
+        return buffer
+    }
+    
+    // MutableRawSpan not supported yet - advanced iOS 26 feature
+    // @available(iOS 26.0, *)
+    // private func createMutableSpanForPixelBuffer(_ pixelBuffer: CVPixelBuffer) -> (span: MutableRawSpan, unlock: () -> Void)? {
+    //     guard CVPixelBufferLockBaseAddress(pixelBuffer, []) == kCVReturnSuccess else { return nil }
+    //     guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+    //         CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+    //         return nil
+    //     }
+    //     let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+    //     let height = CVPixelBufferGetHeight(pixelBuffer)
+    //     let size = bytesPerRow * height
+    //     let bufferPointer = UnsafeMutableRawBufferPointer(start: baseAddress, count: size)
+    //     let span = MutableRawSpan(unsafeBufferPointer)
+    //     let unlock = { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
+    //     return (span, unlock)
+    // }
+    
     // MARK: - Performance Control
     
     func setAdaptiveQuality(_ enabled: Bool) {
@@ -637,12 +740,31 @@ class FrameCompositor {
     }
     
     func resetPerformanceMetrics() {
-        frameProcessingTimes.removeAll()
+        frameProcessingTimesCount = 0
         currentQualityLevel = 1.0
         lastPerformanceCheck = 0
     }
     
+    private func updateCacheSize() {
+        var size: Int64 = 0
+        
+        if textureCache != nil {
+            size += 10 * 1024 * 1024
+        }
+        
+        if pixelBufferPool != nil {
+            size += Int64(renderSize.width * renderSize.height * 4 * 3)
+        }
+        
+        cacheSize = size
+    }
+    
     deinit {
+        // Commented out due to Swift 6.2 compilation issues
+        // if #available(iOS 17.0, *) {
+        //     ModernMemoryManager.shared.unregisterCacheOwner(self)
+        // }
+        
         if let pool = pixelBufferPool {
             CVPixelBufferPoolFlush(pool, .excessBuffers)
         }
@@ -656,6 +778,41 @@ class FrameCompositor {
         if let pool = pixelBufferPool {
             CVPixelBufferPoolFlush(pool, .excessBuffers)
         }
+        updateCacheSize()
     }
 }
+
+// Cache owner extension - temporarily disabled for build
+// Cache owner extension - temporarily disabled for build
+// @available(iOS 17.0, *)
+// extension FrameCompositor: CacheOwner {
+//     func clearCache(type: CacheClearType) {
+//         switch type {
+//         case .nonEssential:
+//             if let pool = pixelBufferPool {
+//                 CVPixelBufferPoolFlush(pool, .excessBuffers)
+//             }
+//             if let cache = textureCache {
+//                 CVMetalTextureCacheFlush(cache, 0)
+//             }
+//         case .all:
+//             if let pool = pixelBufferPool {
+//                 CVPixelBufferPoolFlush(pool, .excessBuffers)
+//             }
+//             if let cache = textureCache {
+//                 CVMetalTextureCacheFlush(cache, 0)
+//             }
+//             resetPerformanceMetrics()
+//         }
+//         updateCacheSize()
+//     }
+//     
+//     func getCacheSize() -> Int64 {
+//         return cacheSize
+//     }
+//     
+//     func getCacheName() -> String {
+//         return "FrameCompositor-\(poolIdentifier)"
+//     }
+// }
 

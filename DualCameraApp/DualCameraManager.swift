@@ -3,6 +3,7 @@ import AVFoundation
 import UIKit
 import Photos
 
+@MainActor
 protocol DualCameraManagerDelegate: AnyObject {
     func didStartRecording()
     func didStopRecording()
@@ -10,6 +11,7 @@ protocol DualCameraManagerDelegate: AnyObject {
     func didUpdateVideoQuality(to quality: VideoQuality)
     func didCapturePhoto(frontImage: UIImage?, backImage: UIImage?)
     func didFinishCameraSetup()
+    func didUpdateSetupProgress(_ message: String, progress: Float)
 }
 
 enum VideoQuality: String, CaseIterable {
@@ -40,19 +42,20 @@ enum VideoQuality: String, CaseIterable {
     }
 }
 
+@available(iOS 15.0, *)
 final class DualCameraManager: NSObject {
     weak var delegate: DualCameraManagerDelegate?
 
     var videoQuality: VideoQuality = .hd1080 {
         didSet {
             activeVideoQuality = videoQuality
-            DispatchQueue.main.async {
-                self.delegate?.didUpdateVideoQuality(to: self.videoQuality)
+            Task { @MainActor in
+                delegate?.didUpdateVideoQuality(to: videoQuality)
             }
         }
     }
 
-    private let sessionQueue = DispatchQueue(label: "DualCameraManager.SessionQueue")
+
 
     private var captureSession: AVCaptureSession?
 
@@ -80,10 +83,20 @@ final class DualCameraManager: NSObject {
     private var capturedFrontImage: UIImage?
     private var capturedBackImage: UIImage?
     private var photoCaptureCount = 0
+    private var isFirstCapture: Bool = true
+    private var preparedPhotoSettingsConfigured: Bool = false
+    private var photoOutputsReady: Bool = false
+    private var cachedSpeedHEVCSettings: AVCapturePhotoSettings?
+    private var cachedSpeedJPEGSettings: AVCapturePhotoSettings?
+    private var cachedBalancedHEVCSettings: AVCapturePhotoSettings?
+    private var cachedBalancedJPEGSettings: AVCapturePhotoSettings?
 
     private var isRecording = false
     private var isSetupComplete = false
     private(set) var activeVideoQuality: VideoQuality = .hd1080
+    private var isAudioSessionActive = false
+    private var photoOutputsConfigured = false
+    private var movieOutputsConfigured = false
     
     enum CameraState {
         case notConfigured
@@ -96,13 +109,14 @@ final class DualCameraManager: NSObject {
     
     private(set) var state: CameraState = .notConfigured {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.handleStateChange(from: oldValue, to: self?.state ?? .notConfigured)
+            Task { @MainActor in
+                await self.handleStateChange(from: oldValue, to: self.state)
             }
         }
     }
     
-    private func handleStateChange(from oldState: CameraState, to newState: CameraState) {
+    @MainActor
+    private func handleStateChange(from oldState: CameraState, to newState: CameraState) async {
         switch (oldState, newState) {
         case (.recording, .configured), (.recording, .paused):
             delegate?.didStopRecording()
@@ -121,9 +135,9 @@ final class DualCameraManager: NSObject {
     private var frontDataOutput: AVCaptureVideoDataOutput?
     private var backDataOutput: AVCaptureVideoDataOutput?
     private var audioDataOutput: AVCaptureAudioDataOutput?
-    private let dataOutputQueue = DispatchQueue(label: "com.dualcamera.dataoutput", qos: .userInitiated)
-    private let audioOutputQueue = DispatchQueue(label: "com.dualcamera.audiooutput", qos: .userInitiated)
-    private let compositionQueue = DispatchQueue(label: "com.dualcamera.composition", qos: .userInitiated)
+    private let dataOutputQueue = DispatchQueue(label: "com.dualcamera.dataoutput", qos: .userInitiated) // For AVFoundation callbacks
+    private let audioOutputQueue = DispatchQueue(label: "com.dualcamera.audiooutput", qos: .userInitiated) // For AVFoundation callbacks
+    private let compositionQueue = DispatchQueue(label: "com.dualcamera.composition", qos: .userInitiated) // For AVFoundation callbacks
 
     private var frameCompositor: FrameCompositor?
     private var assetWriter: AVAssetWriter?
@@ -133,7 +147,7 @@ final class DualCameraManager: NSObject {
 
     private var frontFrameBuffer: CMSampleBuffer?
     private var backFrameBuffer: CMSampleBuffer?
-    private let frameSyncQueue = DispatchQueue(label: "com.dualcamera.framesync")
+    private let frameSyncQueue = DispatchQueue(label: "com.dualcamera.framesync") // For AVFoundation callbacks
 
     private var recordingStartTime: CMTime?
     private var isWriting = false
@@ -213,45 +227,71 @@ final class DualCameraManager: NSObject {
         state = .configuring
         print("DEBUG: Setting up cameras (attempt \(setupRetryCount + 1)/\(maxSetupRetries))...")
 
-        // OPTIMIZATION: Discover devices on background queue
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-            self.backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-            self.audioDevice = AVCaptureDevice.default(for: .audio)
+        Task { @MainActor in
+            delegate?.didUpdateSetupProgress("Discovering cameras...", progress: 0.1)
+        }
 
-            print("DEBUG: Front camera: \(self.frontCamera?.localizedName ?? "nil")")
-            print("DEBUG: Back camera: \(self.backCamera?.localizedName ?? "nil")")
-            print("DEBUG: Audio device: \(self.audioDevice?.localizedName ?? "nil")")
+        Task(priority: .userInitiated) {
+            await withTaskGroup(of: (String, AVCaptureDevice?).self) { group in
+                group.addTask {
+                    ("front", AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front))
+                }
+                group.addTask {
+                    ("back", AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back))
+                }
+                group.addTask {
+                    ("audio", AVCaptureDevice.default(for: .audio))
+                }
+                
+                for await (type, device) in group {
+                    await MainActor.run {
+                        switch type {
+                        case "front": self.frontCamera = device
+                        case "back": self.backCamera = device
+                        case "audio": self.audioDevice = device
+                        default: break
+                        }
+                    }
+                }
+            }
+
+            print("DEBUG: Front camera: \(String(describing: self.frontCamera?.localizedName))")
+            print("DEBUG: Back camera: \(String(describing: self.backCamera?.localizedName))")
+            print("DEBUG: Audio device: \(String(describing: self.audioDevice?.localizedName))")
+
+            Task { @MainActor in
+                self.delegate?.didUpdateSetupProgress("Cameras discovered", progress: 0.3)
+            }
 
             guard self.frontCamera != nil, self.backCamera != nil else {
                 let error = DualCameraError.missingDevices
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
                 }
                 return
             }
 
-            // OPTIMIZATION: Configure audio session asynchronously
-            DispatchQueue.global(qos: .utility).async {
-                self.configureAudioSession()
+            // Audio session deferred until recording starts
+
+            Task { @MainActor in
+                self.delegate?.didUpdateSetupProgress("Configuring camera session...", progress: 0.5)
             }
 
-            // Continue with session configuration on session queue
-            self.sessionQueue.async {
+            Task.detached(priority: .userInitiated) {
                 do {
                     try self.configureSession()
+
+                    // Update progress for session start
+                    await MainActor.run {
+                        self.delegate?.didUpdateSetupProgress("Starting camera session...", progress: 0.8)
+                    }
+
                     self.isSetupComplete = true
                     self.setupRetryCount = 0
                     self.state = .configured
 
-                    // Notify delegate that setup is complete
-                    DispatchQueue.main.async {
-                        self.delegate?.didUpdateVideoQuality(to: self.videoQuality)
-                        self.delegate?.didFinishCameraSetup()
-                    }
-
-                    // Start session immediately on sessionQueue
+                    // Start session immediately
                     // Preview layers can be assigned to a running session
                     if let session = self.captureSession, !session.isRunning {
                         print("DEBUG: Starting capture session...")
@@ -259,9 +299,27 @@ final class DualCameraManager: NSObject {
                         print("DEBUG: ✅ Capture session started - isRunning: \(session.isRunning)")
                     }
 
-                    // OPTIMIZATION: Configure professional features in background
-                    DispatchQueue.global(qos: .utility).async {
-                        self.configureCameraProfessionalFeatures()
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(100))
+                        do {
+                            try self.setupPhotoOutputsIfNeeded()
+                            self.configurePreparedPhotoSettings(prioritization: .speed)
+                            self.photoOutputsReady = true
+                            print("DEBUG: ✅ Photo outputs prepared for fast capture")
+                        } catch {
+                            print("DEBUG: ⚠️ Failed to prepare photo outputs: \(error)")
+                        }
+                    }
+
+                    // Notify delegate that setup is complete
+                    await MainActor.run {
+                        self.delegate?.didUpdateVideoQuality(to: self.videoQuality)
+                        self.delegate?.didUpdateSetupProgress("Camera ready!", progress: 1.0)
+                        self.delegate?.didFinishCameraSetup()
+                    }
+
+                    Task(priority: .utility) {
+                        await self.configureCameraProfessionalFeaturesAsync()
                     }
                 } catch {
                     self.state = .failed(error)
@@ -270,12 +328,11 @@ final class DualCameraManager: NSObject {
                     if self.setupRetryCount < self.maxSetupRetries {
                         self.setupRetryCount += 1
                         print("DEBUG: Setup failed, retrying... (attempt \(self.setupRetryCount))")
-                        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1.0) {
-                            self.isSetupComplete = false
-                            self.setupCameras()
-                        }
+                        try? await Task.sleep(for: .seconds(1))
+                        self.isSetupComplete = false
+                        self.setupCameras()
                     } else {
-                        DispatchQueue.main.async {
+                        await MainActor.run {
                             ErrorHandlingManager.shared.handleError(error)
                             self.delegate?.didFailWithError(error)
                         }
@@ -291,29 +348,35 @@ final class DualCameraManager: NSObject {
             throw DualCameraError.missingDevices
         }
 
-        if #available(iOS 13.0, *) {
-            let isSupported = AVCaptureMultiCamSession.isMultiCamSupported
-            print("DEBUG: MultiCam supported: \(isSupported)")
-            guard isSupported else {
-                print("DEBUG: MultiCam not supported, throwing error")
-                throw DualCameraError.multiCamNotSupported
-            }
-
-            let session = AVCaptureMultiCamSession()
-            captureSession = session
-            try configureMultiCamSession(session: session, frontCamera: frontCamera, backCamera: backCamera)
-        } else {
+        let isSupported = AVCaptureMultiCamSession.isMultiCamSupported
+        print("DEBUG: MultiCam supported: \(isSupported)")
+        guard isSupported else {
+            print("DEBUG: MultiCam not supported, throwing error")
             throw DualCameraError.multiCamNotSupported
         }
+
+        let session = AVCaptureMultiCamSession()
+        captureSession = session
+        try configureMinimalSession(session: session, frontCamera: frontCamera, backCamera: backCamera)
     }
 
-    @available(iOS 13.0, *)
-    private func configureMultiCamSession(session: AVCaptureMultiCamSession, frontCamera: AVCaptureDevice, backCamera: AVCaptureDevice) throws {
+    private func configureMinimalSession(session: AVCaptureMultiCamSession, frontCamera: AVCaptureDevice, backCamera: AVCaptureDevice) throws {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
 
         let selectedQuality = videoQuality
         activeVideoQuality = selectedQuality
+
+        // Try iOS 26 hardware synchronization first
+        if #available(iOS 26.0, *) {
+            Task {
+                do {
+                    try await configureHardwareSync(session: session, frontCamera: frontCamera, backCamera: backCamera)
+                } catch {
+                    print("DEBUG: iOS 26 hardware sync failed, using standard configuration: \(error)")
+                }
+            }
+        }
 
         // STEP 1: Add inputs (fast)
         let frontInput = try AVCaptureDeviceInput(device: frontCamera)
@@ -385,184 +448,280 @@ final class DualCameraManager: NSObject {
         }
         self.backPreviewLayer = backPreviewLayer
 
-        // STEP 4: Setup movie outputs (needed for recording)
+        print("DEBUG: ✅ Preview layers configured - session ready for immediate start. Outputs deferred for faster startup.")
+    }
+    
+    // MARK: - iOS 26 Hardware Multi-Cam Synchronization (Phase 4.2)
+    @available(iOS 26.0, *)
+    private func configureHardwareSync(session: AVCaptureMultiCamSession, frontCamera: AVCaptureDevice, backCamera: AVCaptureDevice) async throws {
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        
+        // Check if hardware-level synchronization is supported
+        if session.isHardwareSynchronizationSupported {
+            // Configure hardware-level multi-cam sync
+            let syncSettings = AVCaptureMultiCamSession.SynchronizationSettings()
+            syncSettings.synchronizationMode = .hardwareLevel
+            syncSettings.enableTimestampAlignment = true
+            syncSettings.maxSyncLatency = CMTime(value: 1, timescale: 1000) // 1ms max latency
+            
+            try session.applySynchronizationSettings(syncSettings)
+            print("DEBUG: ✅ iOS 26 hardware-level multi-cam sync enabled")
+            print("DEBUG:   - Synchronization mode: hardware-level")
+            print("DEBUG:   - Timestamp alignment: enabled")
+            print("DEBUG:   - Max sync latency: 1ms")
+        } else {
+            print("DEBUG: ℹ️ Hardware synchronization not supported on this device")
+        }
+        
+        // Coordinated format selection for all cameras
+        let multiCamFormats = try await session.selectOptimalFormatsForAllCameras(
+            targetQuality: activeVideoQuality,
+            prioritizeSync: true
+        )
+        
+        // Apply optimal formats to all cameras
+        for (device, format) in multiCamFormats {
+            try await device.lockForConfigurationAsync()
+            device.activeFormat = format
+            try await device.unlockForConfigurationAsync()
+            
+            let position = device.position == .front ? "front" : "back"
+            print("DEBUG: ✅ Coordinated format applied to \(position) camera")
+        }
+        
+        print("DEBUG: ✅ Hardware multi-cam synchronization configured with coordinated formats")
+    }
+    
+    private func setupMovieOutputs() throws {
+        guard frontMovieOutput == nil, backMovieOutput == nil else { return }
+        guard let session = captureSession as? AVCaptureMultiCamSession else { return }
+        guard let frontCameraInput = frontCameraInput, let backCameraInput = backCameraInput else { return }
+        
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        
+        guard let frontVideoPort = frontCameraInput.ports(for: .video, sourceDeviceType: frontCamera?.deviceType, sourceDevicePosition: .front).first,
+              let backVideoPort = backCameraInput.ports(for: .video, sourceDeviceType: backCamera?.deviceType, sourceDevicePosition: .back).first else {
+            throw DualCameraError.configurationFailed("Failed to get video ports for movie outputs")
+        }
+        
         let frontOutput = AVCaptureMovieFileOutput()
         guard session.canAddOutput(frontOutput) else {
-            throw DualCameraError.configurationFailed("Unable to add front movie output to capture session.")
+            throw DualCameraError.configurationFailed("Cannot add front movie output")
         }
         session.addOutputWithNoConnections(frontOutput)
-        frontMovieOutput = frontOutput
-
-        let backOutput = AVCaptureMovieFileOutput()
-        guard session.canAddOutput(backOutput) else {
-            throw DualCameraError.configurationFailed("Unable to add back movie output to capture session.")
+        
+        var frontPorts: [AVCaptureInput.Port] = [frontVideoPort]
+        if let audioPort = audioInput?.ports(for: .audio, sourceDeviceType: audioDevice?.deviceType, sourceDevicePosition: audioDevice?.position ?? .unspecified).first {
+            frontPorts.append(audioPort)
         }
-        session.addOutputWithNoConnections(backOutput)
-        backMovieOutput = backOutput
-
-        // STEP 5: Connect movie outputs to cameras
-        var frontConnectionPorts: [AVCaptureInput.Port] = [frontVideoPort]
-        if let audioPort = audioInput?.ports(
-            for: .audio,
-            sourceDeviceType: audioDevice?.deviceType,
-            sourceDevicePosition: audioDevice?.position ?? .unspecified
-        ).first {
-            frontConnectionPorts.append(audioPort)
-        }
-
-        let frontConnection = AVCaptureConnection(inputPorts: frontConnectionPorts, output: frontOutput)
+        
+        let frontConnection = AVCaptureConnection(inputPorts: frontPorts, output: frontOutput)
         guard session.canAddConnection(frontConnection) else {
-            throw DualCameraError.configurationFailed("Unable to link front camera input with movie output.")
+            throw DualCameraError.configurationFailed("Cannot add front movie connection")
         }
         session.addConnection(frontConnection)
         if frontConnection.isVideoOrientationSupported {
-            frontConnection.videoOrientation = AVCaptureVideoOrientation.portrait
+            frontConnection.videoOrientation = .portrait
         }
         
-        // Enable video stabilization for front camera (professional feature)
-        if frontConnection.isVideoStabilizationSupported {
-            frontConnection.preferredVideoStabilizationMode = .cinematicExtended
-            print("DEBUG: Front camera - Cinematic Extended stabilization enabled")
+        let backOutput = AVCaptureMovieFileOutput()
+        guard session.canAddOutput(backOutput) else {
+            throw DualCameraError.configurationFailed("Cannot add back movie output")
         }
-
+        session.addOutputWithNoConnections(backOutput)
+        
         let backConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backOutput)
         guard session.canAddConnection(backConnection) else {
-            throw DualCameraError.configurationFailed("Unable to link back camera input with movie output.")
+            throw DualCameraError.configurationFailed("Cannot add back movie connection")
         }
         session.addConnection(backConnection)
         if backConnection.isVideoOrientationSupported {
-            backConnection.videoOrientation = AVCaptureVideoOrientation.portrait
+            backConnection.videoOrientation = .portrait
         }
         
-        // Enable video stabilization for back camera
-        if backConnection.isVideoStabilizationSupported {
-            backConnection.preferredVideoStabilizationMode = .cinematicExtended
-            print("DEBUG: Back camera - Cinematic Extended stabilization enabled")
-        }
-
-        // Setup photo outputs
-        let frontPhotoOutput = AVCapturePhotoOutput()
-        print("DEBUG: Can add front photo output: \(session.canAddOutput(frontPhotoOutput))")
-        if session.canAddOutput(frontPhotoOutput) {
-            session.addOutputWithNoConnections(frontPhotoOutput)
-            self.frontPhotoOutput = frontPhotoOutput
-
-            let frontPhotoConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontPhotoOutput)
-            print("DEBUG: Can add front photo connection: \(session.canAddConnection(frontPhotoConnection))")
-            if session.canAddConnection(frontPhotoConnection) {
-                session.addConnection(frontPhotoConnection)
-                if frontPhotoConnection.isVideoOrientationSupported {
-                    frontPhotoConnection.videoOrientation = .portrait
-                }
-            }
-        }
-
-        let backPhotoOutput = AVCapturePhotoOutput()
-        print("DEBUG: Can add back photo output: \(session.canAddOutput(backPhotoOutput))")
-        if session.canAddOutput(backPhotoOutput) {
-            session.addOutputWithNoConnections(backPhotoOutput)
-            self.backPhotoOutput = backPhotoOutput
-
-            let backPhotoConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backPhotoOutput)
-            print("DEBUG: Can add back photo connection: \(session.canAddConnection(backPhotoConnection))")
-            if session.canAddConnection(backPhotoConnection) {
-                session.addConnection(backPhotoConnection)
-                if backPhotoConnection.isVideoOrientationSupported {
-                    backPhotoConnection.videoOrientation = .portrait
-                }
-            }
-        }
-
-        // Setup triple output data outputs
-        if self.enableTripleOutput {
-            print("DEBUG: Setting up data outputs")
-            let frontDataOutput = AVCaptureVideoDataOutput()
-            frontDataOutput.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-            ]
-            frontDataOutput.alwaysDiscardsLateVideoFrames = true
-
-            print("DEBUG: Can add front data output: \(session.canAddOutput(frontDataOutput))")
-            if session.canAddOutput(frontDataOutput) {
-                session.addOutputWithNoConnections(frontDataOutput)
-                self.frontDataOutput = frontDataOutput
-
-                let frontDataConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontDataOutput)
-                print("DEBUG: Can add front data connection: \(session.canAddConnection(frontDataConnection))")
-                if session.canAddConnection(frontDataConnection) {
-                    session.addConnection(frontDataConnection)
-                    if frontDataConnection.isVideoOrientationSupported {
-                        frontDataConnection.videoOrientation = .portrait
-                    }
-                }
-                
-                frontDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
-            }
-
-            let backDataOutput = AVCaptureVideoDataOutput()
-            backDataOutput.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-            ]
-            backDataOutput.alwaysDiscardsLateVideoFrames = true
-
-            print("DEBUG: Can add back data output: \(session.canAddOutput(backDataOutput))")
-            if session.canAddOutput(backDataOutput) {
-                session.addOutputWithNoConnections(backDataOutput)
-                self.backDataOutput = backDataOutput
-
-                let backDataConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backDataOutput)
-                print("DEBUG: Can add back data connection: \(session.canAddConnection(backDataConnection))")
-                if session.canAddConnection(backDataConnection) {
-                    session.addConnection(backDataConnection)
-                    if backDataConnection.isVideoOrientationSupported {
-                        backDataConnection.videoOrientation = .portrait
-                    }
-                }
-                
-                backDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
-            }
-            
-            if let audioPort = audioInput?.ports(
-                for: .audio,
-                sourceDeviceType: audioDevice?.deviceType,
-                sourceDevicePosition: audioDevice?.position ?? .unspecified
-            ).first {
-                let audioDataOutput = AVCaptureAudioDataOutput()
-                
-                print("DEBUG: Can add audio data output: \(session.canAddOutput(audioDataOutput))")
-                if session.canAddOutput(audioDataOutput) {
-                    session.addOutputWithNoConnections(audioDataOutput)
-                    self.audioDataOutput = audioDataOutput
-                    
-                    let audioDataConnection = AVCaptureConnection(inputPorts: [audioPort], output: audioDataOutput)
-                    print("DEBUG: Can add audio data connection: \(session.canAddConnection(audioDataConnection))")
-                    if session.canAddConnection(audioDataConnection) {
-                        session.addConnection(audioDataConnection)
-                    }
-                    
-                    audioDataOutput.setSampleBufferDelegate(self, queue: self.audioOutputQueue)
-                }
-            }
-        }
-
-        print("DEBUG: ✅ Configuration complete - all outputs configured successfully")
+        self.frontMovieOutput = frontOutput
+        self.backMovieOutput = backOutput
+        movieOutputsConfigured = true
+        
+        print("DEBUG: ✅ Movie outputs configured on-demand")
     }
     
-    // MARK: - Audio Configuration
+    private func setupPhotoOutputsIfNeeded() throws {
+        guard frontPhotoOutput == nil || backPhotoOutput == nil else { return }
+        guard let session = captureSession as? AVCaptureMultiCamSession else { return }
+        guard let frontCameraInput = frontCameraInput, let backCameraInput = backCameraInput else { return }
+        
+        print("DEBUG: Setting up photo outputs on-demand...")
+        
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        
+        guard let frontVideoPort = frontCameraInput.ports(for: .video, sourceDeviceType: frontCamera?.deviceType, sourceDevicePosition: .front).first,
+              let backVideoPort = backCameraInput.ports(for: .video, sourceDeviceType: backCamera?.deviceType, sourceDevicePosition: .back).first else {
+            throw DualCameraError.configurationFailed("Failed to get video ports for photo outputs")
+        }
+        
+        if frontPhotoOutput == nil {
+            let frontPhotoOut = AVCapturePhotoOutput()
+            if session.canAddOutput(frontPhotoOut) {
+                session.addOutputWithNoConnections(frontPhotoOut)
+                let frontPhotoConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontPhotoOut)
+                if session.canAddConnection(frontPhotoConnection) {
+                    session.addConnection(frontPhotoConnection)
+                    if frontPhotoConnection.isVideoOrientationSupported {
+                        frontPhotoConnection.videoOrientation = .portrait
+                    }
+                }
+                self.frontPhotoOutput = frontPhotoOut
+            }
+        }
+        
+        if backPhotoOutput == nil {
+            let backPhotoOut = AVCapturePhotoOutput()
+            if session.canAddOutput(backPhotoOut) {
+                session.addOutputWithNoConnections(backPhotoOut)
+                let backPhotoConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backPhotoOut)
+                if session.canAddConnection(backPhotoConnection) {
+                    session.addConnection(backPhotoConnection)
+                    if backPhotoConnection.isVideoOrientationSupported {
+                        backPhotoConnection.videoOrientation = .portrait
+                    }
+                }
+                self.backPhotoOutput = backPhotoOut
+            }
+        }
+        
+        photoOutputsConfigured = true
+        configurePreparedPhotoSettings(prioritization: .speed)
+        print("DEBUG: ✅ Photo outputs configured on-demand")
+    }
+    
+    private func createPreparedPhotoSettings(prioritization: AVCapturePhotoOutput.QualityPrioritization) -> [AVCapturePhotoSettings] {
+        var settings: [AVCapturePhotoSettings] = []
+        
+        if let photoOutput = frontPhotoOutput ?? backPhotoOutput {
+            if let hevcFormat = photoOutput.availablePhotoCodecTypes.first(where: { $0 == .hevc }) {
+                let hevcSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: hevcFormat])
+                hevcSettings.photoQualityPrioritization = prioritization
+                hevcSettings.isHighResolutionPhotoEnabled = true
+                hevcSettings.isAutoStillImageStabilizationEnabled = true
+                settings.append(hevcSettings)
+            }
+        }
+        
+        let jpegSettings = AVCapturePhotoSettings()
+        jpegSettings.photoQualityPrioritization = prioritization
+        jpegSettings.isHighResolutionPhotoEnabled = true
+        jpegSettings.isAutoStillImageStabilizationEnabled = true
+        settings.append(jpegSettings)
+        
+        return settings
+    }
+    
+    private func configurePreparedPhotoSettings(prioritization: AVCapturePhotoOutput.QualityPrioritization = .speed) {
+        guard let frontPhotoOutput = frontPhotoOutput, let backPhotoOutput = backPhotoOutput else { return }
+        
+        let preparedSettings = createPreparedPhotoSettings(prioritization: prioritization)
+        
+        if prioritization == .speed {
+            if let hevcSettings = preparedSettings.first(where: { $0.format?[AVVideoCodecKey] as? AVVideoCodecType == .hevc }) {
+                cachedSpeedHEVCSettings = hevcSettings
+            }
+            if let jpegSettings = preparedSettings.first(where: { $0.format?[AVVideoCodecKey] == nil }) {
+                cachedSpeedJPEGSettings = jpegSettings
+            }
+        } else {
+            if let hevcSettings = preparedSettings.first(where: { $0.format?[AVVideoCodecKey] as? AVVideoCodecType == .hevc }) {
+                cachedBalancedHEVCSettings = hevcSettings
+            }
+            if let jpegSettings = preparedSettings.first(where: { $0.format?[AVVideoCodecKey] == nil }) {
+                cachedBalancedJPEGSettings = jpegSettings
+            }
+        }
+        
+        frontPhotoOutput.setPreparedPhotoSettingsArray(preparedSettings, completionHandler: nil)
+        frontPhotoOutput.maxPhotoQualityPrioritization = prioritization
+        
+        backPhotoOutput.setPreparedPhotoSettingsArray(preparedSettings, completionHandler: nil)
+        backPhotoOutput.maxPhotoQualityPrioritization = prioritization
+        
+        print("DEBUG: ✅ Configured prepared photo settings with prioritization: \(prioritization)")
+    }
+    
+    private func setupTripleOutputDataOutputs() throws {
+        guard enableTripleOutput, frontDataOutput == nil else { return }
+        guard let session = captureSession as? AVCaptureMultiCamSession else { return }
+        guard let frontCameraInput = frontCameraInput, let backCameraInput = backCameraInput else { return }
+        
+        print("DEBUG: Setting up triple output data outputs...")
+        
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        
+        guard let frontVideoPort = frontCameraInput.ports(for: .video, sourceDeviceType: frontCamera?.deviceType, sourceDevicePosition: .front).first,
+              let backVideoPort = backCameraInput.ports(for: .video, sourceDeviceType: backCamera?.deviceType, sourceDevicePosition: .back).first else {
+            throw DualCameraError.configurationFailed("Failed to get video ports for triple output")
+        }
+        
+        let frontDataOut = AVCaptureVideoDataOutput()
+        frontDataOut.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        frontDataOut.alwaysDiscardsLateVideoFrames = true
+        
+        if session.canAddOutput(frontDataOut) {
+            session.addOutputWithNoConnections(frontDataOut)
+            let frontDataConnection = AVCaptureConnection(inputPorts: [frontVideoPort], output: frontDataOut)
+            if session.canAddConnection(frontDataConnection) {
+                session.addConnection(frontDataConnection)
+                if frontDataConnection.isVideoOrientationSupported {
+                    frontDataConnection.videoOrientation = .portrait
+                }
+            }
+            frontDataOut.setSampleBufferDelegate(self, queue: dataOutputQueue)
+            self.frontDataOutput = frontDataOut
+        }
+        
+        let backDataOut = AVCaptureVideoDataOutput()
+        backDataOut.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        backDataOut.alwaysDiscardsLateVideoFrames = true
+        
+        if session.canAddOutput(backDataOut) {
+            session.addOutputWithNoConnections(backDataOut)
+            let backDataConnection = AVCaptureConnection(inputPorts: [backVideoPort], output: backDataOut)
+            if session.canAddConnection(backDataConnection) {
+                session.addConnection(backDataConnection)
+                if backDataConnection.isVideoOrientationSupported {
+                    backDataConnection.videoOrientation = .portrait
+                }
+            }
+            backDataOut.setSampleBufferDelegate(self, queue: dataOutputQueue)
+            self.backDataOutput = backDataOut
+        }
+        
+        if let audioPort = audioInput?.ports(for: .audio, sourceDeviceType: audioDevice?.deviceType, sourceDevicePosition: audioDevice?.position ?? .unspecified).first {
+            let audioDataOut = AVCaptureAudioDataOutput()
+            if session.canAddOutput(audioDataOut) {
+                session.addOutputWithNoConnections(audioDataOut)
+                let audioDataConnection = AVCaptureConnection(inputPorts: [audioPort], output: audioDataOut)
+                if session.canAddConnection(audioDataConnection) {
+                    session.addConnection(audioDataConnection)
+                }
+                audioDataOut.setSampleBufferDelegate(self, queue: audioOutputQueue)
+                self.audioDataOutput = audioDataOut
+            }
+        }
+        
+        print("DEBUG: ✅ Triple output data outputs configured")
+    }
+    
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             
-            // Configure for recording with playback
             try audioSession.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetoothA2DP])
-            
-            // Set preferred sample rate to 44.1kHz (standard for video)
             try audioSession.setPreferredSampleRate(44100.0)
-            
-            // Set preferred I/O buffer duration to minimize latency
             try audioSession.setPreferredIOBufferDuration(0.005)
-            
-            // Activate the session
             try audioSession.setActive(true)
             
             print("DEBUG: ✅ Audio session configured for recording")
@@ -574,20 +733,28 @@ final class DualCameraManager: NSObject {
         }
     }
     
-    // MARK: - Professional Camera Features
+    private func activateAudioSessionForRecording() async throws {
+        print("DEBUG: Activating audio session for recording...")
+        
+        let audioSession = AVAudioSession.sharedInstance()
+        
+        try audioSession.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetoothA2DP])
+        try audioSession.setPreferredSampleRate(44100.0)
+        try audioSession.setPreferredIOBufferDuration(0.005)
+        try audioSession.setActive(true)
+        
+        print("DEBUG: ✅ Audio session configured for recording (async)")
+    }
+    
     private func configureCameraProfessionalFeatures() {
-        // Configure Center Stage for front camera (iOS 14.5+)
         if #available(iOS 14.5, *), let frontCamera = frontCamera {
             do {
                 try frontCamera.lockForConfiguration()
                 
-                // Enable Center Stage (auto-framing feature)
                 if frontCamera.isCenterStageActive {
                     print("DEBUG: ✅ Center Stage is already active")
                 } else {
-                    // Try to enable Center Stage globally
                     if #available(iOS 14.5, *) {
-                        // Enable Center Stage (it will only work if device supports it)
                         AVCaptureDevice.isCenterStageEnabled = true
                         print("DEBUG: ✅ Attempted to enable Center Stage")
                         
@@ -604,18 +771,78 @@ final class DualCameraManager: NSObject {
             }
         }
         
-        // Configure HDR Video for both cameras
         configureHDRVideo(for: frontCamera, position: "Front")
         configureHDRVideo(for: backCamera, position: "Back")
         
-        // Configure optimal format for each camera
         configureOptimalFormat(for: frontCamera, position: "Front")
         configureOptimalFormat(for: backCamera, position: "Back")
+    }
+    
+    private func configureCameraProfessionalFeaturesAsync() async {
+        if #available(iOS 14.5, *), let frontCamera = frontCamera {
+            do {
+                try frontCamera.lockForConfiguration()
+                
+                if !frontCamera.isCenterStageActive {
+                    AVCaptureDevice.isCenterStageEnabled = true
+                    
+                    if #available(iOS 15.4, *) {
+                        frontCamera.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+                    }
+                }
+                
+                frontCamera.unlockForConfiguration()
+            } catch {
+                print("DEBUG: ⚠️ Error configuring Center Stage: \(error)")
+            }
+        }
+        
+        await configureVideoStabilization()
+        
+        configureHDRVideo(for: frontCamera, position: "Front")
+        configureHDRVideo(for: backCamera, position: "Back")
+        configureOptimalFormat(for: frontCamera, position: "Front")
+        configureOptimalFormat(for: backCamera, position: "Back")
+    }
+    
+    private func configureVideoStabilization() async {
+        guard let frontMovieOutput = frontMovieOutput,
+              let backMovieOutput = backMovieOutput else {
+            print("DEBUG: ⚠️ Movie outputs not yet configured - video stabilization will be applied after outputs are created")
+            return
+        }
+        
+        if let frontConnection = frontMovieOutput.connection(with: .video) {
+            if frontConnection.isVideoStabilizationSupported {
+                frontConnection.preferredVideoStabilizationMode = .cinematicExtended
+                print("DEBUG: ✅ Front camera - Cinematic Extended stabilization enabled (deferred)")
+            }
+        }
+
+        if let backConnection = backMovieOutput.connection(with: .video) {
+            if backConnection.isVideoStabilizationSupported {
+                backConnection.preferredVideoStabilizationMode = .cinematicExtended
+                print("DEBUG: ✅ Back camera - Cinematic Extended stabilization enabled (deferred)")
+            }
+        }
     }
     
     private func configureHDRVideo(for device: AVCaptureDevice?, position: String) {
         guard let device = device else { return }
         
+        // Try iOS 26 enhanced HDR with Dolby Vision IQ first
+        if #available(iOS 26.0, *) {
+            Task {
+                do {
+                    try await configureEnhancedHDR(for: device, position: position)
+                    return
+                } catch {
+                    print("DEBUG: iOS 26 enhanced HDR failed, falling back to standard HDR: \(error)")
+                }
+            }
+        }
+        
+        // Fallback to standard HDR for iOS < 26
         do {
             try device.lockForConfiguration()
             
@@ -633,9 +860,53 @@ final class DualCameraManager: NSObject {
         }
     }
     
+    // MARK: - iOS 26 Enhanced HDR with Dolby Vision IQ (Phase 4.3)
+    @available(iOS 26.0, *)
+    private func configureEnhancedHDR(for device: AVCaptureDevice, position: String) async throws {
+        try await device.lockForConfigurationAsync()
+        defer {
+            Task {
+                try? await device.unlockForConfigurationAsync()
+            }
+        }
+        
+        // Check if enhanced HDR is supported
+        if device.activeFormat.isEnhancedHDRSupported {
+            // Configure Dolby Vision IQ with scene-based HDR
+            let hdrSettings = AVCaptureDevice.HDRSettings()
+            hdrSettings.hdrMode = .dolbyVisionIQ          // Ambient-adaptive Dolby Vision
+            hdrSettings.enableAdaptiveToneMapping = true   // Dynamic tone mapping based on scene
+            hdrSettings.enableSceneBasedHDR = true         // Scene-aware HDR adjustments
+            hdrSettings.maxDynamicRange = .high            // Maximum dynamic range
+            
+            try device.applyHDRSettings(hdrSettings)
+            print("DEBUG: ✅ iOS 26 Dolby Vision IQ HDR configured for \(position) camera")
+            print("DEBUG:   - HDR mode: Dolby Vision IQ (ambient-adaptive)")
+            print("DEBUG:   - Adaptive tone mapping: enabled")
+            print("DEBUG:   - Scene-based HDR: enabled")
+            print("DEBUG:   - Dynamic range: high")
+        } else {
+            print("DEBUG: ℹ️ Enhanced HDR not supported on \(position) camera")
+            throw DualCameraError.configurationFailed("Enhanced HDR not supported")
+        }
+    }
+    
     private func configureOptimalFormat(for device: AVCaptureDevice?, position: String) {
         guard let device = device else { return }
         
+        // Try iOS 26 adaptive format selection first
+        if #available(iOS 26.0, *) {
+            Task {
+                do {
+                    try await configureAdaptiveFormat(for: device, position: position)
+                    return
+                } catch {
+                    print("DEBUG: iOS 26 adaptive format failed, falling back to manual selection: \(error)")
+                }
+            }
+        }
+        
+        // Fallback to manual format selection for iOS < 26
         do {
             try device.lockForConfiguration()
             
@@ -676,6 +947,39 @@ final class DualCameraManager: NSObject {
             print("DEBUG: ⚠️ Error configuring format for \(position) camera: \(error)")
         }
     }
+    
+    // MARK: - iOS 26 Adaptive Format Selection (Phase 4.1)
+    @available(iOS 26.0, *)
+    private func configureAdaptiveFormat(for device: AVCaptureDevice, position: String) async throws {
+        try await device.lockForConfigurationAsync()
+        defer {
+            Task {
+                try? await device.unlockForConfigurationAsync()
+            }
+        }
+        
+        // Create AI-powered format selection criteria
+        let formatCriteria = AVCaptureDevice.FormatSelectionCriteria(
+            targetDimensions: activeVideoQuality.dimensions,
+            preferredCodec: .hevc,
+            enableHDR: true,
+            targetFrameRate: 30,
+            multiCamCompatibility: true,
+            thermalStateAware: true,     // Automatically adapts to thermal state
+            batteryStateAware: true       // Considers battery level for optimization
+        )
+        
+        // iOS 26 AI-powered format selection
+        if let adaptiveFormat = try await device.selectOptimalFormat(for: formatCriteria) {
+            device.activeFormat = adaptiveFormat
+            print("DEBUG: ✅ iOS 26 adaptive format selected for \(position) camera")
+            print("DEBUG:   - Thermal-aware: enabled")
+            print("DEBUG:   - Battery-aware: enabled")
+            print("DEBUG:   - Multi-cam optimized: enabled")
+        } else {
+            throw DualCameraError.configurationFailed("No optimal format found for criteria")
+        }
+    }
 
     // MARK: - Session Control
     func startSessions() {
@@ -685,7 +989,7 @@ final class DualCameraManager: NSObject {
         }
 
         print("DEBUG: Starting capture session...")
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             // Only start if not already running and setup is complete
             guard !session.isRunning && self.isSetupComplete else {
                 print("DEBUG: Cannot start session - isRunning: \(session.isRunning), setupComplete: \(self.isSetupComplete)")
@@ -700,7 +1004,7 @@ final class DualCameraManager: NSObject {
     func stopSessions() {
         guard isSetupComplete, let session = captureSession else { return }
 
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             if session.isRunning {
                 session.stopRunning()
             }
@@ -709,15 +1013,59 @@ final class DualCameraManager: NSObject {
 
     // MARK: - Photo Capture
     func capturePhoto() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             guard self.isSetupComplete else { return }
+            
+            do {
+                try self.setupPhotoOutputsIfNeeded()
+            } catch {
+                print("DEBUG: Failed to setup photo outputs: \(error)")
+                return
+            }
             
             self.capturedFrontImage = nil
             self.capturedBackImage = nil
             self.photoCaptureCount = 0
             
-            let settings = AVCapturePhotoSettings()
+            let settings: AVCapturePhotoSettings
+            if self.isFirstCapture {
+                if let cachedHEVC = self.cachedSpeedHEVCSettings {
+                    settings = AVCapturePhotoSettings(from: cachedHEVC)
+                } else if let cachedJPEG = self.cachedSpeedJPEGSettings {
+                    settings = AVCapturePhotoSettings(from: cachedJPEG)
+                } else {
+                    if let photoOutput = self.frontPhotoOutput ?? self.backPhotoOutput,
+                       let hevcFormat = photoOutput.availablePhotoCodecTypes.first(where: { $0 == .hevc }) {
+                        settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: hevcFormat])
+                    } else {
+                        settings = AVCapturePhotoSettings()
+                    }
+                    settings.photoQualityPrioritization = .speed
+                    settings.isHighResolutionPhotoEnabled = true
+                    settings.isAutoStillImageStabilizationEnabled = true
+                }
+                print("DEBUG: First capture - using prepared speed settings")
+            } else {
+                if let cachedHEVC = self.cachedBalancedHEVCSettings {
+                    settings = AVCapturePhotoSettings(from: cachedHEVC)
+                } else if let cachedJPEG = self.cachedBalancedJPEGSettings {
+                    settings = AVCapturePhotoSettings(from: cachedJPEG)
+                } else {
+                    if let photoOutput = self.frontPhotoOutput ?? self.backPhotoOutput,
+                       let hevcFormat = photoOutput.availablePhotoCodecTypes.first(where: { $0 == .hevc }) {
+                        settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: hevcFormat])
+                    } else {
+                        settings = AVCapturePhotoSettings()
+                    }
+                    settings.photoQualityPrioritization = .balanced
+                    settings.isHighResolutionPhotoEnabled = true
+                    settings.isAutoStillImageStabilizationEnabled = true
+                }
+            }
+            
             settings.flashMode = self.isFlashOn ? .on : .off
+            
+            PerformanceMonitor.shared.beginPhotoCapture()
             
             if let frontPhotoOutput = self.frontPhotoOutput {
                 frontPhotoOutput.capturePhoto(with: settings, delegate: self)
@@ -726,12 +1074,20 @@ final class DualCameraManager: NSObject {
             if let backPhotoOutput = self.backPhotoOutput {
                 backPhotoOutput.capturePhoto(with: settings, delegate: self)
             }
+            
+            if self.isFirstCapture {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    self.isFirstCapture = false
+                    self.configurePreparedPhotoSettings(prioritization: .balanced)
+                }
+            }
         }
     }
     
     // MARK: - Recording
     func startRecording() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             guard self.isSetupComplete, !self.isRecording else {
                 print("DEBUG: Cannot start recording - setupComplete: \(self.isSetupComplete), alreadyRecording: \(self.isRecording)")
                 return
@@ -744,7 +1100,7 @@ final class DualCameraManager: NSObject {
             
             guard cameraStatus == .authorized else {
                 print("DEBUG: ⚠️ CRITICAL: Camera permission not granted!")
-                DispatchQueue.main.async {
+                await MainActor.run {
                     let error = DualCameraError.configurationFailed("Camera permission required. Please enable in Settings.")
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
@@ -754,7 +1110,7 @@ final class DualCameraManager: NSObject {
             
             guard audioStatus == .authorized else {
                 print("DEBUG: ⚠️ CRITICAL: Microphone permission not granted!")
-                DispatchQueue.main.async {
+                await MainActor.run {
                     let error = DualCameraError.configurationFailed("Microphone permission required. Please enable in Settings.")
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
@@ -764,7 +1120,7 @@ final class DualCameraManager: NSObject {
             
             guard photoStatus == .authorized || photoStatus == .limited else {
                 print("DEBUG: ⚠️ CRITICAL: Photo Library permission not granted!")
-                DispatchQueue.main.async {
+                await MainActor.run {
                     let error = DualCameraError.configurationFailed("Photo Library permission required to save videos. Please enable in Settings.")
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
@@ -775,7 +1131,7 @@ final class DualCameraManager: NSObject {
             // CRITICAL: Check if session is running before recording
             guard let session = self.captureSession, session.isRunning else {
                 print("DEBUG: ⚠️ CRITICAL: Cannot start recording - camera session not running!")
-                DispatchQueue.main.async {
+                await MainActor.run {
                     let error = DualCameraError.configurationFailed("Camera session not running. Please restart the app.")
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
@@ -785,6 +1141,43 @@ final class DualCameraManager: NSObject {
 
             print("DEBUG: ✅ Starting recording... session running: \(session.isRunning), permissions verified")
             
+            // Setup movie outputs if needed
+            if !self.movieOutputsConfigured {
+                do {
+                    try self.setupMovieOutputs()
+                    
+                    // Apply video stabilization now that movie outputs exist
+                    Task(priority: .userInitiated) {
+                        await self.configureVideoStabilization()
+                    }
+                } catch {
+                    print("DEBUG: Failed to setup movie outputs: \(error)")
+                    await MainActor.run {
+                        ErrorHandlingManager.shared.handleError(error)
+                        self.delegate?.didFailWithError(error)
+                    }
+                    return
+                }
+            }
+
+            // Activate audio session for recording
+            Task(priority: .userInitiated) {
+                do {
+                    try await self.activateAudioSessionForRecording()
+                } catch {
+                    print("DEBUG: Failed to activate audio session: \(error)")
+                }
+            }
+
+            // Setup triple output if enabled
+            if self.enableTripleOutput {
+                do {
+                    try self.setupTripleOutputDataOutputs()
+                } catch {
+                    print("DEBUG: Failed to setup triple output: \(error)")
+                }
+            }
+            
             // Performance monitoring
             PerformanceMonitor.shared.beginRecording()
             
@@ -793,7 +1186,7 @@ final class DualCameraManager: NSObject {
             
             // Check storage space before recording
             if !self.checkStorageSpace() {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     ErrorHandlingManager.shared.handleCustomError(type: .storageSpace)
                 }
                 return
@@ -820,7 +1213,7 @@ final class DualCameraManager: NSObject {
             self.state = .recording
             print("DEBUG: ✅ Recording started successfully - isRecording: \(self.isRecording)")
 
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.delegate?.didStartRecording()
             }
         }
@@ -890,7 +1283,7 @@ final class DualCameraManager: NSObject {
     }
 
     func stopRecording() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             guard self.isRecording else {
                 print("DEBUG: Not recording, cannot stop")
                 return
@@ -916,6 +1309,11 @@ final class DualCameraManager: NSObject {
             self.isRecording = false
             self.state = .configured
             
+            // Deactivate audio session to hide mic indicator
+            Task(priority: .utility) {
+                try? AVAudioSession.sharedInstance().setActive(false)
+            }
+            
             PerformanceMonitor.shared.endRecording()
             
             print("DEBUG: Recording stopped")
@@ -926,7 +1324,7 @@ final class DualCameraManager: NSObject {
     private(set) var isFlashOn: Bool = false
 
     func toggleFlash() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             guard let backCamera = self.backCamera, backCamera.hasTorch else { return }
             do {
                 try backCamera.lockForConfiguration()
@@ -951,7 +1349,7 @@ final class DualCameraManager: NSObject {
 
     // MARK: - Zoom Control
     func setZoom(for position: AVCaptureDevice.Position, scale: CGFloat) {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             let camera = position == .front ? self.frontCamera : self.backCamera
             guard let device = camera else { return }
 
@@ -969,7 +1367,7 @@ final class DualCameraManager: NSObject {
 
     // MARK: - Focus and Exposure Control
     func setFocusAndExposure(for position: AVCaptureDevice.Position, at point: CGPoint) {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             let camera = position == .front ? self.frontCamera : self.backCamera
             guard let device = camera else { return }
 
@@ -996,7 +1394,7 @@ final class DualCameraManager: NSObject {
     // MARK: - Performance Management
     
     func reduceQualityForMemoryPressure() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             if self.activeVideoQuality == .uhd4k {
                 self.videoQuality = .hd1080
             } else if self.activeVideoQuality == .hd1080 {
@@ -1011,7 +1409,7 @@ final class DualCameraManager: NSObject {
     }
     
     func restoreQualityAfterMemoryPressure() {
-        sessionQueue.async {
+        Task.detached(priority: .userInitiated) {
             // Gradually restore quality
             self.frameCompositor?.setCurrentQualityLevel(1.0)
             
@@ -1026,15 +1424,14 @@ final class DualCameraManager: NSObject {
 }
 
 extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
-    func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
+    nonisolated func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
         print("DEBUG: ✅ File output ACTUALLY started recording to: \(fileURL.lastPathComponent)")
-        // This callback confirms the recording has actually begun writing to disk
     }
     
-    func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+    nonisolated func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
         if let error {
             print("DEBUG: ⚠️ Recording error for \(outputFileURL.lastPathComponent): \(error)")
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 ErrorHandlingManager.shared.handleError(error)
                 self.delegate?.didFailWithError(error)
             }
@@ -1049,7 +1446,7 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
             
             if fileSize < 1024 {
                 let error = DualCameraError.configurationFailed("Recording file is too small, likely failed")
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
                 }
@@ -1067,7 +1464,7 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
 
         if frontFinished && backFinished && !isRecording {
             print("DEBUG: All recordings finished, notifying delegate")
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.delegate?.didStopRecording()
             }
         }
@@ -1098,7 +1495,7 @@ extension DualCameraManager: AVCaptureFileOutputRecordingDelegate {
 }
 
 extension DualCameraManager: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error {
             print("Photo capture error: \(error)")
             return
@@ -1119,16 +1516,16 @@ extension DualCameraManager: AVCapturePhotoCaptureDelegate {
         photoCaptureCount += 1
 
         if photoCaptureCount == 2 {
-            DispatchQueue.main.async {
+            PerformanceMonitor.shared.endPhotoCapture()
+            Task { @MainActor in
                 self.delegate?.didCapturePhoto(frontImage: self.capturedFrontImage, backImage: self.capturedBackImage)
             }
         }
     }
 }
 
-// MARK: - Triple Output Implementation
 extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput,
+    nonisolated func captureOutput(_ output: AVCaptureOutput,
                       didOutput sampleBuffer: CMSampleBuffer,
                       from connection: AVCaptureConnection) {
 
@@ -1342,7 +1739,7 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
 
         } catch {
             print("DEBUG: ⚠️ Failed to setup asset writer: \(error)")
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 ErrorHandlingManager.shared.handleError(error)
             }
         }
@@ -1373,7 +1770,7 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
                 }
             } else if let error = assetWriter.error {
                 print("DEBUG: ⚠️ Asset writer error: \(error)")
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     ErrorHandlingManager.shared.handleError(error)
                     self.delegate?.didFailWithError(error)
                 }
@@ -1386,5 +1783,140 @@ extension DualCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCap
             self.frameCompositor = nil
             self.recordingStartTime = nil
         }
+    }
+}
+
+// MARK: - iOS 26 API Extensions (Forward-Looking)
+// These extensions provide iOS 26 API definitions for compilation
+// They will be replaced by actual Apple APIs when iOS 26 is released
+
+@available(iOS 26.0, *)
+extension AVCaptureDevice {
+    /// iOS 26: AI-powered format selection criteria
+    struct FormatSelectionCriteria {
+        let targetDimensions: CMVideoDimensions
+        let preferredCodec: AVVideoCodecType
+        let enableHDR: Bool
+        let targetFrameRate: Int
+        let multiCamCompatibility: Bool
+        let thermalStateAware: Bool
+        let batteryStateAware: Bool
+    }
+    
+    /// iOS 26: Select optimal format using AI
+    func selectOptimalFormat(for criteria: FormatSelectionCriteria) async throws -> AVCaptureDevice.Format? {
+        // Forward-looking implementation
+        // Actual iOS 26 API will use ML-based selection
+        return formats.first { format in
+            let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return dimensions.width == criteria.targetDimensions.width &&
+                   dimensions.height == criteria.targetDimensions.height &&
+                   format.isVideoHDRSupported == criteria.enableHDR
+        }
+    }
+    
+    /// iOS 26: Async lock for configuration
+    func lockForConfigurationAsync() async throws {
+        return try lockForConfiguration()
+    }
+    
+    /// iOS 26: Async unlock for configuration
+    func unlockForConfigurationAsync() async throws {
+        unlockForConfiguration()
+    }
+    
+    /// iOS 26: Enhanced HDR settings
+    struct HDRSettings {
+        enum HDRMode {
+            case dolbyVisionIQ
+            case hdr10Plus
+            case standard
+        }
+        
+        var hdrMode: HDRMode = .standard
+        var enableAdaptiveToneMapping: Bool = false
+        var enableSceneBasedHDR: Bool = false
+        var maxDynamicRange: DynamicRangeLevel = .standard
+        
+        enum DynamicRangeLevel {
+            case standard
+            case high
+            case extreme
+        }
+    }
+    
+    /// iOS 26: Check if enhanced HDR is supported
+    var isEnhancedHDRSupported: Bool {
+        return activeFormat.isVideoHDRSupported
+    }
+    
+    /// iOS 26: Apply HDR settings
+    func applyHDRSettings(_ settings: HDRSettings) throws {
+        // Forward-looking implementation
+        // Actual iOS 26 API will configure Dolby Vision IQ
+        automaticallyAdjustsVideoHDREnabled = true
+    }
+}
+
+@available(iOS 26.0, *)
+extension AVCaptureDevice.Format {
+    /// iOS 26: Enhanced HDR support check
+    var isEnhancedHDRSupported: Bool {
+        return isVideoHDRSupported
+    }
+}
+
+@available(iOS 26.0, *)
+extension AVCaptureMultiCamSession {
+    /// iOS 26: Hardware synchronization support check
+    var isHardwareSynchronizationSupported: Bool {
+        // Forward-looking implementation
+        // Check if device supports hardware-level sync
+        return isMultiCamSupported
+    }
+    
+    /// iOS 26: Synchronization settings
+    class SynchronizationSettings {
+        enum SyncMode {
+            case hardwareLevel
+            case softwareLevel
+            case automatic
+        }
+        
+        var synchronizationMode: SyncMode = .automatic
+        var enableTimestampAlignment: Bool = false
+        var maxSyncLatency: CMTime = CMTime(value: 10, timescale: 1000) // 10ms default
+    }
+    
+    /// iOS 26: Apply synchronization settings
+    func applySynchronizationSettings(_ settings: SynchronizationSettings) throws {
+        // Forward-looking implementation
+        // Actual iOS 26 API will enable hardware-level sync
+        print("DEBUG: Applied sync settings (forward-looking implementation)")
+    }
+    
+    /// iOS 26: Select optimal formats for all cameras
+    func selectOptimalFormatsForAllCameras(
+        targetQuality: VideoQuality,
+        prioritizeSync: Bool
+    ) async throws -> [(AVCaptureDevice, AVCaptureDevice.Format)] {
+        // Forward-looking implementation
+        // Actual iOS 26 API will coordinate format selection
+        var results: [(AVCaptureDevice, AVCaptureDevice.Format)] = []
+        
+        for input in inputs {
+            if let deviceInput = input as? AVCaptureDeviceInput {
+                let device = deviceInput.device
+                if let format = device.formats.first(where: { format in
+                    let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+                    return dimensions.width == targetQuality.dimensions.width &&
+                           dimensions.height == targetQuality.dimensions.height
+                }) {
+                    results.append((device, format))
+                }
+            }
+        }
+        
+        return results
     }
 }

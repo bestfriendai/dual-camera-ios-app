@@ -89,8 +89,13 @@ final class ModernLiquidGlassButton: UIButton {
     private let glowLayer = CALayer()
     private let contentContainer = UIView()
     
+    private var cachedBounds: CGRect = .zero
+    private var cachedCornerRadius: CGFloat = 0
+    private var hasMovedSubviews: Bool = false
+    private var isAnimating: Bool = false
+    
     var liquidColor: UIColor = LiquidDesignSystem.DesignTokens.Colors.liquidGlass {
-        didSet { updateGradient() }
+        didSet { updateAppearance() }
     }
     
     override init(frame: CGRect) {
@@ -107,8 +112,8 @@ final class ModernLiquidGlassButton: UIButton {
         backgroundColor = .clear
         
         gradientLayer.colors = [
-            UIColor.white.withAlphaComponent(0.4).cgColor,
-            UIColor.white.withAlphaComponent(0.2).cgColor
+            liquidColor.withAlphaComponent(0.4).cgColor,
+            liquidColor.withAlphaComponent(0.2).cgColor
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
@@ -149,13 +154,16 @@ final class ModernLiquidGlassButton: UIButton {
         layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
         
         glowLayer.backgroundColor = UIColor.clear.cgColor
-        glowLayer.shadowColor = UIColor.white.cgColor
+        glowLayer.shadowColor = liquidColor.cgColor
         glowLayer.shadowOffset = .zero
         glowLayer.shadowRadius = 12
         glowLayer.shadowOpacity = 0
         glowLayer.cornerRadius = LiquidDesignSystem.DesignTokens.CornerRadius.medium
         glowLayer.cornerCurve = .continuous
         layer.insertSublayer(glowLayer, at: 0)
+        
+        let shadowPath = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: 100, height: 100), cornerRadius: LiquidDesignSystem.DesignTokens.CornerRadius.medium).cgPath
+        glowLayer.shadowPath = shadowPath
         
         tintColor = .white
         setTitleColor(.white, for: .normal)
@@ -178,56 +186,97 @@ final class ModernLiquidGlassButton: UIButton {
             contentContainer.bottomAnchor.constraint(equalTo: vibrancyEffectView.contentView.bottomAnchor)
         ])
         
+        DispatchQueue.main.async { [weak self] in
+            self?.moveSubviewsToContentContainer()
+        }
+        
         addTarget(self, action: #selector(touchDown), for: [.touchDown, .touchDragEnter])
         addTarget(self, action: #selector(touchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
     }
     
+    private func moveSubviewsToContentContainer() {
+        guard !hasMovedSubviews else { return }
+        
+        if let imageView = self.imageView, imageView.superview != contentContainer {
+            imageView.tintColor = .white
+            imageView.isUserInteractionEnabled = false
+            imageView.removeFromSuperview()
+            contentContainer.addSubview(imageView)
+        }
+        
+        if let titleLabel = self.titleLabel, titleLabel.superview != contentContainer {
+            titleLabel.textColor = .white
+            titleLabel.isUserInteractionEnabled = false
+            titleLabel.removeFromSuperview()
+            contentContainer.addSubview(titleLabel)
+        }
+        
+        hasMovedSubviews = true
+    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard bounds != cachedBounds else { return }
+        cachedBounds = bounds
+        
+        let cornerRadius = min(bounds.width, bounds.height) / 2
+        if cornerRadius != cachedCornerRadius {
+            cachedCornerRadius = cornerRadius
+            layer.cornerRadius = cornerRadius
+            blurEffectView.layer.cornerRadius = cornerRadius
+            glowLayer.cornerRadius = cornerRadius
+        }
+        
         gradientLayer.frame = bounds
         noiseLayer.frame = bounds
         glowLayer.frame = bounds
+        glowLayer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: cornerRadius).cgPath
         
-        if let imageView = self.imageView {
-            imageView.tintColor = .white
-            imageView.isUserInteractionEnabled = false
-            if imageView.superview != contentContainer {
-                imageView.removeFromSuperview()
-                contentContainer.addSubview(imageView)
-            }
+        if !hasMovedSubviews {
+            moveSubviewsToContentContainer()
         }
-        
-        if let titleLabel = self.titleLabel {
-            titleLabel.textColor = .white
-            titleLabel.isUserInteractionEnabled = false
+    }
+    
+    enum PerformanceLevel { case high, medium, low }
+    
+    func optimizeForPerformance(level: PerformanceLevel) {
+        switch level {
+        case .high:
+            layer.shouldRasterize = false
+        case .medium:
+            layer.shouldRasterize = true
+            layer.rasterizationScale = UIScreen.main.scale
+        case .low:
+            layer.shouldRasterize = true
+            layer.rasterizationScale = UIScreen.main.scale * 0.75
         }
-        
-        // Ensure button can receive touches
-        self.isUserInteractionEnabled = true
     }
     
     @objc private func touchDown() {
-        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
+        isAnimating = true
+        layer.shouldRasterize = false
+        HapticFeedbackManager.shared.lightImpact()
+        UIView.animate(withDuration: 0.15, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]) {
             self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
             self.glowLayer.shadowOpacity = 0.5
-        })
-        
-        HapticFeedbackManager.shared.lightImpact()
+        }
     }
     
     @objc private func touchUp() {
-        UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
+        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.8, options: [.beginFromCurrentState, .allowUserInteraction]) {
             self.transform = .identity
             self.glowLayer.shadowOpacity = 0
-        })
+        } completion: { _ in
+            self.isAnimating = false
+        }
     }
     
-    private func updateGradient() {
+    private func updateAppearance() {
         gradientLayer.colors = [
-            UIColor.white.withAlphaComponent(0.4).cgColor,
-            UIColor.white.withAlphaComponent(0.2).cgColor
+            liquidColor.withAlphaComponent(0.4).cgColor,
+            liquidColor.withAlphaComponent(0.2).cgColor
         ]
-        glowLayer.shadowColor = UIColor.white.cgColor
+        glowLayer.shadowColor = liquidColor.cgColor
     }
     
     func setGlowEnabled(_ enabled: Bool, animated: Bool = true) {
@@ -240,4 +289,38 @@ final class ModernLiquidGlassButton: UIButton {
         }
         glowLayer.shadowOpacity = opacity
     }
+    
+    func setRecording(_ recording: Bool, animated: Bool = true) {
+        if animated {
+            UIView.animate(withDuration: 0.3) {
+                self.setGlowEnabled(recording, animated: false)
+                if recording {
+                    self.layer.borderColor = UIColor.systemRed.cgColor
+                    self.glowLayer.shadowColor = UIColor.systemRed.cgColor
+                } else {
+                    self.layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
+                    self.glowLayer.shadowColor = self.liquidColor.cgColor
+                }
+            }
+        } else {
+            setGlowEnabled(recording, animated: false)
+            if recording {
+                layer.borderColor = UIColor.systemRed.cgColor
+                glowLayer.shadowColor = UIColor.systemRed.cgColor
+            } else {
+                layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
+                glowLayer.shadowColor = liquidColor.cgColor
+            }
+        }
+    }
+    
+    func enableRasterization(_ enabled: Bool) {
+        layer.shouldRasterize = enabled && !isAnimating
+        layer.rasterizationScale = UIScreen.main.scale
+    }
 }
+
+typealias AppleCameraButton = ModernLiquidGlassButton
+typealias AppleModernButton = ModernLiquidGlassButton
+typealias AppleRecordButton = ModernLiquidGlassButton
+typealias ModernGlassButton = ModernLiquidGlassButton

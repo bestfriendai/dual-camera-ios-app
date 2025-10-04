@@ -54,7 +54,9 @@ final class RecordingRepository {
     }
     
     private init() {
-        loadRecordings()
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.loadRecordings()
+        }
     }
     
     func add(frontURL: URL, backURL: URL, completion: @escaping (Result<Recording, RepositoryError>) -> Void) {
@@ -116,27 +118,29 @@ final class RecordingRepository {
     }
     
     func cleanupOldRecordings(olderThan days: Int, completion: @escaping (Int) -> Void) {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
             let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
             let oldRecordings = self.recordings.filter { $0.createdAt < cutoffDate }
             
-            var deletedCount = 0
-            
-            for recording in oldRecordings {
-                try? self.fileManager.removeItem(at: recording.frontURL)
-                try? self.fileManager.removeItem(at: recording.backURL)
-                if let mergedURL = recording.mergedURL {
-                    try? self.fileManager.removeItem(at: mergedURL)
+            DispatchQueue.global(qos: .utility).async {
+                var deletedCount = 0
+                
+                for recording in oldRecordings {
+                    try? self.fileManager.removeItem(at: recording.frontURL)
+                    try? self.fileManager.removeItem(at: recording.backURL)
+                    if let mergedURL = recording.mergedURL {
+                        try? self.fileManager.removeItem(at: mergedURL)
+                    }
+                    deletedCount += 1
                 }
-                deletedCount += 1
-            }
-            
-            DispatchQueue.main.async {
-                self.recordings.removeAll { $0.createdAt < cutoffDate }
-                self.logger.info("Cleaned up \(deletedCount) old recordings")
-                completion(deletedCount)
+                
+                DispatchQueue.main.async {
+                    self.recordings.removeAll { $0.createdAt < cutoffDate }
+                    self.logger.info("Cleaned up \(deletedCount) old recordings")
+                    completion(deletedCount)
+                }
             }
         }
     }

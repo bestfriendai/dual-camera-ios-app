@@ -3,6 +3,7 @@ import Foundation
 import os.signpost
 import UIKit
 import Metal
+import Swift
 
 class PerformanceMonitor {
     static let shared = PerformanceMonitor()
@@ -12,11 +13,18 @@ class PerformanceMonitor {
     private var cameraSetupSignpostID: OSSignpostID?
     private var recordingSignpostID: OSSignpostID?
     private var frameProcessingSignpostID: OSSignpostID?
+    private var photoCaptureSignpostID: OSSignpostID?
+    private var frontPhotoCaptureSignpostID: OSSignpostID?
+    private var backPhotoCaptureSignpostID: OSSignpostID?
+    private var photoCaptureStartTime: CFTimeInterval = 0
+    private var photoCaptureLatencies: [CFTimeInterval] = []
+    private let maxPhotoCaptureLatencySamples = 50
     
     // Performance metrics
     private var frameCount: Int = 0
     private var lastFrameTime: CFTimeInterval = 0
-    private var frameRateBuffer: [CFTimeInterval] = []
+    private var frameRateBuffer: InlineArray<60, CFTimeInterval> = InlineArray(repeating: 0.0)
+    private var frameRateBufferCount: Int = 0
     private let maxFrameRateSamples = 60 // Increased for better accuracy
     
     // Memory monitoring
@@ -25,14 +33,16 @@ class PerformanceMonitor {
     private var memoryPressureHandler: DispatchSourceMemoryPressure?
     
     // CPU monitoring
-    private var cpuUsageBuffer: [Double] = []
+    private var cpuUsageBuffer: InlineArray<30, Double> = InlineArray(repeating: 0.0)
+    private var cpuUsageBufferCount: Int = 0
     private let maxCpuSamples = 30
     private var lastCpuCheck: CFTimeInterval = 0
     private var cpuMonitoringTimer: Timer?
     
     // Thermal monitoring
     private var thermalState: ProcessInfo.ThermalState = .nominal
-    private var thermalStateHistory: [(Date, ProcessInfo.ThermalState)] = []
+    private var thermalStateHistory: InlineArray<100, (Date, ProcessInfo.ThermalState)> = InlineArray(repeating: (Date.distantPast, .nominal))
+    private var thermalStateHistoryCount: Int = 0
     private let maxThermalSamples = 100
     
     // GPU monitoring
@@ -61,16 +71,30 @@ class PerformanceMonitor {
     private var batteryState: UIDevice.BatteryState = .unknown
     private var lastBatteryCheck: CFTimeInterval = 0
     
+    private var isFullyInitialized = false
+    
     private init() {
         self.log = OSLog(subsystem: "com.dualcamera.app", category: "Performance")
-        self.metalDevice = MTLCreateSystemDefaultDevice()
+    }
+    
+    private func deferredInitialization() {
+        guard !isFullyInitialized else { return }
+        
+        metalDevice = MTLCreateSystemDefaultDevice()
         setupMemoryMonitoring()
         setupThermalMonitoring()
         setupBatteryMonitoring()
+        isFullyInitialized = true
+        
+        logEvent("Initialization", "Deferred initialization complete")
     }
     
     // MARK: - App Launch Performance
     func beginAppLaunch() {
+        Task(priority: .utility) {
+            self.deferredInitialization()
+        }
+        
         let signpostID = OSSignpostID(log: log)
         appLaunchSignpostID = signpostID
         os_signpost(.begin, log: log, name: "App Launch", signpostID: signpostID)
@@ -86,6 +110,10 @@ class PerformanceMonitor {
     
     // MARK: - Camera Setup Performance
     func beginCameraSetup() {
+        if !isFullyInitialized {
+            deferredInitialization()
+        }
+        
         let signpostID = OSSignpostID(log: log)
         cameraSetupSignpostID = signpostID
         os_signpost(.begin, log: log, name: "Camera Setup", signpostID: signpostID)
@@ -105,7 +133,7 @@ class PerformanceMonitor {
         recordingSignpostID = signpostID
         os_signpost(.begin, log: log, name: "Recording", signpostID: signpostID)
         frameCount = 0
-        frameRateBuffer.removeAll()
+        frameRateBufferCount = 0
         logEvent("Recording", "Started recording performance monitoring")
     }
     
@@ -131,17 +159,131 @@ class PerformanceMonitor {
         frameProcessingSignpostID = nil
     }
     
+    // MARK: - Photo Capture Performance
+    func beginPhotoCapture() {
+        let signpostID = OSSignpostID(log: log)
+        photoCaptureSignpostID = signpostID
+        os_signpost(.begin, log: log, name: "Photo Capture", signpostID: signpostID)
+        photoCaptureStartTime = CACurrentMediaTime()
+        logEvent("Photo Capture", "Started photo capture")
+    }
+    
+    func endPhotoCapture() {
+        guard let signpostID = photoCaptureSignpostID else { return }
+        let latency = CACurrentMediaTime() - photoCaptureStartTime
+        os_signpost(.end, log: log, name: "Photo Capture", signpostID: signpostID, "Latency: %.2f ms", latency * 1000)
+        photoCaptureSignpostID = nil
+        
+        photoCaptureLatencies.append(latency)
+        if photoCaptureLatencies.count > maxPhotoCaptureLatencySamples {
+            photoCaptureLatencies.removeFirst()
+        }
+        
+        logEvent("Photo Capture", "Completed in \(String(format: "%.2f", latency * 1000)) ms")
+        addToHistory("photoCaptureLatency", value: latency * 1000)
+    }
+    
+    func beginFrontPhotoCapture() {
+        let signpostID = OSSignpostID(log: log)
+        frontPhotoCaptureSignpostID = signpostID
+        os_signpost(.begin, log: log, name: "Front Photo Capture", signpostID: signpostID)
+        photoCaptureStartTime = CACurrentMediaTime()
+        logEvent("Photo Capture", "Started front camera photo capture")
+    }
+    
+    func endFrontPhotoCapture() {
+        guard let signpostID = frontPhotoCaptureSignpostID else { return }
+        let latency = CACurrentMediaTime() - photoCaptureStartTime
+        os_signpost(.end, log: log, name: "Front Photo Capture", signpostID: signpostID, "Latency: %.2f ms", latency * 1000)
+        frontPhotoCaptureSignpostID = nil
+        
+        photoCaptureLatencies.append(latency)
+        if photoCaptureLatencies.count > maxPhotoCaptureLatencySamples {
+            photoCaptureLatencies.removeFirst()
+        }
+        
+        logEvent("Photo Capture", "Front camera completed in \(String(format: "%.2f", latency * 1000)) ms")
+        addToHistory("photoCaptureLatency", value: latency * 1000)
+    }
+    
+    func beginBackPhotoCapture() {
+        let signpostID = OSSignpostID(log: log)
+        backPhotoCaptureSignpostID = signpostID
+        os_signpost(.begin, log: log, name: "Back Photo Capture", signpostID: signpostID)
+        photoCaptureStartTime = CACurrentMediaTime()
+        logEvent("Photo Capture", "Started back camera photo capture")
+    }
+    
+    func endBackPhotoCapture() {
+        guard let signpostID = backPhotoCaptureSignpostID else { return }
+        let latency = CACurrentMediaTime() - photoCaptureStartTime
+        os_signpost(.end, log: log, name: "Back Photo Capture", signpostID: signpostID, "Latency: %.2f ms", latency * 1000)
+        backPhotoCaptureSignpostID = nil
+        
+        photoCaptureLatencies.append(latency)
+        if photoCaptureLatencies.count > maxPhotoCaptureLatencySamples {
+            photoCaptureLatencies.removeFirst()
+        }
+        
+        logEvent("Photo Capture", "Back camera completed in \(String(format: "%.2f", latency * 1000)) ms")
+        addToHistory("photoCaptureLatency", value: latency * 1000)
+    }
+    
+    func getAveragePhotoCaptureLatency() -> Double {
+        guard !photoCaptureLatencies.isEmpty else { return 0 }
+        let total = photoCaptureLatencies.reduce(0, +)
+        return (total / Double(photoCaptureLatencies.count)) * 1000
+    }
+    
+    func getPhotoCaptureStatistics() -> [String: Any] {
+        guard !photoCaptureLatencies.isEmpty else {
+            return [
+                "average": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "median": 0.0,
+                "sampleCount": 0
+            ]
+        }
+        
+        let latenciesInMs = photoCaptureLatencies.map { $0 * 1000 }
+        let total = latenciesInMs.reduce(0, +)
+        let average = total / Double(latenciesInMs.count)
+        let min = latenciesInMs.min() ?? 0
+        let max = latenciesInMs.max() ?? 0
+        
+        let sorted = latenciesInMs.sorted()
+        let median: Double
+        if sorted.count % 2 == 0 {
+            median = (sorted[sorted.count / 2 - 1] + sorted[sorted.count / 2]) / 2
+        } else {
+            median = sorted[sorted.count / 2]
+        }
+        
+        return [
+            "average": average,
+            "min": min,
+            "max": max,
+            "median": median,
+            "sampleCount": photoCaptureLatencies.count
+        ]
+    }
+    
     // MARK: - Frame Rate Monitoring
     func recordFrame() {
         let currentTime = CACurrentMediaTime()
         
         if lastFrameTime > 0 {
             let frameTime = currentTime - lastFrameTime
-            frameRateBuffer.append(frameTime)
             
-            // Keep only recent samples
-            if frameRateBuffer.count > maxFrameRateSamples {
-                frameRateBuffer.removeFirst()
+            if frameRateBufferCount < 60 {
+                frameRateBuffer[frameRateBufferCount] = frameTime
+                frameRateBufferCount += 1
+            } else {
+                for i in 0..<59 {
+                    frameRateBuffer[i] = frameRateBuffer[i + 1]
+                }
+                frameRateBuffer[59] = frameTime
             }
             
             frameCount += 1
@@ -160,8 +302,8 @@ class PerformanceMonitor {
             }
             
             // Calculate frame rate variance
-            if frameRateBuffer.count >= 10 {
-                let frameRates = frameRateBuffer.map { 1.0 / $0 }
+            if frameRateBufferCount >= 10 {
+                let frameRates = (0..<frameRateBufferCount).map { 1.0 / frameRateBuffer[$0] }
                 let avgRate = frameRates.reduce(0, +) / Double(frameRates.count)
                 let variance = frameRates.map { pow($0 - avgRate, 2) }.reduce(0, +) / Double(frameRates.count)
                 frameRateVariance = sqrt(variance)
@@ -182,8 +324,12 @@ class PerformanceMonitor {
     }
     
     private func calculateAverageFrameRate() -> Double {
-        guard !frameRateBuffer.isEmpty else { return 0 }
-        let averageFrameTime = frameRateBuffer.reduce(0, +) / CFTimeInterval(frameRateBuffer.count)
+        guard frameRateBufferCount > 0 else { return 0 }
+        var sum: CFTimeInterval = 0
+        for i in 0..<frameRateBufferCount {
+            sum += frameRateBuffer[i]
+        }
+        let averageFrameTime = sum / CFTimeInterval(frameRateBufferCount)
         return 1.0 / averageFrameTime
     }
     
@@ -193,8 +339,8 @@ class PerformanceMonitor {
         
         // Calculate stability as percentage of frames within 10% of target
         let targetTolerance = targetFrameRate * 0.1
-        let stableFrames = frameRateBuffer.filter { abs(1.0 / $0 - targetFrameRate) <= targetTolerance }.count
-        return Double(stableFrames) / Double(frameRateBuffer.count) * 100
+        let stableFrames = (0..<frameRateBufferCount).filter { abs(1.0 / frameRateBuffer[$0] - targetFrameRate) <= targetTolerance }.count
+        return Double(stableFrames) / Double(frameRateBufferCount) * 100
     }
     
     // MARK: - Memory Monitoring
@@ -255,7 +401,8 @@ class PerformanceMonitor {
         
         // Initial thermal state
         thermalState = ProcessInfo.processInfo.thermalState
-        thermalStateHistory.append((Date(), thermalState))
+        thermalStateHistory[0] = (Date(), thermalState)
+        thermalStateHistoryCount = 1
     }
     
     @objc private func thermalStateChanged() {
@@ -263,11 +410,15 @@ class PerformanceMonitor {
         
         if newThermalState != thermalState {
             thermalState = newThermalState
-            thermalStateHistory.append((Date(), thermalState))
             
-            // Keep only recent samples
-            if thermalStateHistory.count > maxThermalSamples {
-                thermalStateHistory.removeFirst()
+            if thermalStateHistoryCount < 100 {
+                thermalStateHistory[thermalStateHistoryCount] = (Date(), thermalState)
+                thermalStateHistoryCount += 1
+            } else {
+                for i in 0..<99 {
+                    thermalStateHistory[i] = thermalStateHistory[i + 1]
+                }
+                thermalStateHistory[99] = (Date(), thermalState)
             }
             
             logEvent("Thermal State", "Changed to: \(thermalStateDescription(thermalState))")
@@ -396,6 +547,10 @@ class PerformanceMonitor {
     func startRealTimeMonitoring() {
         guard !isMonitoring else { return }
         
+        if !isFullyInitialized {
+            deferredInitialization()
+        }
+        
         isMonitoring = true
         monitoringTimer = Timer.scheduledTimer(withTimeInterval: metricsUpdateInterval, repeats: true) { [weak self] _ in
             self?.updateRealTimeMetrics()
@@ -506,16 +661,24 @@ class PerformanceMonitor {
         analytics["frameDropCount"] = frameDropCount
         analytics["frameRateVariance"] = frameRateVariance
         
+        // Photo capture metrics
+        analytics["photoCaptureStatistics"] = getPhotoCaptureStatistics()
+        analytics["averagePhotoCaptureLatency"] = getAveragePhotoCaptureLatency()
+        
         // Memory metrics
         analytics["currentMemoryUsage"] = getCurrentMemoryUsage()
         analytics["memoryWarnings"] = memoryWarningCount
         
         // CPU metrics
-        analytics["averageCpuUsage"] = cpuUsageBuffer.isEmpty ? 0 : cpuUsageBuffer.reduce(0, +) / Double(cpuUsageBuffer.count)
+        var cpuSum: Double = 0
+        for i in 0..<cpuUsageBufferCount {
+            cpuSum += cpuUsageBuffer[i]
+        }
+        analytics["averageCpuUsage"] = cpuUsageBufferCount == 0 ? 0 : cpuSum / Double(cpuUsageBufferCount)
         
         // Thermal metrics
         analytics["thermalState"] = thermalStateDescription(thermalState)
-        analytics["thermalHistory"] = thermalStateHistory.map { ($0.0.timeIntervalSince1970, $0.1.rawValue) }
+        analytics["thermalHistory"] = (0..<thermalStateHistoryCount).map { (thermalStateHistory[$0].0.timeIntervalSince1970, thermalStateHistory[$0].1.rawValue) }
         
         // Battery metrics
         analytics["batteryLevel"] = batteryLevel
@@ -588,20 +751,24 @@ class PerformanceMonitor {
             "thermalState": thermalStateDescription(thermalState),
             "batteryLevel": batteryLevel,
             "topBottlenecks": getTopBottlenecks(),
-            "isMonitoring": isMonitoring
+            "isMonitoring": isMonitoring,
+            "averagePhotoCaptureLatency": getAveragePhotoCaptureLatency(),
+            "photoCaptureCount": photoCaptureLatencies.count
         ]
     }
     
     func resetPerformanceMetrics() {
         frameCount = 0
-        frameRateBuffer.removeAll()
+        frameRateBufferCount = 0
         memoryWarningCount = 0
         frameDropCount = 0
         frameDropHistory.removeAll()
         performanceBottlenecks.removeAll()
         performanceHistory.removeAll()
-        cpuUsageBuffer.removeAll()
-        thermalStateHistory.removeAll()
+        cpuUsageBufferCount = 0
+        thermalStateHistoryCount = 0
+        photoCaptureLatencies.removeAll()
+        photoCaptureStartTime = 0
         
         logEvent("Metrics", "Reset all performance metrics")
     }

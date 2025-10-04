@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Core Camera Capabilities -->
+	<key>com.apple.developer.avfoundation.multicam-session</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.camera-raw-format</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.capture-session-priority</key>
+	<true/>
+	
+	<!-- iOS 26+ Advanced Camera Capabilities -->
+	<key>com.apple.developer.avfoundation.hardware-multicam-synchronization</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.ai-enhanced-recording</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.adaptive-format-selection</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.enhanced-hdr</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.dolby-vision-iq</key>
+	<true/>
+	<key>com.apple.developer.avfoundation.span-based-processing</key>
+	<true/>
+	
+	<!-- iOS 26+ Memory Management -->
+	<key>com.apple.developer.advanced-memory-compaction</key>
+	<true/>
+	<key>com.apple.developer.predictive-memory-management</key>
+	<true/>
+	<key>com.apple.developer.span-based-buffer-management</key>
+	<true/>
+	
+	<!-- iOS 26+ Dynamic Island and Live Activities -->
+	<key>com.apple.developer.activitykit</key>
+	<true/>
+	<key>com.apple.developer.interactive-dynamic-island</key>
+	<true/>
+	<key>com.apple.developer.enhanced-live-activities</key>
+	<true/>
+	<key>com.apple.developer.lock-screen-live-activities</key>
+	<true/>
+	
+	<!-- iOS 26+ App Intents -->
+	<key>com.apple.developer.app-intents</key>
+	<true/>
+	<key>com.apple.developer.contextual-app-intents</key>
+	<true/>
+	<key>com.apple.developer.predictive-app-intents</key>
+	<true/>
+	<key>com.apple.developer.enhanced-app-intents</key>
+	<true/>
+	
+	<!-- iOS 26+ Background Processing -->
+	<key>com.apple.developer.background-processing</key>
+	<true/>
+	<key>com.apple.developer.background-video-processing</key>
+	<true/>
+	<key>com.apple.developer.background-audio-processing</key>
+	<true/>
+	<key>com.apple.developer.background-ai-processing</key>
+	<true/>
+	<key>com.apple.developer.background-memory-compaction</key>
+	<true/>
+	<key>com.apple.developer.advanced-background-scheduling</key>
+	<true/>
+	
+	<!-- iOS 26+ Privacy Features -->
+	<key>com.apple.developer.enhanced-privacy-features</key>
+	<true/>
+	<key>com.apple.developer.on-device-processing</key>
+	<true/>
+	<key>com.apple.developer.secure-enclave-processing</key>
+	<true/>
+	<key>com.apple.developer.differential-privacy</key>
+	<true/>
+	
+	<!-- iOS 26+ Notification Handling -->
+	<key>com.apple.developer.enhanced-notification-handling</key>
+	<true/>
+	<key>com.apple.developer.time-sensitive-notifications</key>
+	<true/>
+	<key>com.apple.developer.interruptive-notifications</key>
+	<true/>
+	
+	<!-- iOS 26+ Accessibility Features -->
+	<key>com.apple.developer.advanced-accessibility-features</key>
+	<true/>
+	<key>com.apple.developer.voice-control-integration</key>
+	<true/>
+	<key>com.apple.developer.switch-control-integration</key>
+	<true/>
+	
+	<!-- iOS 26+ Widget Features -->
+	<key>com.apple.developer.interactive-widgets</key>
+	<true/>
+	<key>com.apple.developer.lock-screen-widgets</key>
+	<true/>
+	<key>com.apple.developer.widget-configuration</key>
+	<true/>
+	
+	<!-- iOS 26+ Focus Features -->
+	<key>com.apple.developer.focus-filters</key>
+	<true/>
+	<key>com.apple.developer.focus-modes</key>
+	<true/>
+	
+	<!-- iOS 26+ Performance Features -->
+	<key>com.apple.developer.enhanced-thermal-management</key>
+	<true/>
+	<key>com.apple.developer.battery-aware-processing</key>
+	<true/>
+	<key>com.apple.developer.gpu-acceleration</key>
+	<true/>
+	<key>com.apple.developer.neural-engine-acceleration</key>
+	<true/>
+	
+	<!-- Core Capabilities -->
+	<key>com.apple.developer.networking.wifi-info</key>
+	<true/>
+	<key>com.apple.developer.networking.HotspotConfiguration</key>
+	<true/>
+	<key>com.apple.developer.networking.networkextension</key>
+	<true/>
+	
+	<!-- Security Capabilities -->
+	<key>com.apple.developer.devicecheck.appattest-environment</key>
+	<string>production</string>
+	<key>com.apple.developer.identitylookup</key>
+	<true/>
+	<key>com.apple.developer.networking.custom-protocol</key>
+	<true/>
+	
+	<!-- Media Capabilities -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>dualapp.example.com</string>
+	</array>
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+	<key>com.apple.developer.homekit</key>
+	<true/>
+	<key>com.apple.developer.siri</key>
+	<true/>
+	<key>com.apple.developer.videosubscriptions</key>
+	<true/>
+	
+	<!-- Location Capabilities -->
+	<key>com.apple.developer.location-services</key>
+	<true/>
+	<key>com.apple.developer.location-services.always</key>
+	<true/>
+	
+	<!-- Bluetooth Capabilities -->
+	<key>com.apple.developer.bluetooth</key>
+	<true/>
+	<key>com.apple.developer.networking.bluetooth-le</key>
+	<true/>
+	
+	<!-- NFC Capabilities -->
+	<key>com.apple.developer.nfc.readersession.formats</key>
+	<array>
+		<string>NDEF</string>
+		<string>TAG</string>
+	</array>
+	
+	<!-- Associated Domains -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:dualapp.example.com</string>
+		<string>webcredentials:dualapp.example.com</string>
+	</array>
+	
+	<!-- App Groups -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.example.dualapp</string>
+	</array>
+	
+	<!-- Keychain Sharing -->
+	<key>com.apple.developer.legacy-keychain-access</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.example.dualapp</string>
+	</array>
+	
+	<!-- iCloud Capabilities -->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.example.dualapp</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudDocuments</string>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-development-container-identifiers</key>
+	<array>
+		<string>iCloud.com.example.dualapp.development</string>
+	</array>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)com.example.dualapp</string>
+	
+	<!-- Push Notifications -->
+	<key>com.apple.developer.aps-environment</key>
+	<string>development</string>
+	
+	<!-- In-App Purchase -->
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.example.dualapp</string>
+	</array>
+	
+	<!-- Apple Pay -->
+	<key>com.apple.developer.pass-type-identifiers</key>
+	<array>
+		<string>pass.com.example.dualapp</string>
+	</array>
+</dict>
+</plist>
