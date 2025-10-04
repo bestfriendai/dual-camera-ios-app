@@ -7,6 +7,10 @@
 
 import Foundation
 import SwiftUI
+import Combine
+
+// Import UserSettings from SettingsManager
+typealias UserSettings = SettingsManager.UserSettings
 
 @MainActor
 class SettingsViewModel: ObservableObject {
@@ -50,13 +54,9 @@ class SettingsViewModel: ObservableObject {
     @Published var showingExportSheet = false
     @Published var showingImportSheet = false
 
-    // Initialization
-    init() {
-        Task {
-            await loadSettings()
-        }
-    }
+    // Initialization (async version)
     @Published var exportData: Data?
+    @Published var hasUnsavedChanges = false
 
     // Diagnostics
     @Published var diagnosticReport: DiagnosticReport?
@@ -103,7 +103,9 @@ class SettingsViewModel: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        loadSettings()
+        Task {
+            await loadSettings()
+        }
     }
 
     // MARK: - Settings Management
@@ -399,6 +401,34 @@ struct ErrorReport {
         hasUnsavedChanges = true
     }
 
+    func updateVideoQuality(_ quality: VideoQuality) {
+        var newSettings = userSettings
+        newSettings.videoSettings.videoQuality = quality
+        userSettings = newSettings
+        hasUnsavedChanges = true
+    }
+
+    func updateTheme(_ theme: String) {
+        var newSettings = userSettings
+        newSettings.uiSettings.theme = theme
+        userSettings = newSettings
+        hasUnsavedChanges = true
+    }
+
+    func updateThermalManagement(_ enabled: Bool) {
+        var newSettings = userSettings
+        newSettings.performanceSettings.thermalManagementEnabled = enabled
+        userSettings = newSettings
+        hasUnsavedChanges = true
+    }
+
+    func updateAutoSave(_ enabled: Bool) {
+        var newSettings = userSettings
+        newSettings.generalSettings.autoSaveToGallery = enabled
+        userSettings = newSettings
+        hasUnsavedChanges = true
+    }
+
     // Export/Import methods
     func exportSettings() async throws -> Data {
         let encoder = JSONEncoder()
@@ -415,4 +445,38 @@ struct ErrorReport {
             self.updatePublishedProperties(from: importedSettings)
             hasUnsavedChanges = false
         }
+    }
+
+    // MARK: - Computed Binding Properties for UI
+
+    var videoQualityBinding: Binding<VideoQuality> {
+        Binding(
+            get: { self.userSettings.videoSettings.videoQuality },
+            set: { self.updateVideoQuality($0) }
+        )
+    }
+
+    var themeBinding: Binding<String> {
+        Binding(
+            get: { self.userSettings.uiSettings.theme },
+            set: { self.updateTheme($0) }
+        )
+    }
+
+    var thermalManagementBinding: Binding<Bool> {
+        Binding(
+            get: { self.userSettings.performanceSettings.thermalManagementEnabled },
+            set: { self.updateThermalManagement($0) }
+        )
+    }
+
+    var autoSaveBinding: Binding<Bool> {
+        Binding(
+            get: { self.userSettings.generalSettings.autoSaveToGallery },
+            set: { self.updateAutoSave($0) }
+        )
+    }
+
+    func updateAutoSaveToGallery(_ enabled: Bool) {
+        updateAutoSave(enabled)
     }

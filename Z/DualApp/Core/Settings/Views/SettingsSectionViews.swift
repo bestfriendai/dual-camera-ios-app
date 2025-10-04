@@ -15,16 +15,16 @@ struct CameraSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Default Camera Position
-            SettingsPickerView(
+            // Default Camera Position - Simplified for now
+            LiquidGlassComponents.settingsRow(
                 title: "Default Camera",
                 subtitle: "Choose the default camera when opening the app",
                 icon: "camera",
-                color: DesignColors.primary,
-                selection: Binding(
-                    get: { settingsViewModel.userSettings.cameraSettings.defaultCameraPosition },
-                    set: { settingsViewModel.updateDefaultCameraPosition($0) }
-                )
-            )
+                color: DesignColors.primary
+            ) {
+                Text(settingsViewModel.userSettings.cameraSettings.defaultCameraPosition.description)
+                    .foregroundColor(DesignColors.secondaryText)
+            }
             
             Divider()
                 .background(DesignColors.glassBorder)
@@ -124,7 +124,13 @@ struct AudioSettingsView: View {
                 color: DesignColors.accent,
                 isOn: Binding(
                     get: { settingsViewModel.userSettings.audioSettings.audioRecordingEnabled },
-                    set: { settingsViewModel.updateAudioSettings({ var s = $0; s.audioRecordingEnabled = $1; return s }) }
+                    set: { newValue in
+                        settingsViewModel.updateAudioSettings { settings in
+                            var newSettings = settings
+                            newSettings.audioRecordingEnabled = newValue
+                            return newSettings
+                        }
+                    }
                 )
             )
             
@@ -238,16 +244,16 @@ struct VideoSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Video Quality
-            SettingsPickerView(
+            // Video Quality - Simplified for now
+            LiquidGlassComponents.settingsRow(
                 title: "Video Quality",
                 subtitle: "Higher quality uses more storage and battery",
                 icon: "video.badge.plus",
-                color: DesignColors.primary,
-                selection: Binding(
-                    get: { settingsViewModel.userSettings.videoSettings.videoQuality },
-                    set: { settingsViewModel.updateVideoQuality($0) }
-                )
-            )
+                color: DesignColors.primary
+            ) {
+                Text(settingsViewModel.userSettings.videoSettings.videoQuality.description)
+                    .foregroundColor(DesignColors.secondaryText)
+            }
             
             Divider()
                 .background(DesignColors.glassBorder)
@@ -355,17 +361,16 @@ struct UISettingsView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Theme
-            SettingsPickerView(
+            // Theme - Simplified for now
+            LiquidGlassComponents.settingsRow(
                 title: "Theme",
                 subtitle: "App appearance theme",
                 icon: "paintbrush",
-                color: DesignColors.primary,
-                selection: Binding(
-                    get: { settingsViewModel.userSettings.uiSettings.theme },
-                    set: { settingsViewModel.updateTheme($0) }
-                )
-            )
+                color: DesignColors.primary
+            ) {
+                Text(settingsViewModel.userSettings.uiSettings.theme)
+                    .foregroundColor(DesignColors.secondaryText)
+            }
             
             Divider()
                 .background(DesignColors.glassBorder)
@@ -572,7 +577,7 @@ struct GeneralSettingsView: View {
                 color: DesignColors.primary,
                 isOn: Binding(
                     get: { settingsViewModel.userSettings.generalSettings.autoSaveToGallery },
-                    set: { settingsViewModel.updateAutoSaveToGallery($0) }
+                    set: { settingsViewModel.updateAutoSave($0) }
                 )
             )
             
@@ -683,12 +688,12 @@ struct AdvancedSettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Last Sync")
-                                .textStyle(TypographyPresets.Glass.caption)
+                                .font(.caption)
                                 .foregroundColor(DesignColors.textOnGlassTertiary)
                             
                             if let lastSync = settingsViewModel.lastSyncDate {
                                 Text(lastSync, style: .relative)
-                                    .textStyle(TypographyPresets.Glass.body)
+                                    .font(.body)
                                     .foregroundColor(DesignColors.textOnGlassSecondary)
                             } else {
                                 Text("Never")
@@ -707,7 +712,7 @@ struct AdvancedSettingsView: View {
                             Button("Sync Now") {
                                 settingsViewModel.forceSyncToCloud()
                             }
-                            .font(TypographyPresets.Glass.caption)
+                            .font(.caption)
                             .foregroundColor(DesignColors.primary)
                         }
                     }
@@ -730,7 +735,7 @@ struct AdvancedSettingsView: View {
                 Button("Export") {
                     // Export settings
                 }
-                .textStyle(TypographyPresets.Glass.caption)
+                .font(.caption)
                 .foregroundColor(DesignColors.success)
             }
             
@@ -748,7 +753,7 @@ struct AdvancedSettingsView: View {
                 Button("Import") {
                     // Import settings
                 }
-                .textStyle(TypographyPresets.Glass.caption)
+                .font(.caption)
                 .foregroundColor(DesignColors.info)
             }
             
@@ -766,7 +771,7 @@ struct AdvancedSettingsView: View {
                 Button("Reset") {
                     // Reset settings
                 }
-                .textStyle(TypographyPresets.Glass.caption)
+                .font(.caption)
                 .foregroundColor(DesignColors.error)
             }
         }
@@ -797,8 +802,13 @@ struct SettingsExportView: View {
                 LiquidGlassComponents.button(
                     "Export Settings",
                     action: {
-                        if let data = settingsViewModel.exportSettings() {
-                            // Share the data
+                        Task {
+                            do {
+                                let data = try await settingsViewModel.exportSettings()
+                                // Share the data
+                            } catch {
+                                print("Export failed: \(error)")
+                            }
                         }
                     },
                     variant: .standard,

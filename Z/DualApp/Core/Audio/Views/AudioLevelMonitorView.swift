@@ -7,6 +7,17 @@
 
 import SwiftUI
 import AVFoundation
+import Combine
+
+// MARK: - Type Definitions for Preview
+// Note: LiquidGlassStyle and LiquidGlassAnimationType are defined in LiquidDesignSystem.swift
+
+// AudioManager protocol for UI compatibility
+protocol AudioManagerProtocol: ObservableObject {
+    var audioLevels: AudioLevels { get }
+    var isRecording: Bool { get }
+    var isMonitoring: Bool { get }
+}
 
 // MARK: - Audio Level Monitor View
 
@@ -30,8 +41,8 @@ struct AudioLevelMonitorView: View {
     
     // MARK: - Initialization
     
-    init(
-        audioManager: AudioManager,
+    init<T: AudioManagerProtocol>(
+        audioManager: T,
         style: LiquidGlassStyle = .card,
         intensity: Double = 0.6,
         animationType: LiquidGlassAnimationType = .pulse
@@ -630,7 +641,7 @@ struct AudioSpectrumView: View {
 
 // MARK: - Mock AudioManager for Preview
 
-class MockAudioManager: ObservableObject {
+class MockAudioManager: ObservableObject, AudioManagerProtocol {
     @Published var audioLevels: AudioLevels = AudioLevels()
     @Published var isRecording: Bool = false
     @Published var isMonitoring: Bool = false
