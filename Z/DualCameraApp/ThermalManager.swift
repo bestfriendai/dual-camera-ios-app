@@ -11,7 +11,6 @@ import UIKit
 
 // MARK: - Thermal Manager Actor
 
-@MainActor
 actor ThermalManager: Sendable {
     // MARK: - Singleton
     
@@ -19,7 +18,7 @@ actor ThermalManager: Sendable {
     
     // MARK: - State Properties
     
-    private(set) var currentThermalState: ThermalState = .nominal
+    private(set) var currentThermalState: ThermalManagerState = .nominal
     private(set) var thermalPressure: ThermalPressure = .none
     private(set) var temperatureTrend: TemperatureTrend = .stable
     private(set) var lastStateChange: Date = Date()
@@ -418,7 +417,7 @@ enum ThermalEvent: Sendable {
 
 // MARK: - Thermal State
 
-enum ThermalState: Int, CaseIterable, Sendable {
+enum ThermalManagerState: Int, CaseIterable, Sendable {
     case nominal = 0
     case fair = 1
     case serious = 2

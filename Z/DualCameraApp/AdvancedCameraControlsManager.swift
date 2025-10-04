@@ -8,6 +8,7 @@
 import UIKit
 import AVFoundation
 
+@MainActor
 class AdvancedCameraControlsManager {
     
     // MARK: - Properties
@@ -77,15 +78,13 @@ class AdvancedCameraControlsManager {
         Task {
             let userSettings = await SettingsManager.shared.getSettings()
 
-            await MainActor.run {
-                // Load focus settings
-                frontFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
-                backFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
+            // Load focus settings
+            frontFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
+            backFocusMode = userSettings.cameraSettings.focusMode == FocusMode.autoFocus ? .continuousAutoFocus : .locked
 
-                // Load zoom settings
-                frontZoomFactor = 1.0
-                backZoomFactor = 1.0
-            }
+            // Load zoom settings
+            frontZoomFactor = 1.0
+            backZoomFactor = 1.0
         }
         targetFrontZoom = 1.0
         targetBackZoom = 1.0
@@ -258,7 +257,7 @@ class AdvancedCameraControlsManager {
     
     func adjustExposure(by delta: Float, for position: AVCaptureDevice.Position) {
         let device = getDevice(for: position)
-        guard let cameraDevice = device else { return }
+        guard device != nil else { return }
         
         let currentBias = position == .front ? frontTargetBias : backTargetBias
         let newBias = currentBias + delta
@@ -459,6 +458,7 @@ class AdvancedCameraControlsManager {
     }
     
     deinit {
-        stopSmoothZoomAnimation()
+        // Note: Cannot call @MainActor methods from deinit
+        // Animation will be stopped automatically when the object is deallocated
     }
 }

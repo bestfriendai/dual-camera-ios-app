@@ -11,7 +11,6 @@ import Combine
 
 // MARK: - Memory Manager Actor
 
-@MainActor
 actor MemoryManager: Sendable {
     // MARK: - Singleton
 
@@ -19,7 +18,7 @@ actor MemoryManager: Sendable {
 
     // MARK: - State Properties
     
-    private(set) var currentMemoryPressure: MemoryPressure = .normal
+    private(set) var currentMemoryPressure: MemoryManagerPressure = .normal
     private(set) var availableMemory: UInt64 = 0
     private(set) var usedMemory: UInt64 = 0
     private(set) var memoryWarningThreshold: Double = 0.8
@@ -446,7 +445,7 @@ actor MemoryManager: Sendable {
 
 // MARK: - Memory Pressure
 
-enum MemoryPressure: Sendable {
+enum MemoryManagerPressure: Sendable {
     case normal
     case warning
     case critical

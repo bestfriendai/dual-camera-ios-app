@@ -51,18 +51,20 @@ class VisualCountdownView: UIView {
         
         countdownTimer?.invalidate()
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            self.remainingTime -= 1
-            if self.remainingTime > 0 {
-                self.updateLabel()
-                self.onCountdownTick?(self.remainingTime)
-            } else {
-                self.countdownTimer?.invalidate()
-                self.countdownTimer = nil
-                self.updateLabelForCompletion()
-                self.onCountdownTick?(0)
-                self.onCountdownComplete?()
+            Task { @MainActor in
+                guard let self = self else { return }
+
+                self.remainingTime -= 1
+                if self.remainingTime > 0 {
+                    self.updateLabel()
+                    self.onCountdownTick?(self.remainingTime)
+                } else {
+                    self.countdownTimer?.invalidate()
+                    self.countdownTimer = nil
+                    self.updateLabelForCompletion()
+                    self.onCountdownTick?(0)
+                    self.onCountdownComplete?()
+                }
             }
         }
     }

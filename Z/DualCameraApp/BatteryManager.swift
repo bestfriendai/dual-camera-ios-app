@@ -11,7 +11,6 @@ import UIKit
 
 // MARK: - Battery Manager Actor
 
-@MainActor
 actor BatteryManager: Sendable {
     // MARK: - Singleton
 
@@ -566,7 +565,7 @@ enum BatteryRiskLevel: Sendable {
 
 // MARK: - Thermal State
 
-enum ThermalState: Sendable {
+enum BatteryThermalState: Sendable {
     case unknown
     case nominal
     case fair
