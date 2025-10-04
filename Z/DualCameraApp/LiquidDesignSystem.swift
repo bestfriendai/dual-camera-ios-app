@@ -357,6 +357,7 @@ struct DesignColors {
     static let textOnGlass = Color.white
     static let textOnGlassSecondary = Color.white.opacity(0.7)
     static let textOnGlassTertiary = Color.white.opacity(0.5)
+    static let secondaryText = Color(red: 0.6, green: 0.6, blue: 0.6)
 
     // Glass Colors
     static let glassBackground = Color.white.opacity(0.1)
@@ -442,6 +443,83 @@ struct LiquidGlassComponents {
                         .background(.ultraThinMaterial)
                 )
         }
+    }
+
+    static func settingsRow<Content: View>(
+        title: String,
+        subtitle: String? = nil,
+        icon: String? = nil,
+        color: Color = DesignColors.primary,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .frame(width: 24, height: 24)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundColor(.primary)
+
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            content()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+                .background(.ultraThinMaterial)
+        )
+    }
+
+    static func toggle(
+        _ title: String,
+        subtitle: String? = nil,
+        icon: String? = nil,
+        color: Color = DesignColors.primary,
+        isOn: Binding<Bool>
+    ) -> some View {
+        HStack {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .frame(width: 24, height: 24)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundColor(.primary)
+
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+                .background(.ultraThinMaterial)
+        )
     }
 }
 

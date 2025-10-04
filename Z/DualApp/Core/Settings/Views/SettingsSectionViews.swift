@@ -251,7 +251,7 @@ struct VideoSettingsView: View {
                 icon: "video.badge.plus",
                 color: DesignColors.primary
             ) {
-                Text(settingsViewModel.userSettings.videoSettings.videoQuality.description)
+                Text($settingsViewModel.userSettings.videoSettings.videoQuality.wrappedValue.description)
                     .foregroundColor(DesignColors.secondaryText)
             }
             
@@ -368,7 +368,7 @@ struct UISettingsView: View {
                 icon: "paintbrush",
                 color: DesignColors.primary
             ) {
-                Text(settingsViewModel.userSettings.uiSettings.theme)
+                Text($settingsViewModel.userSettings.uiSettings.theme.wrappedValue)
                     .foregroundColor(DesignColors.secondaryText)
             }
             
@@ -488,7 +488,7 @@ struct PerformanceSettingsView: View {
                 icon: "thermometer",
                 color: DesignColors.error,
                 isOn: Binding(
-                    get: { settingsViewModel.userSettings.performanceSettings.thermalManagementEnabled },
+                    get: { $settingsViewModel.userSettings.performanceSettings.thermalManagementEnabled.wrappedValue },
                     set: { settingsViewModel.updateThermalManagement($0) }
                 )
             )
@@ -576,7 +576,7 @@ struct GeneralSettingsView: View {
                 icon: "photo.on.rectangle",
                 color: DesignColors.primary,
                 isOn: Binding(
-                    get: { settingsViewModel.userSettings.generalSettings.autoSaveToGallery },
+                    get: { $settingsViewModel.userSettings.generalSettings.autoSaveToGallery.wrappedValue },
                     set: { settingsViewModel.updateAutoSave($0) }
                 )
             )
