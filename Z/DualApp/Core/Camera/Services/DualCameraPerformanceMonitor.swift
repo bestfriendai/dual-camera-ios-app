@@ -252,12 +252,12 @@ actor DualCameraPerformanceMonitor {
         
         if timeInterval >= 2.0 { // Check every 2 seconds
             let thermalState = await ThermalManager.shared.currentThermalState
-            let thermalPressure = await ThermalManager.shared.getCurrentThermalMetrics()
-            
+            let thermalMetrics = await ThermalManager.shared.getCurrentThermalMetrics()
+
             let snapshot = ThermalSnapshot(
                 timestamp: currentTime,
-                thermalState: thermalState,
-                thermalPressure: thermalPressure
+                thermalState: thermalState.processInfoThermalState,
+                thermalPressure: thermalMetrics.pressure.doubleValue
             )
             
             thermalHistory.append(snapshot)
@@ -265,8 +265,8 @@ actor DualCameraPerformanceMonitor {
                 thermalHistory.removeFirst()
             }
             
-            currentMetrics.thermalState = thermalState
-            currentMetrics.thermalPressure = thermalPressure
+            currentMetrics.thermalState = thermalState.processInfoThermalState
+            currentMetrics.thermalPressure = thermalMetrics.pressure.doubleValue
             
             lastThermalCheck = currentTime
         }

@@ -382,9 +382,9 @@ actor AdaptiveQualityManager: Sendable {
     }
     
     private func getCurrentPerformanceSnapshot() async -> PerformanceSnapshot {
-        let thermalState = ThermalManager.shared.currentThermalStateValue
-        let batteryLevel = BatteryManager.shared.currentBatteryLevel
-        let _ = MemoryManager.shared.currentMemoryPressure
+        let thermalState = await ThermalManager.shared.currentThermalState
+        let batteryLevel = await BatteryManager.shared.currentBatteryLevel
+        let _ = await MemoryManager.shared.currentMemoryPressure
         
         return PerformanceSnapshot(
             timestamp: Date(),
