@@ -76,7 +76,7 @@ extension VideoQuality {
 
 // MARK: - Camera Position
 
-enum CameraPosition: String, CaseIterable, Sendable, Codable {
+enum CameraDevicePosition: String, CaseIterable, Sendable, Codable {
     case front = "Front"
     case back = "Back"
     case wide = "Wide"
@@ -168,7 +168,7 @@ enum CameraFocusMode: String, CaseIterable, Sendable, Codable {
 
 // MARK: - Exposure Mode
 
-enum ExposureMode: String, CaseIterable, Sendable, Codable {
+enum CameraExposureMode: String, CaseIterable, Sendable, Codable {
     case locked = "Locked"
     case autoExpose = "Auto"
     case continuousAutoExposure = "Continuous Auto"
@@ -207,7 +207,7 @@ enum ExposureMode: String, CaseIterable, Sendable, Codable {
 
 // MARK: - White Balance Mode
 
-enum WhiteBalanceMode: String, CaseIterable, Sendable, Codable {
+enum CameraWhiteBalanceMode: String, CaseIterable, Sendable, Codable {
     case locked = "Locked"
     case continuousAutoWhiteBalance = "Continuous Auto"
     case autoWhiteBalance = "Auto"
@@ -306,7 +306,7 @@ enum WhiteBalanceMode: String, CaseIterable, Sendable, Codable {
 
 // MARK: - Flash Mode
 
-enum FlashMode: String, CaseIterable, Sendable, Codable {
+enum CameraFlashMode: String, CaseIterable, Sendable, Codable {
     case off = "Off"
     case on = "On"
     case auto = "Auto"
