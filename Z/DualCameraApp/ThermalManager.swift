@@ -18,22 +18,22 @@ actor ThermalManager: Sendable {
     
     // MARK: - State Properties
     
-    private(set) var currentThermalState: ThermalManagerState = .nominal
-    private(set) var thermalPressure: LegacyThermalPressure = .none
+    private(set) var currentThermalState: ProcessInfo.ThermalState = .nominal
+    private(set) var thermalPressure: Double = 0.0
     private(set) var temperatureTrend: TemperatureTrend = .stable
     private(set) var lastStateChange: Date = Date()
-    
+
     // MARK: - Thermal History
-    
-    private var thermalHistory: [LegacyThermalSnapshot] = []
+
+    private var thermalHistory: [ThermalSnapshot] = []
     private let maxHistorySize = 100
     private var stateChangeCount: Int = 0
-    
+
     // MARK: - Configuration
-    
+
     private var thermalMitigationEnabled: Bool = true
-    private var mitigationThreshold: ThermalState = .serious
-    private var recoveryThreshold: ThermalState = .fair
+    private var mitigationThreshold: ProcessInfo.ThermalState = .serious
+    private var recoveryThreshold: ProcessInfo.ThermalState = .fair
     private var adaptivePerformanceEnabled: Bool = true
     
     // MARK: - Event Stream
@@ -61,7 +61,7 @@ actor ThermalManager: Sendable {
     // MARK: - Public Interface
     
     func startMonitoring() async {
-        stopMonitoring()
+        await stopMonitoring()
         
         monitoringTask = Task {
             while !Task.isCancelled {
@@ -106,51 +106,51 @@ actor ThermalManager: Sendable {
     
     func shouldThrottlePerformance() async -> Bool {
         guard thermalMitigationEnabled else { return false }
-        
+
         switch currentThermalState {
         case .critical:
             return true
         case .serious:
             return true
         case .fair:
-            return thermalPressure == .moderate || thermalPressure == .high
+            return thermalPressure >= 0.5 // moderate or high pressure
         case .nominal:
             return false
-        case .unknown:
+        @unknown default:
             return false
         }
     }
     
     func getRecommendedFrameRate() async -> Int32 {
         guard thermalMitigationEnabled else { return 60 }
-        
+
         switch currentThermalState {
         case .critical:
             return 15
         case .serious:
             return 24
         case .fair:
-            return thermalPressure == .high ? 24 : 30
+            return thermalPressure >= 0.8 ? 24 : 30
         case .nominal:
             return 60
-        case .unknown:
+        @unknown default:
             return 30
         }
     }
     
     func getRecommendedVideoQuality() async -> VideoQuality {
         guard thermalMitigationEnabled else { return .uhd4k }
-        
+
         switch currentThermalState {
         case .critical:
             return .hd720
         case .serious:
             return .hd1080
         case .fair:
-            return thermalPressure == .high ? .hd1080 : .uhd4k
+            return thermalPressure >= 0.8 ? .hd1080 : .uhd4k
         case .nominal:
             return .uhd4k
-        case .unknown:
+        @unknown default:
             return .hd1080
         }
     }
@@ -192,20 +192,19 @@ actor ThermalManager: Sendable {
         
         // Get current thermal state from system
         let systemThermalState = ProcessInfo.processInfo.thermalState
-        currentThermalState = ThermalState(from: systemThermalState)
-        
+        currentThermalState = systemThermalState
+
         // Calculate thermal pressure
         thermalPressure = calculateThermalPressure()
-        
+
         // Determine temperature trend
         temperatureTrend = calculateTemperatureTrend()
-        
+
         // Create snapshot
         let snapshot = ThermalSnapshot(
             timestamp: Date(),
-            state: currentThermalState,
-            pressure: thermalPressure,
-            trend: temperatureTrend
+            thermalState: currentThermalState,
+            thermalPressure: thermalPressure
         )
         
         // Add to history
@@ -233,19 +232,19 @@ actor ThermalManager: Sendable {
         eventContinuation.yield(.statusUpdated(snapshot))
     }
     
-    private func calculateThermalPressure() -> ThermalPressure {
+    private func calculateThermalPressure() -> Double {
         // Calculate pressure based on current state and historical data
         switch currentThermalState {
         case .critical:
-            return .critical
+            return 1.0
         case .serious:
-            return thermalHistory.suffix(5).allSatisfy({ $0.state == .serious }) ? .high : .moderate
+            return thermalHistory.suffix(5).allSatisfy({ $0.thermalState == .serious }) ? 0.8 : 0.6
         case .fair:
-            return temperatureTrend == .rising ? .moderate : .low
+            return temperatureTrend == .rising ? 0.4 : 0.2
         case .nominal:
-            return temperatureTrend == .rising ? .low : .none
-        case .unknown:
-            return .none
+            return temperatureTrend == .rising ? 0.1 : 0.0
+        @unknown default:
+            return 0.0
         }
     }
     
@@ -254,12 +253,12 @@ actor ThermalManager: Sendable {
         
         let recentHistory = Array(thermalHistory.suffix(10))
         let stateValues = recentHistory.map { snapshot -> Double in
-            switch snapshot.state {
+            switch snapshot.thermalState {
             case .nominal: return 0
             case .fair: return 1
             case .serious: return 2
             case .critical: return 3
-            case .unknown: return 0
+            @unknown default: return 0
             }
         }
         
@@ -281,7 +280,7 @@ actor ThermalManager: Sendable {
         }
     }
     
-    private func handleThermalStateChange(from previousState: ThermalState, to newState: ThermalState) async {
+    private func handleThermalStateChange(from previousState: ProcessInfo.ThermalState, to newState: ProcessInfo.ThermalState) async {
         lastStateChange = Date()
         stateChangeCount += 1
         
@@ -297,7 +296,7 @@ actor ThermalManager: Sendable {
         }
     }
     
-    private func handleTemperatureIncrease(from previousState: ThermalState, to newState: ThermalState) async {
+    private func handleTemperatureIncrease(from previousState: ProcessInfo.ThermalState, to newState: ProcessInfo.ThermalState) async {
         switch newState {
         case .serious, .critical:
             eventContinuation.yield(.warning(newState))
@@ -310,8 +309,8 @@ actor ThermalManager: Sendable {
         }
     }
     
-    private func handleTemperatureDecrease(from previousState: ThermalState, to newState: ThermalState) async {
-        if newState <= recoveryThreshold && isMitigating {
+    private func handleTemperatureDecrease(from previousState: ProcessInfo.ThermalState, to newState: ProcessInfo.ThermalState) async {
+        if newState.rawValue <= recoveryThreshold.rawValue && isMitigating {
             await reduceThermalMitigation()
             eventContinuation.yield(.recovery(newState))
         }
@@ -679,11 +678,15 @@ struct ThermalPredictionEngine {
     
     private static func calculateConfidence(from history: [ThermalSnapshot], trend: TemperatureTrend) -> Double {
         guard history.count >= 5 else { return 0 }
-        
+
         let recentHistory = Array(history.suffix(10))
-        let trendConsistency = recentHistory.filter { $0.trend == trend }.count
-        
-        return Double(trendConsistency) / Double(recentHistory.count)
+        // Calculate trend consistency based on thermal state progression
+        let stateProgression = recentHistory.map { $0.thermalState.rawValue }
+        let isConsistent = stateProgression.count >= 2 &&
+                          (trend == .rising ? stateProgression.last! >= stateProgression.first! :
+                           trend == .falling ? stateProgression.last! <= stateProgression.first! : true)
+
+        return isConsistent ? 0.8 : 0.3
     }
     
     private static func calculateTimeToThreshold(
@@ -702,7 +705,9 @@ struct ThermalPredictionEngine {
             return 180 // 3 minutes estimate
         case .serious:
             return 120 // 2 minutes estimate
-        case .critical, .unknown:
+        case .critical:
+            return nil
+        @unknown default:
             return nil
         }
     }
@@ -723,7 +728,7 @@ struct ThermalPrediction: Sendable {
             return .medium
         case .critical:
             return .high
-        case .unknown:
+        @unknown default:
             return .unknown
         }
     }

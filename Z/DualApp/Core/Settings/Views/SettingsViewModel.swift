@@ -48,6 +48,7 @@ class SettingsViewModel: ObservableObject {
     @Published var isCloudSyncEnabled = false
     @Published var lastSyncDate: Date?
     @Published var syncInProgress = false
+    @Published var hasUnsavedChanges = false
 
     // MARK: - Private Properties
 
@@ -503,3 +504,26 @@ struct ErrorReport {
     func updateAutoSaveToGallery(_ enabled: Bool) {
         updateAutoSave(enabled)
     }
+
+    // MARK: - Update Methods
+
+    private func updateVideoQuality(_ quality: VideoQuality) {
+        userSettings.videoSettings.videoQuality = quality
+        hasUnsavedChanges = true
+    }
+
+    private func updateTheme(_ theme: String) {
+        userSettings.uiSettings.theme = theme
+        hasUnsavedChanges = true
+    }
+
+    private func updateThermalManagement(_ enabled: Bool) {
+        userSettings.performanceSettings.thermalManagementEnabled = enabled
+        hasUnsavedChanges = true
+    }
+
+    private func updateAutoSave(_ enabled: Bool) {
+        userSettings.generalSettings.autoSaveToGallery = enabled
+        hasUnsavedChanges = true
+    }
+}

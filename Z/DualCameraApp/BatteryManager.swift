@@ -21,7 +21,7 @@ actor BatteryManager: Sendable {
     private(set) var currentBatteryLevel: Double = 1.0
     private(set) var batteryState: UIDevice.BatteryState = .unknown
     private(set) var powerSourceState: PowerSourceState = .unknown
-    private(set) var thermalState: ThermalState = .unknown
+    private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     
     // MARK: - Battery-Aware Configuration
     
@@ -39,7 +39,7 @@ actor BatteryManager: Sendable {
     
     private var monitoringTask: Task<Void, Never>?
     private let monitoringInterval: TimeInterval = 5.0
-    private var batteryHistory: [LegacyBatterySnapshot] = []
+    private var batteryHistory: [BatterySnapshot] = []
     private let maxHistorySize = 200
     
     // MARK: - Initialization
@@ -56,7 +56,7 @@ actor BatteryManager: Sendable {
     // MARK: - Public Interface
     
     func startMonitoring() async {
-        stopMonitoring()
+        await stopMonitoring()
         
         monitoringTask = Task {
             while !Task.isCancelled {
@@ -149,7 +149,9 @@ actor BatteryManager: Sendable {
     // MARK: - Private Methods
     
     private func setupBatteryMonitoring() async {
-        UIDevice.current.isBatteryMonitoringEnabled = true
+        await MainActor.run {
+            UIDevice.current.isBatteryMonitoringEnabled = true
+        }
         
         // Register for battery level change notifications
         NotificationCenter.default.addObserver(
@@ -179,18 +181,19 @@ actor BatteryManager: Sendable {
         let previousState = batteryState
         
         // Update current values
-        currentBatteryLevel = UIDevice.current.batteryLevel
-        batteryState = UIDevice.current.batteryState
+        await MainActor.run {
+            currentBatteryLevel = Double(UIDevice.current.batteryLevel)
+            batteryState = UIDevice.current.batteryState
+        }
         powerSourceState = determinePowerSourceState()
         thermalState = await ThermalManager.shared.currentThermalState
-        
+
         // Create snapshot
         let snapshot = BatterySnapshot(
             timestamp: Date(),
             level: currentBatteryLevel,
             state: batteryState,
-            powerSource: powerSourceState,
-            thermalState: thermalState
+            powerSource: convertPowerSourceState(powerSourceState)
         )
         
         // Add to history
@@ -389,6 +392,19 @@ struct LegacyBatterySnapshot: Sendable {
         return level < 0.1 && !isCharging
     }
 }
+
+    // MARK: - Helper Functions
+
+    private func convertPowerSourceState(_ state: PowerSourceState) -> BatterySnapshot.PowerSource {
+        switch state {
+        case .battery:
+            return .battery
+        case .charging, .full:
+            return .external
+        case .unknown:
+            return .unknown
+        }
+    }
 
 // MARK: - Power Source State
 
