@@ -49,6 +49,11 @@ class SettingsViewModel: ObservableObject {
     @Published var lastSyncDate: Date?
     @Published var syncInProgress = false
 
+    // MARK: - Private Properties
+
+    private let settingsManager = SettingsManager.shared
+    private var userSettings = UserSettings.default
+
     // Export/Import
     @Published var showingExportSheet = false
     @Published var showingImportSheet = false
@@ -117,16 +122,16 @@ class SettingsViewModel: ObservableObject {
         await MainActor.run {
             // Update UI properties from UserSettings
             videoQuality = settings.videoSettings.videoQuality
-            enableTripleOutput = settings.videoSettings.enableTripleOutput
-            enableHapticFeedback = settings.interfaceSettings.enableHapticFeedback
-            enableVisualCountdown = settings.interfaceSettings.enableVisualCountdown
-            countdownDuration = settings.interfaceSettings.countdownDuration
-            enableGrid = settings.interfaceSettings.enableGrid
-            audioSource = settings.audioSettings.audioSource
-            enableNoiseReduction = settings.audioSettings.enableNoiseReduction
-            recordingQualityAdaptive = settings.performanceSettings.recordingQualityAdaptive
-            maxRecordingDuration = settings.performanceSettings.maxRecordingDuration
-            enablePerformanceMonitoring = settings.performanceSettings.enablePerformanceMonitoring
+            enableTripleOutput = settings.videoSettings.dualCameraMode == .sideBySide
+            enableHapticFeedback = settings.uiSettings.hapticFeedbackEnabled
+            enableVisualCountdown = false // Not available in current UserSettings
+            countdownDuration = 3 // Default value
+            enableGrid = settings.cameraSettings.gridEnabled
+            audioSource = settings.audioSettings.audioFormat.rawValue
+            enableNoiseReduction = settings.audioSettings.noiseReductionEnabled
+            recordingQualityAdaptive = settings.performanceSettings.adaptiveQualityEnabled
+            maxRecordingDuration = Int(settings.performanceSettings.maxRecordingDuration)
+            enablePerformanceMonitoring = settings.performanceSettings.thermalManagementEnabled
 
             isLoading = false
         }
@@ -141,16 +146,15 @@ class SettingsViewModel: ObservableObject {
 
             // Update settings with current UI values
             settings.videoSettings.videoQuality = videoQuality
-            settings.videoSettings.enableTripleOutput = enableTripleOutput
-            settings.interfaceSettings.enableHapticFeedback = enableHapticFeedback
-            settings.interfaceSettings.enableVisualCountdown = enableVisualCountdown
-            settings.interfaceSettings.countdownDuration = countdownDuration
-            settings.interfaceSettings.enableGrid = enableGrid
-            settings.audioSettings.audioSource = audioSource
-            settings.audioSettings.enableNoiseReduction = enableNoiseReduction
-            settings.performanceSettings.recordingQualityAdaptive = recordingQualityAdaptive
-            settings.performanceSettings.maxRecordingDuration = maxRecordingDuration
-            settings.performanceSettings.enablePerformanceMonitoring = enablePerformanceMonitoring
+            settings.videoSettings.dualCameraMode = enableTripleOutput ? .sideBySide : .pictureInPicture
+            settings.uiSettings.hapticFeedbackEnabled = enableHapticFeedback
+            // enableVisualCountdown and countdownDuration not available in current UserSettings
+            settings.cameraSettings.gridEnabled = enableGrid
+            // audioSource mapping would need enum conversion
+            settings.audioSettings.noiseReductionEnabled = enableNoiseReduction
+            settings.performanceSettings.adaptiveQualityEnabled = recordingQualityAdaptive
+            settings.performanceSettings.maxRecordingDuration = TimeInterval(maxRecordingDuration)
+            settings.performanceSettings.thermalManagementEnabled = enablePerformanceMonitoring
 
             // Save to SettingsManager
             try await settingsManager.updateSettings(settings)
@@ -184,7 +188,7 @@ class SettingsViewModel: ObservableObject {
     }
 
     func exportSettings() async throws -> Data {
-        return await settingsManager.exportSettings()
+        return try await settingsManager.exportSettings()
     }
 
     func importSettings(from data: Data) async throws {
@@ -217,7 +221,9 @@ class SettingsViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.syncInProgress = false
             self.lastSyncDate = Date()
-            self.loadSettings()
+            Task {
+                await self.loadSettings()
+            }
         }
     }
 

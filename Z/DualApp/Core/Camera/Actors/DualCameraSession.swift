@@ -513,7 +513,7 @@ actor DualCameraSession: Sendable {
         }
         
         // Apply zoom
-        if configuration.zoomLevel > 1.0 && configuration.zoomLevel <= device.activeFormat.videoMaxZoomFactor {
+        if configuration.zoomLevel > 1.0 && CGFloat(configuration.zoomLevel) <= device.activeFormat.videoMaxZoomFactor {
             device.videoZoomFactor = CGFloat(configuration.zoomLevel)
         }
         
@@ -610,8 +610,8 @@ actor DualCameraSession: Sendable {
         try await device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
         
-        let clampedZoom = max(1.0, min(zoomLevel, device.activeFormat.videoMaxZoomFactor))
-        device.videoZoomFactor = CGFloat(clampedZoom)
+        let clampedZoom = max(CGFloat(1.0), min(CGFloat(zoomLevel), device.activeFormat.videoMaxZoomFactor))
+        device.videoZoomFactor = clampedZoom
     }
     
     private func setFocusPoint(_ point: CGPoint, device: AVCaptureDevice) async throws {
@@ -629,7 +629,7 @@ actor DualCameraSession: Sendable {
         defer { device.unlockForConfiguration() }
         
         let clampedBias = max(device.minExposureTargetBias, min(bias, device.maxExposureTargetBias))
-        device.setExposureTargetBias(clampedBias)
+        await device.setExposureTargetBias(clampedBias)
     }
     
     deinit {
@@ -684,7 +684,8 @@ extension DualCameraSession: AVCaptureAudioDataOutputSampleBufferDelegate {
     
     private func processAudioFrame(_ sampleBuffer: CMSampleBuffer) async {
         // Process audio frame
-        await recordingCoordinator?.processAudioFrame(sampleBuffer)
+        // TODO: Implement audio frame processing
+        // await recordingCoordinator?.processAudioFrame(sampleBuffer)
     }
 }
 
@@ -759,13 +760,13 @@ enum DualCameraError: LocalizedError, Sendable {
         case .configurationNotSet:
             return "Camera configuration is not set"
         case .configurationInvalid(let errors):
-            return "Invalid configuration: \(errors.map(\.errorDescription).joined(separator: ", "))"
+            return "Invalid configuration: \(errors.compactMap(\.errorDescription).joined(separator: ", "))"
         case .initializationFailed(let reason):
             return "Initialization failed: \(reason)"
         case .deviceNotAvailable(let position):
-            return "Camera device not available: \(position.description)"
+            return "Camera device not available: \(position.rawValue)"
         case .cannotAddInput(let position):
-            return "Cannot add camera input: \(position.description)"
+            return "Cannot add camera input: \(position.rawValue)"
         case .photoOutputNotAvailable:
             return "Photo output is not available"
         case .thermalLimitReached:

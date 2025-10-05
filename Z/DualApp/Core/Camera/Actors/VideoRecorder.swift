@@ -12,7 +12,6 @@ import Photos
 
 // MARK: - Video Recorder Actor
 
-@MainActor
 actor VideoRecorder: Sendable {
     
     // MARK: - Properties
