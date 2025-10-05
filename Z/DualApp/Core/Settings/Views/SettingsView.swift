@@ -75,7 +75,9 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .navigationBarHidden(true)
             .onAppear {
-                settingsViewModel.loadSettings()
+                Task {
+                    await settingsViewModel.loadSettings()
+                }
             }
             .sheet(isPresented: $showingExportSheet) {
                 SettingsExportView(settingsViewModel: settingsViewModel)

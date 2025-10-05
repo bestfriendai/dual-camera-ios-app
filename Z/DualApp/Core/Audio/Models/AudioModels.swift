@@ -190,6 +190,28 @@ enum AudioQuality: String, CaseIterable, Sendable, Codable {
             return AVAudioQuality.max.rawValue
         }
     }
+
+    var channels: UInt32 {
+        switch self {
+        case .low:
+            return 1 // Mono for low quality
+        case .medium, .high, .lossless, .ultra:
+            return 2 // Stereo for higher qualities
+        }
+    }
+
+    var sampleRate: Double {
+        switch self {
+        case .low, .medium:
+            return 44100.0
+        case .high:
+            return 48000.0
+        case .lossless:
+            return 48000.0
+        case .ultra:
+            return 96000.0
+        }
+    }
     
     var displayName: String {
         switch self {

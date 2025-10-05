@@ -31,7 +31,7 @@ class AppState: ObservableObject {
     // MARK: - Managers
     
     private let settingsManager = SettingsManager.shared
-    private let errorHandlingManager = ErrorHandlingManager.shared
+    // private let errorHandlingManager = ErrorHandlingManager.shared
     private let diagnosticsManager = DiagnosticsManager.shared
     
     // MARK: - Cancellables
@@ -64,7 +64,7 @@ class AppState: ObservableObject {
         await settingsManager.initializeSystem()
         
         // Initialize error handling manager
-        await errorHandlingManager.initializeSystem()
+        // await errorHandlingManager.initializeSystem()
         
         // Initialize diagnostics manager
         await diagnosticsManager.startMonitoring()
@@ -72,11 +72,13 @@ class AppState: ObservableObject {
     
     private func setupBindings() {
         // Listen to error handling events
+        /*
         Task {
             for await event in errorHandlingManager.events {
                 await handleErrorEvent(event)
             }
         }
+        */
         
         // Listen to settings events
         Task {
@@ -95,6 +97,7 @@ class AppState: ObservableObject {
     
     // MARK: - Error Handling
     
+    /*
     private func handleErrorEvent(_ event: ErrorEvent) async {
         await MainActor.run {
             switch event {
@@ -113,11 +116,11 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
     private func handleNewError(_ errorRecord: ErrorRecord) {
         // Store the active error
         activeError = errorRecord
-        
+
         // Show error based on severity
         switch errorRecord.severity {
         case .critical:
@@ -128,7 +131,7 @@ class AppState: ObservableObject {
             // Show banner for warnings
             showingError = true
             errorMessage = errorRecord.localizedDescription
-            
+
             // Auto-hide after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 self.showingError = false
@@ -138,7 +141,7 @@ class AppState: ObservableObject {
             // Show banner for info
             showingError = true
             errorMessage = errorRecord.localizedDescription
-            
+
             // Auto-hide after 2 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 self.showingError = false
@@ -146,11 +149,12 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
     private func handleCriticalError() {
         // Handle critical errors
         // This could include saving state, stopping operations, etc.
     }
+    */
     
     // MARK: - Settings Handling
     
@@ -196,12 +200,13 @@ class AppState: ObservableObject {
     
     // MARK: - Public Methods
     
+    /*
     func handleError(_ error: Error, context: ErrorContext? = nil, severity: ErrorSeverity = .error) {
         Task {
             await errorHandlingManager.handleError(error, context: context, severity: severity)
         }
     }
-    
+
     func dismissError() {
         Task {
             if let errorId = activeError?.id {
@@ -209,19 +214,20 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
     func dismissAllErrors() {
         Task {
             await errorHandlingManager.dismissAllErrors()
         }
     }
-    
+    */
+
     func runDiagnostics() {
         Task {
             isLoading = true
-            
+
             let report = await diagnosticsManager.generateDiagnosticReport()
-            
+
             await MainActor.run {
                 self.diagnosticReport = report
                 self.showingDiagnosticReport = true
@@ -229,13 +235,14 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
+    /*
     func generateErrorReport() {
         Task {
             isLoading = true
-            
+
             let report = await errorHandlingManager.generateErrorReport()
-            
+
             await MainActor.run {
                 self.errorReport = report
                 self.showingErrorReport = true
@@ -243,6 +250,7 @@ class AppState: ObservableObject {
             }
         }
     }
+    */
     
     func showError(_ message: String) {
         errorMessage = message
@@ -308,14 +316,16 @@ extension AppState {
     }
     
     // MARK: - Error Handling Convenience Methods
-    
+
+    /*
     func getActiveErrors() async -> [ErrorRecord] {
         return await errorHandlingManager.getActiveErrors()
     }
-    
+
     func getErrorHistory() async -> [ErrorRecord] {
         return await errorHandlingManager.getErrorHistory()
     }
+    */
     
     // MARK: - Diagnostics Convenience Methods
     
@@ -338,12 +348,14 @@ extension AppState {
 
 // MARK: - Error Handling Manager Extensions
 
+/*
 extension ErrorHandlingManager {
     func initializeSystem() async {
         // Initialize error handling system
         // This would set up default error handlers, crash reporting, etc.
     }
 }
+*/
 
 // MARK: - Settings Manager Extensions
 

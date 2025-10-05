@@ -19,13 +19,13 @@ actor ThermalManager: Sendable {
     // MARK: - State Properties
     
     private(set) var currentThermalState: ThermalManagerState = .nominal
-    private(set) var thermalPressure: ThermalPressure = .none
+    private(set) var thermalPressure: LegacyThermalPressure = .none
     private(set) var temperatureTrend: TemperatureTrend = .stable
     private(set) var lastStateChange: Date = Date()
     
     // MARK: - Thermal History
     
-    private var thermalHistory: [ThermalSnapshot] = []
+    private var thermalHistory: [LegacyThermalSnapshot] = []
     private let maxHistorySize = 100
     private var stateChangeCount: Int = 0
     
@@ -502,7 +502,7 @@ enum ThermalManagerState: Int, CaseIterable, Sendable {
 
 // MARK: - Thermal Pressure
 
-enum ThermalPressure: Int, CaseIterable, Sendable {
+enum LegacyThermalPressure: Int, CaseIterable, Sendable {
     case none = 0
     case low = 1
     case moderate = 2
@@ -591,7 +591,7 @@ enum ThermalMitigationLevel: String, CaseIterable, Sendable {
 
 // MARK: - Thermal Snapshot
 
-struct ThermalSnapshot: Sendable {
+struct LegacyThermalSnapshot: Sendable {
     let timestamp: Date
     let state: ThermalState
     let pressure: ThermalPressure

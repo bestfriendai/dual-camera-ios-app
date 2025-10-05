@@ -55,7 +55,6 @@ class SettingsViewModel: ObservableObject {
 
     // Initialization (async version)
     @Published var exportData: Data?
-    @Published var hasUnsavedChanges = false
 
     // Diagnostics
     @Published var diagnosticReport: DiagnosticReport?
@@ -109,65 +108,91 @@ class SettingsViewModel: ObservableObject {
 
     // MARK: - Settings Management
 
-    func loadSettings() {
+    func loadSettings() async {
         isLoading = true
 
         // Load from SettingsManager
-        videoQuality = settingsManager.videoQuality
-        enableTripleOutput = settingsManager.enableTripleOutput
-        enableHapticFeedback = settingsManager.enableHapticFeedback
-        enableVisualCountdown = settingsManager.enableVisualCountdown
-        countdownDuration = settingsManager.countdownDuration
-        enableGrid = settingsManager.enableGrid
-        audioSource = settingsManager.audioSource
-        enableNoiseReduction = settingsManager.enableNoiseReduction
-        recordingQualityAdaptive = settingsManager.recordingQualityAdaptive
-        maxRecordingDuration = settingsManager.maxRecordingDuration
-        enablePerformanceMonitoring = settingsManager.enablePerformanceMonitoring
+        let settings = await settingsManager.getSettings()
 
-        isLoading = false
+        await MainActor.run {
+            // Update UI properties from UserSettings
+            videoQuality = settings.videoSettings.videoQuality
+            enableTripleOutput = settings.videoSettings.enableTripleOutput
+            enableHapticFeedback = settings.interfaceSettings.enableHapticFeedback
+            enableVisualCountdown = settings.interfaceSettings.enableVisualCountdown
+            countdownDuration = settings.interfaceSettings.countdownDuration
+            enableGrid = settings.interfaceSettings.enableGrid
+            audioSource = settings.audioSettings.audioSource
+            enableNoiseReduction = settings.audioSettings.enableNoiseReduction
+            recordingQualityAdaptive = settings.performanceSettings.recordingQualityAdaptive
+            maxRecordingDuration = settings.performanceSettings.maxRecordingDuration
+            enablePerformanceMonitoring = settings.performanceSettings.enablePerformanceMonitoring
+
+            isLoading = false
+        }
     }
 
     func saveSettings() async {
         isLoading = true
 
-        // Save to SettingsManager
-        settingsManager.videoQuality = videoQuality
-        settingsManager.enableTripleOutput = enableTripleOutput
-        settingsManager.enableHapticFeedback = enableHapticFeedback
-        settingsManager.enableVisualCountdown = enableVisualCountdown
-        settingsManager.countdownDuration = countdownDuration
-        settingsManager.enableGrid = enableGrid
-        settingsManager.audioSource = audioSource
-        settingsManager.enableNoiseReduction = enableNoiseReduction
-        settingsManager.recordingQualityAdaptive = recordingQualityAdaptive
-        settingsManager.maxRecordingDuration = maxRecordingDuration
-        settingsManager.enablePerformanceMonitoring = enablePerformanceMonitoring
+        do {
+            // Create updated settings from current UI state
+            var settings = await settingsManager.getSettings()
 
-        hasUnsavedChanges = false
-        isLoading = false
+            // Update settings with current UI values
+            settings.videoSettings.videoQuality = videoQuality
+            settings.videoSettings.enableTripleOutput = enableTripleOutput
+            settings.interfaceSettings.enableHapticFeedback = enableHapticFeedback
+            settings.interfaceSettings.enableVisualCountdown = enableVisualCountdown
+            settings.interfaceSettings.countdownDuration = countdownDuration
+            settings.interfaceSettings.enableGrid = enableGrid
+            settings.audioSettings.audioSource = audioSource
+            settings.audioSettings.enableNoiseReduction = enableNoiseReduction
+            settings.performanceSettings.recordingQualityAdaptive = recordingQualityAdaptive
+            settings.performanceSettings.maxRecordingDuration = maxRecordingDuration
+            settings.performanceSettings.enablePerformanceMonitoring = enablePerformanceMonitoring
+
+            // Save to SettingsManager
+            try await settingsManager.updateSettings(settings)
+
+            await MainActor.run {
+                hasUnsavedChanges = false
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to save settings: \(error.localizedDescription)"
+                showingAlert = true
+                isLoading = false
+            }
+        }
     }
 
     func resetToDefaults() async {
-        settingsManager.resetToDefaults()
-        loadSettings()
-        hasUnsavedChanges = false
+        do {
+            try await settingsManager.resetToDefaults()
+            await loadSettings()
+            await MainActor.run {
+                hasUnsavedChanges = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to reset settings: \(error.localizedDescription)"
+                showingAlert = true
+            }
+        }
     }
 
     func exportSettings() async throws -> Data {
-        let settings = settingsManager.exportSettings()
-        return try JSONSerialization.data(withJSONObject: settings, options: .prettyPrinted)
+        return await settingsManager.exportSettings()
     }
 
     func importSettings(from data: Data) async throws {
-        let json = try JSONSerialization.jsonObject(with: data, options: [])
-        guard let settings = json as? [String: Any] else {
-            throw NSError(domain: "SettingsError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid settings format"])
+        try await settingsManager.importSettings(from: data)
+        await loadSettings()
+        await MainActor.run {
+            hasUnsavedChanges = false
         }
-
-        settingsManager.importSettings(settings)
-        loadSettings()
-        hasUnsavedChanges = false
     }
 
     // MARK: - Cloud Sync (Simplified)
@@ -396,13 +421,6 @@ struct ErrorReport {
     func updateAudioSettings(_ updater: (AudioSettings) -> AudioSettings) {
         var newSettings = userSettings
         newSettings.audioSettings = updater(newSettings.audioSettings)
-        userSettings = newSettings
-        hasUnsavedChanges = true
-    }
-
-    func updateVideoQuality(_ quality: VideoQuality) {
-        var newSettings = userSettings
-        newSettings.videoSettings.videoQuality = quality
         userSettings = newSettings
         hasUnsavedChanges = true
     }

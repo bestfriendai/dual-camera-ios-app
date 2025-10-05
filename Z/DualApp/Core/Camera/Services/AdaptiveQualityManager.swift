@@ -382,10 +382,13 @@ actor AdaptiveQualityManager: Sendable {
     }
     
     private func getCurrentPerformanceSnapshot() async -> PerformanceSnapshot {
-        let thermalState = await ThermalManager.shared.currentThermalState
+        let thermalManagerState = await ThermalManager.shared.currentThermalState
         let batteryLevel = await BatteryManager.shared.currentBatteryLevel
         let _ = await MemoryManager.shared.currentMemoryPressure
-        
+
+        // Convert ThermalManagerState to ProcessInfo.ThermalState
+        let thermalState = convertToProcessInfoThermalState(thermalManagerState)
+
         return PerformanceSnapshot(
             timestamp: Date(),
             frameRateEfficiency: 0.9, // Would get actual value
@@ -400,6 +403,21 @@ actor AdaptiveQualityManager: Sendable {
                 batteryLevel: Double(batteryLevel)
             )
         )
+    }
+
+    private func convertToProcessInfoThermalState(_ state: ThermalManagerState) -> ProcessInfo.ThermalState {
+        switch state {
+        case .nominal:
+            return .nominal
+        case .fair:
+            return .fair
+        case .serious:
+            return .serious
+        case .critical:
+            return .critical
+        case .unknown:
+            return .nominal // Default to nominal for unknown state
+        }
     }
     
     private func calculateOverallScore(

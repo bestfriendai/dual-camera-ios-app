@@ -11,7 +11,6 @@ import SwiftUI
 
 // MARK: - Camera Manager Actor
 
-@MainActor
 actor CameraManager: Sendable {
     // MARK: - State Properties (Actor-Isolated)
     
@@ -156,10 +155,7 @@ actor CameraManager: Sendable {
             session.beginConfiguration()
             defer { session.commitConfiguration() }
             
-            // Enable synchronization if available
-            if #available(iOS 16.0, *) {
-                session.synchronizedCaptureMode = .synchronized
-            }
+            // Note: AVCaptureMultiCamSession handles synchronization automatically
         }
         
         private func applyConfiguration(_ config: CameraConfiguration) async throws {
@@ -382,12 +378,26 @@ actor CameraManager: Sendable {
 
 // MARK: - Camera State
 
-enum CameraState: Sendable {
+enum CameraState: Sendable, Equatable {
     case notConfigured
     case configuring
     case configured
     case recording
     case error(CameraError)
+
+    static func == (lhs: CameraState, rhs: CameraState) -> Bool {
+        switch (lhs, rhs) {
+        case (.notConfigured, .notConfigured),
+             (.configuring, .configuring),
+             (.configured, .configured),
+             (.recording, .recording):
+            return true
+        case (.error(let lhsError), .error(let rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Camera Event
@@ -397,6 +407,7 @@ enum CameraEvent: Sendable {
     case configurationUpdated(CameraConfiguration)
     case recordingStarted
     case recordingStopped
+    case recordingsReady([RecordingMetadata])
     case photoCaptured(PhotoMetadata)
     case error(CameraError)
 }
@@ -421,6 +432,10 @@ enum CameraError: LocalizedError, Sendable {
     case permissionDenied
     case thermalLimitReached
     case batteryLevelLow
+    case invalidState
+    case sessionNotAvailable
+    case recordingFailed(String)
+    case photoCaptureFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -436,6 +451,14 @@ enum CameraError: LocalizedError, Sendable {
             return "Thermal limit reached"
         case .batteryLevelLow:
             return "Battery level too low"
+        case .invalidState:
+            return "Invalid camera state"
+        case .sessionNotAvailable:
+            return "Camera session not available"
+        case .recordingFailed(let reason):
+            return "Recording failed: \(reason)"
+        case .photoCaptureFailed(let reason):
+            return "Photo capture failed: \(reason)"
         }
     }
 }

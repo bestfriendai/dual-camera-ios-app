@@ -24,7 +24,6 @@ enum AudioSource: String, CaseIterable, Sendable {
     }
 }
 
-@MainActor
 actor AudioManager: Sendable {
     // MARK: - Singleton
 

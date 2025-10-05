@@ -25,7 +25,7 @@ actor VideoRecorder: Sendable {
     
     private var recordingSession: RecordingSession?
     private var recordingStartTime: Date?
-    private var pausedDuration: TimeInterval = 0
+    private var pausedStartTime: Date?
     private var totalPausedDuration: TimeInterval = 0
     
     // MARK: - Asset Writers
@@ -123,7 +123,7 @@ actor VideoRecorder: Sendable {
         
         // Update session
         recordingSession?.updateState(.stopped)
-        recordingSession?.duration = finalDuration
+        recordingSession?.endTime = Date()
         
         eventContinuation.yield(.recordingStopped(recordingSession!))
         
@@ -139,13 +139,10 @@ actor VideoRecorder: Sendable {
         }
         
         isPaused = true
-        pausedDuration = Date()
+        pausedStartTime = Date()
         
-        // Pause asset writers
-        frontAssetWriter?.pause()
-        backAssetWriter?.pause()
-        compositeAssetWriter?.pause()
-        pictureInPictureAssetWriter?.pause()
+        // Note: AVAssetWriter doesn't have pause/resume methods
+        // Pausing is handled by tracking time intervals
         
         eventContinuation.yield(.recordingPaused)
     }
@@ -156,13 +153,13 @@ actor VideoRecorder: Sendable {
         }
         
         isPaused = false
-        totalPausedDuration += Date().timeIntervalSince(pausedDuration)
+        if let pausedStart = pausedStartTime {
+            totalPausedDuration += Date().timeIntervalSince(pausedStart)
+        }
+        pausedStartTime = nil
         
-        // Resume asset writers
-        frontAssetWriter?.resume()
-        backAssetWriter?.resume()
-        compositeAssetWriter?.resume()
-        pictureInPictureAssetWriter?.resume()
+        // Note: AVAssetWriter doesn't have pause/resume methods
+        // Resuming is handled by tracking time intervals
         
         eventContinuation.yield(.recordingResumed)
     }
@@ -291,8 +288,8 @@ actor VideoRecorder: Sendable {
         
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: configuration.outputFormat.codec,
-            AVVideoWidthKey: configuration.quality.resolution.width,
-            AVVideoHeightKey: configuration.quality.resolution.height,
+            AVVideoWidthKey: configuration.quality.dimensions.width,
+            AVVideoHeightKey: configuration.quality.dimensions.height,
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: configuration.quality.bitRate,
                 AVVideoExpectedSourceFrameRateKey: configuration.frameRate,
@@ -313,8 +310,8 @@ actor VideoRecorder: Sendable {
         
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: configuration.outputFormat.codec,
-            AVVideoWidthKey: configuration.quality.resolution.width,
-            AVVideoHeightKey: configuration.quality.resolution.height,
+            AVVideoWidthKey: configuration.quality.dimensions.width,
+            AVVideoHeightKey: configuration.quality.dimensions.height,
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: configuration.quality.bitRate,
                 AVVideoExpectedSourceFrameRateKey: configuration.frameRate,
@@ -359,8 +356,8 @@ actor VideoRecorder: Sendable {
         
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: configuration.outputFormat.codec,
-            AVVideoWidthKey: configuration.quality.resolution.width,
-            AVVideoHeightKey: configuration.quality.resolution.height,
+            AVVideoWidthKey: configuration.quality.dimensions.width,
+            AVVideoHeightKey: configuration.quality.dimensions.height,
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: configuration.quality.bitRate,
                 AVVideoExpectedSourceFrameRateKey: configuration.frameRate,
@@ -408,7 +405,7 @@ actor VideoRecorder: Sendable {
     }
     
     private func startRecordingSessions() async throws {
-        let startTime = CMSampleBufferGetPresentationTimeStamp(CMSampleBufferCreateReadyWithImageBuffer(nil, nil, nil, nil).takeRetainedValue())
+        let startTime = CMTime.zero
         
         // Start front camera recording
         if let frontWriter = frontAssetWriter {
@@ -531,11 +528,11 @@ actor VideoRecorder: Sendable {
         switch videoCompositionMode {
         case .sideBySide:
             return CGSize(
-                width: configuration.quality.resolution.width * 2,
-                height: configuration.quality.resolution.height
+                width: configuration.quality.dimensions.width * 2,
+                height: configuration.quality.dimensions.height
             )
         case .pictureInPicture, .splitScreen, .overlay:
-            return configuration.quality.resolution
+            return configuration.quality.dimensions
         }
     }
     
@@ -591,8 +588,8 @@ actor VideoRecorder: Sendable {
         var duration = Date().timeIntervalSince(startTime)
         duration -= totalPausedDuration
         
-        if isPaused {
-            duration -= Date().timeIntervalSince(pausedDuration)
+        if isPaused, let pausedStart = pausedStartTime {
+            duration -= Date().timeIntervalSince(pausedStart)
         }
         
         return duration

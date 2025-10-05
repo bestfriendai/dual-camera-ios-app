@@ -97,7 +97,7 @@ actor SettingsManager: Sendable {
         try await updateSettings(UserSettings.default)
     }
     
-    func exportSettings() async -> Data {
+    func exportSettings() async throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
@@ -115,7 +115,7 @@ actor SettingsManager: Sendable {
         isCloudSyncEnabled = enabled
         
         if enabled {
-            try await setupCloudSync()
+            await setupCloudSync()
             try await syncFromCloud()
         }
         
@@ -249,10 +249,16 @@ actor SettingsManager: Sendable {
                     await saveLocalSettings(settings)
                     
                     // Update cloud settings metadata
+                    let deviceName: String
+                    if let recordDeviceName = record["deviceName"] as? String {
+                        deviceName = recordDeviceName
+                    } else {
+                        deviceName = await getDeviceName()
+                    }
                     cloudSettings = CloudSettings(
                         recordID: record.recordID,
                         lastModified: record.modificationDate ?? Date(),
-                        deviceName: record["deviceName"] as? String ?? await getDeviceName()
+                        deviceName: deviceName
                     )
                     
                     lastSyncDate = Date()
@@ -365,7 +371,7 @@ actor SettingsManager: Sendable {
     // MARK: - Utility Methods
     
     private func getDeviceName() async -> String {
-        return UIDevice.current.name
+        return await UIDevice.current.name
     }
     
     private func getAppVersion() async -> String {
@@ -536,12 +542,41 @@ struct GeneralSettings: Codable, Sendable {
 
 struct CloudSettings: Codable, Sendable {
     static let `default` = CloudSettings()
-    
+
     var recordID: CKRecord.ID?
     var lastModified: Date?
     var deviceName: String?
     var appVersion: String?
     var settingsVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case lastModified, deviceName, appVersion, settingsVersion
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recordID = nil // CKRecord.ID is not codable, so we skip it
+        lastModified = try container.decodeIfPresent(Date.self, forKey: .lastModified)
+        deviceName = try container.decodeIfPresent(String.self, forKey: .deviceName)
+        appVersion = try container.decodeIfPresent(String.self, forKey: .appVersion)
+        settingsVersion = try container.decodeIfPresent(String.self, forKey: .settingsVersion)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(lastModified, forKey: .lastModified)
+        try container.encodeIfPresent(deviceName, forKey: .deviceName)
+        try container.encodeIfPresent(appVersion, forKey: .appVersion)
+        try container.encodeIfPresent(settingsVersion, forKey: .settingsVersion)
+    }
+
+    init(recordID: CKRecord.ID? = nil, lastModified: Date? = nil, deviceName: String? = nil, appVersion: String? = nil, settingsVersion: String? = nil) {
+        self.recordID = recordID
+        self.lastModified = lastModified
+        self.deviceName = deviceName
+        self.appVersion = appVersion
+        self.settingsVersion = settingsVersion
+    }
 }
 
 // MARK: - Sync Status

@@ -11,7 +11,6 @@ import os.log
 
 // MARK: - Error Handling Manager Actor
 
-@MainActor
 actor ErrorHandlingManager: Sendable {
     
     // MARK: - Singleton

@@ -39,7 +39,7 @@ actor BatteryManager: Sendable {
     
     private var monitoringTask: Task<Void, Never>?
     private let monitoringInterval: TimeInterval = 5.0
-    private var batteryHistory: [BatterySnapshot] = []
+    private var batteryHistory: [LegacyBatterySnapshot] = []
     private let maxHistorySize = 200
     
     // MARK: - Initialization
@@ -366,7 +366,7 @@ enum BatteryEvent: Sendable {
 
 // MARK: - Battery Snapshot
 
-struct BatterySnapshot: Sendable {
+struct LegacyBatterySnapshot: Sendable {
     let timestamp: Date
     let level: Double
     let state: UIDevice.BatteryState

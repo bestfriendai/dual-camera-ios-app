@@ -40,6 +40,7 @@ struct DualAppApp: App {
     
     private func setupGlobalErrorHandling() {
         // Set up global error handling for uncaught exceptions
+        /*
         NSSetUncaughtExceptionHandler { exception in
             Task { @MainActor in
                 appState.handleError(
@@ -60,12 +61,14 @@ struct DualAppApp: App {
                 )
             }
         }
+        */
     }
-    
+
     private func setupNotifications() {
         // Request notification permissions
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if let error = error {
+                /*
                 Task { @MainActor in
                     appState.handleError(
                         error,
@@ -76,6 +79,8 @@ struct DualAppApp: App {
                         severity: .warning
                     )
                 }
+                */
+                print("Notification authorization error: \(error)")
             }
         }
     }

@@ -558,13 +558,17 @@ actor VideoProcessor: Sendable {
             throw VideoProcessorError.noVideoTrack
         }
         
-        let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-        try compositionVideoTrack!.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
+        guard let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw VideoProcessorError.compositionFailed
+        }
+        try compositionVideoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
         
         // Add audio track if exists
         if let audioTrack = asset.tracks(withMediaType: .audio).first {
-            let compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-            try compositionAudioTrack!.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: audioTrack, at: .zero)
+            guard let compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                throw VideoProcessorError.compositionFailed
+            }
+            try compositionAudioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: audioTrack, at: .zero)
         }
         
         // Apply stabilization
@@ -575,10 +579,8 @@ actor VideoProcessor: Sendable {
         let instruction = AVMutableVideoCompositionInstruction()
         instruction.timeRange = CMTimeRange(start: CMTime.zero, duration: asset.duration)
         
-        guard let compositionVideoTrack = compositionVideoTrack else {
-            throw VideoProcessorError.compositionFailed
-        }
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compositionVideoTrack!)
+        // compositionVideoTrack is already non-optional from the previous guard statement
+        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compositionVideoTrack)
         layerInstruction.setTransform(videoTrack.preferredTransform, at: CMTime.zero)
         instruction.layerInstructions = [layerInstruction]
         
@@ -1057,7 +1059,7 @@ struct VideoProcessingMetrics: Sendable {
 final class FilterVideoCompositor: NSObject, AVVideoCompositing, @unchecked Sendable {
     nonisolated(unsafe) static var filter: VideoFilter = .none
     
-    var sourcePixelBufferAttributes: [String : Any]? {
+    var sourcePixelBufferAttributes: [String : any Sendable]? {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferOpenGLCompatibilityKey as String: true,
@@ -1065,7 +1067,7 @@ final class FilterVideoCompositor: NSObject, AVVideoCompositing, @unchecked Send
         ]
     }
     
-    var requiredPixelBufferAttributesForRenderContext: [String : Any] {
+    var requiredPixelBufferAttributesForRenderContext: [String : any Sendable] {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferOpenGLCompatibilityKey as String: true,
@@ -1120,7 +1122,7 @@ final class FilterVideoCompositor: NSObject, AVVideoCompositing, @unchecked Send
 }
 
 final class StabilizationVideoCompositor: NSObject, AVVideoCompositing, @unchecked Sendable {
-    var sourcePixelBufferAttributes: [String : Any]? {
+    var sourcePixelBufferAttributes: [String : any Sendable]? {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferOpenGLCompatibilityKey as String: true,
@@ -1128,7 +1130,7 @@ final class StabilizationVideoCompositor: NSObject, AVVideoCompositing, @uncheck
         ]
     }
     
-    var requiredPixelBufferAttributesForRenderContext: [String : Any] {
+    var requiredPixelBufferAttributesForRenderContext: [String : any Sendable] {
         return [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferOpenGLCompatibilityKey as String: true,

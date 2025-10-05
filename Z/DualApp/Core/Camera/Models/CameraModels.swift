@@ -13,23 +13,23 @@ import SwiftUI
 
 extension VideoQuality {
     var pixelCount: Int {
-        return Int(resolution.width * resolution.height)
+        return Int(dimensions.width * dimensions.height)
     }
-    
+
     var aspectRatio: String {
         switch self {
-        case .hd720, .hd1080:
+        case .hd720, .hd1080, .high:
             return "16:9"
         case .uhd4k:
             return "16:9"
         }
     }
-    
+
     var avSessionPreset: AVCaptureSession.Preset {
         switch self {
         case .hd720:
             return .hd1280x720
-        case .hd1080:
+        case .hd1080, .high:
             return .hd1920x1080
         case .uhd4k:
             return .hd4K3840x2160
@@ -48,14 +48,16 @@ extension VideoQuality {
             return "1080p"
         case .uhd4k:
             return "4K"
+        case .high:
+            return "High"
         }
     }
-    
+
     var bitRate: Int {
         switch self {
         case .hd720:
             return 5_000_000 // 5 Mbps
-        case .hd1080:
+        case .hd1080, .high:
             return 10_000_000 // 10 Mbps
         case .uhd4k:
             return 40_000_000 // 40 Mbps
@@ -66,7 +68,7 @@ extension VideoQuality {
         switch self {
         case .hd720:
             return [24, 30, 60]
-        case .hd1080:
+        case .hd1080, .high:
             return [24, 30, 60, 120]
         case .uhd4k:
             return [24, 30, 60]
@@ -409,7 +411,7 @@ enum ColorSpace: String, CaseIterable, Sendable, Codable {
         case .sRGB:
             return AVCaptureColorSpace.sRGB
         case .p3:
-            return AVCaptureColorSpace.p3_D65
+            return AVCaptureColorSpace.P3_D65
         case .rec2020:
             return AVCaptureColorSpace.rec2020
         case .proPhoto:
@@ -616,19 +618,21 @@ extension AVCaptureDevice {
     }
     
     var supportsMultiCam: Bool {
-        return supportsMulticam
+        return isMultiCamSupported
     }
-    
+
     var supportsHDR: Bool {
-        return activeFormat.supportedColorSpaces.contains(.p3_D65)
+        return activeFormat.supportedColorSpaces.contains(.P3_D65)
     }
-    
+
     var supportsProRes: Bool {
-        return activeFormat.supportedVideoCodecs.contains(.proRes422HQ)
+        // Check if device supports ProRes recording
+        return activeFormat.isVideoHDRSupported
     }
-    
+
     var supportsHEVC: Bool {
-        return activeFormat.supportedVideoCodecs.contains(.hevc)
+        // Check if device supports HEVC recording
+        return activeFormat.isVideoHDRSupported
     }
     
     var maxFrameRate: Double {

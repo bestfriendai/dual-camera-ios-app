@@ -25,7 +25,7 @@ actor MemoryManager: Sendable {
     
     // MARK: - Predictive Properties
     
-    private var memoryHistory: [MemorySnapshot] = []
+    private var memoryHistory: [LegacyMemorySnapshot] = []
     private var predictionModel: MemoryPredictionModel
     private let maxHistorySize = 100
     
@@ -491,7 +491,7 @@ enum MemoryEvent: Sendable {
 
 // MARK: - Memory Snapshot
 
-struct MemorySnapshot: Sendable {
+struct LegacyMemorySnapshot: Sendable {
     let timestamp: Date
     let usedMemory: UInt64
     let availableMemory: UInt64
